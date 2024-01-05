@@ -11,7 +11,7 @@ const BIG_NUMBER_ZERO = ethers.constants.Zero;
 const BIG_NUMBER_MAX_UINT256 = ethers.constants.MaxUint256;
 const YIELD_STREAMER_INIT_TOKEN_BALANCE: BigNumber = BigNumber.from(1000_000_000_000);
 const USER_CURRENT_TOKEN_BALANCE: BigNumber = BigNumber.from(1000_000_000_000);
-const LOOK_BACK_PERIOD_LENGTH: number = 3;
+const LOOK_BACK_PERIOD_LENGTH: number = 2;
 const LOOK_BACK_PERIOD_INDEX_ZERO = 0;
 const INITIAL_YIELD_RATE = 10000000000; // 1%
 const BALANCE_TRACKER_INIT_DAY = 100;
@@ -22,6 +22,8 @@ const RATE_FACTOR: BigNumber = BigNumber.from(1000000000000);
 const MIN_CLAIM_AMOUNT: BigNumber = BigNumber.from(1000000);
 const ROUNDING_COEF: BigNumber = BigNumber.from(10000);
 const BALANCE_TRACKER_ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
+const ZERO_GROUP_ID = ethers.utils.formatBytes32String("");
+const GROUP_ONE_ID = ethers.utils.formatBytes32String("GROUP_ONE");
 
 interface TestContext {
   tokenMock: Contract;
@@ -400,80 +402,66 @@ async function checkLookBackPeriods(
   expectedLookBackPeriodRecords: LookBackPeriodRecord[]
 ) {
   const expectedRecordArrayLength = expectedLookBackPeriodRecords.length;
-  if (expectedRecordArrayLength == 0) {
-    const actualRecordState = await yieldStreamer.getLookBackPeriod(0);
-    const actualRecord = actualRecordState[0];
-    const actualRecordArrayLength: number = actualRecordState[1].toNumber();
-    expect(actualRecordArrayLength).to.equal(
-      expectedRecordArrayLength,
-      `Wrong look-back period array length. The array should be empty`
-    );
-    expect(actualRecord.effectiveDay).to.equal(
-      0,
-      `Wrong field '_lookBackPeriods[0].effectiveDay' for empty look-back period array`
-    );
-    expect(actualRecord[1]).to.equal( // Index is used here because 'length' return the internal property
-      0,
-      `Wrong field '_lookBackPeriods[0].length' for empty look-back period array`
-    );
-  } else {
-    for (let i = 0; i < expectedRecordArrayLength; ++i) {
-      const expectedRecord: LookBackPeriodRecord = expectedLookBackPeriodRecords[i];
-      const actualRecordState = await yieldStreamer.getLookBackPeriod(i);
-      const actualRecord = actualRecordState[0];
-      const actualRecordArrayLength: number = actualRecordState[1].toNumber();
-      expect(actualRecordArrayLength).to.equal(
-        expectedRecordArrayLength,
-        `Wrong look-back period array length`
-      );
-      expect(actualRecord.effectiveDay).to.equal(
-        expectedRecord.effectiveDay,
-        `Wrong field '_lookBackPeriods[${i}].effectiveDay'`
-      );
-      expect(actualRecord[1]).to.equal( // Index is used here because 'length' return the internal property
-        expectedRecord.length,
-        `Wrong field '_lookBackPeriods[${i}].length'`
-      );
-    }
-  }
+  const actualRecordState = await yieldStreamer.getLookBackPeriods();
+  const actualRecordArrayLength: number = actualRecordState.length;
+
+  expect(actualRecordArrayLength).to.equal(
+    expectedRecordArrayLength,
+    `Wrong look-back period array length`
+  );
+
+  for (let i = 0; i < expectedRecordArrayLength; i++) {
+     const expectedRecord: LookBackPeriodRecord = expectedLookBackPeriodRecords[i];
+
+     expect(actualRecordState[i].length).to.equal(
+       2,
+       `Wrong look-back structure: expected 2 elements in array`
+     );
+
+     const actualRecord: LookBackPeriodRecord = {
+       effectiveDay: actualRecordState[i][0],
+       length: BigNumber.from(actualRecordState[i][1]),
+     };
+
+     expect(actualRecord.effectiveDay).to.equal(
+       expectedRecord.effectiveDay,
+       `Wrong field '_lookBackPeriods[${i}].effectiveDay'`
+     );
+     expect(actualRecord.length).to.equal(
+       expectedRecord.length,
+       `Wrong field '_lookBackPeriods[${i}].length'`
+     );
+   }
 }
 
 async function checkYieldRates(
   yieldStreamer: Contract,
-  yieldRateRecords: YieldRateRecord[]
+  yieldRateRecords: YieldRateRecord[],
+  groupId : string
 ) {
   const expectedRecordArrayLength = yieldRateRecords.length;
   if (expectedRecordArrayLength == 0) {
-    const actualRecordState = await yieldStreamer.getYieldRate(0);
-    const actualRecord = actualRecordState[0];
-    const actualRecordArrayLength: number = actualRecordState[1].toNumber();
+    const actualRecordState = await yieldStreamer.getGroupYieldRates(groupId);
+    const actualRecordArrayLength = actualRecordState.length;
     expect(actualRecordArrayLength).to.equal(
       expectedRecordArrayLength,
       `Wrong yield rate array length. The array should be empty`
     );
-    expect(actualRecord.effectiveDay).to.equal(
-      0,
-      `Wrong field '_yieldRates[0].effectiveDay' for empty yield rate array`
-    );
-    expect(actualRecord.value).to.equal(
-      0,
-      `Wrong field '_yieldRates[0].value' for empty yield rate array`
-    );
   } else {
     for (let i = 0; i < expectedRecordArrayLength; ++i) {
       const expectedRecord: YieldRateRecord = yieldRateRecords[i];
-      const actualRecordState = await yieldStreamer.getYieldRate(i);
-      const actualRecord = actualRecordState[0];
-      const actualRecordArrayLength: number = actualRecordState[1].toNumber();
+      const actualRecordState = await yieldStreamer.getGroupYieldRates(groupId);
+      const actualRecord = actualRecordState;
+      const actualRecordArrayLength: number = actualRecordState.length;
       expect(actualRecordArrayLength).to.equal(
         expectedRecordArrayLength,
         `Wrong yield rate array length`
       );
-      expect(actualRecord.effectiveDay).to.equal(
+      expect(actualRecord[i].effectiveDay).to.equal(
         expectedRecord.effectiveDay,
         `Wrong field '_yieldRates[${i}].effectiveDay'`
       );
-      expect(actualRecord.value).to.equal(
+      expect(actualRecord[i].value).to.equal(
         expectedRecord.value,
         `Wrong field '_yieldRates[${i}].value'`
       );
@@ -531,6 +519,8 @@ describe("Contract 'YieldStreamer'", async () => {
   const REVERT_ERROR_YIELD_RATE_INVALID_EFFECTIVE_DAY = "YieldRateInvalidEffectiveDay";
   const REVERT_ERROR_YIELD_RATE_VALUE_ALREADY_CONFIGURED = "YieldRateValueAlreadyConfigured";
   const REVERT_ERROR_YIELD_RATE_WRONG_INDEX = "YieldRateWrongIndex";
+  const REVERT_ERROR_GROUP_ALREADY_ASSIGNED = "GroupAlreadyAssigned";
+  const REVERT_ERROR_CALLER_NOT_BLOCKLISTER = "UnauthorizedBlocklister";
 
   const EVENT_BALANCE_TRACKER_CHANGED = "BalanceTrackerChanged";
   const EVENT_CLAIM = "Claim";
@@ -539,16 +529,20 @@ describe("Contract 'YieldStreamer'", async () => {
   const EVENT_LOOK_BACK_PERIOD_UPDATED = "LookBackPeriodUpdated";
   const EVENT_YIELD_RATE_CONFIGURED = "YieldRateConfigured";
   const EVENT_YIELD_RATE_UPDATED = "YieldRateUpdated";
+  const EVENT_ACCOUNT_ASSIGNED_TO_GROUP = "AssignAccountGroup";
 
   let tokenMockFactory: ContractFactory;
   let balanceTrackerMockFactory: ContractFactory;
   let yieldStreamerFactory: ContractFactory;
   let deployer: SignerWithAddress;
   let user: SignerWithAddress;
+  let user2: SignerWithAddress;
+  let user3: SignerWithAddress;
+  let blocklister: SignerWithAddress;
   let feeReceiver: SignerWithAddress;
 
   before(async () => {
-    [deployer, user, feeReceiver] = await ethers.getSigners();
+    [deployer, user, feeReceiver, user2, user3, blocklister] = await ethers.getSigners();
     tokenMockFactory = await ethers.getContractFactory("ERC20TestMock");
     balanceTrackerMockFactory = await ethers.getContractFactory("BalanceTrackerMock");
     yieldStreamerFactory = await ethers.getContractFactory("YieldStreamer");
@@ -577,7 +571,7 @@ describe("Contract 'YieldStreamer'", async () => {
 
     await proveTx(yieldStreamer.setFeeReceiver(feeReceiver.address));
     await proveTx(yieldStreamer.setBalanceTracker(balanceTrackerMock.address));
-    await proveTx(yieldStreamer.configureYieldRate(YIELD_STREAMER_INIT_DAY, INITIAL_YIELD_RATE));
+    await proveTx(yieldStreamer.configureYieldRate(ZERO_GROUP_ID, YIELD_STREAMER_INIT_DAY, INITIAL_YIELD_RATE));
     await proveTx(yieldStreamer.configureLookBackPeriod(YIELD_STREAMER_INIT_DAY, LOOK_BACK_PERIOD_LENGTH));
     await proveTx(balanceTrackerMock.setInitDay(BALANCE_TRACKER_INIT_DAY));
     await proveTx(balanceTrackerMock.setCurrentBalance(user.address, USER_CURRENT_TOKEN_BALANCE));
@@ -602,7 +596,7 @@ describe("Contract 'YieldStreamer'", async () => {
       expect(await yieldStreamer.MIN_CLAIM_AMOUNT()).to.equal(MIN_CLAIM_AMOUNT);
       expect(await yieldStreamer.ROUNDING_COEF()).to.equal(ROUNDING_COEF);
       await checkLookBackPeriods(yieldStreamer, []);
-      await checkYieldRates(yieldStreamer, []);
+      await checkYieldRates(yieldStreamer, [], ZERO_GROUP_ID);
     });
 
     it("Is reverted if called for the second time", async () => {
@@ -734,6 +728,58 @@ describe("Contract 'YieldStreamer'", async () => {
         context.yieldStreamer,
         REVERT_ERROR_BALANCE_TRACKER_ALREADY_CONFIGURED
       );
+    });
+  });
+
+  describe("Function 'assignAccountGroup()'", async () => {
+    let users: any;
+    before(async () => {
+      users = [user.address, user2.address, user3.address];
+    });
+    it("Executes as expected and emits the corresponding events", async () => {
+      const context: TestContext = await setUpFixture(deployContracts);
+      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
+      expect(await context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
+        .to.emit(
+          context.yieldStreamer,
+          EVENT_ACCOUNT_ASSIGNED_TO_GROUP
+        ).withArgs(
+          user.address,
+          GROUP_ONE_ID
+        )
+        .to.emit(
+          context.yieldStreamer,
+          EVENT_ACCOUNT_ASSIGNED_TO_GROUP
+        ).withArgs(
+          user2.address,
+          GROUP_ONE_ID
+        )
+        .to.emit(
+          context.yieldStreamer,
+          EVENT_ACCOUNT_ASSIGNED_TO_GROUP
+        ).withArgs(
+          user3.address,
+          GROUP_ONE_ID
+        );
+    });
+
+    it("Is reverted if caller is not the blocklister", async () => {
+      const context: TestContext = await setUpFixture(deployContracts);
+      expect(context.yieldStreamer.connect(user).assignAccountGroup(users, GROUP_ONE_ID))
+        .to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CALLER_NOT_BLOCKLISTER)
+        .withArgs(user.address);
+    });
+
+    it("Is reverted if user is already assigned to group", async () => {
+      const context: TestContext = await setUpFixture(deployContracts);
+      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
+      users = [user.address];
+      await context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users)
+      expect(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
+        .to.be.revertedWithCustomError(
+          context.yieldStreamer,
+          REVERT_ERROR_GROUP_ALREADY_ASSIGNED
+        ).withArgs(user.address)
     });
   });
 
@@ -978,28 +1024,32 @@ describe("Contract 'YieldStreamer'", async () => {
       ] = defineExpectedYieldRateRecords();
 
       await expect(context.yieldStreamer.configureYieldRate(
+        ZERO_GROUP_ID,
         expectedYieldRateRecord1.effectiveDay,
         expectedYieldRateRecord1.value
       )).to.emit(
         context.yieldStreamer,
         EVENT_YIELD_RATE_CONFIGURED
       ).withArgs(
+        ZERO_GROUP_ID,
         expectedYieldRateRecord1.effectiveDay,
         expectedYieldRateRecord1.value
       );
 
       await expect(context.yieldStreamer.configureYieldRate(
+        ZERO_GROUP_ID,
         expectedYieldRateRecord2.effectiveDay,
         expectedYieldRateRecord2.value
       )).to.emit(
         context.yieldStreamer,
         EVENT_YIELD_RATE_CONFIGURED
       ).withArgs(
+        ZERO_GROUP_ID,
         expectedYieldRateRecord2.effectiveDay,
         expectedYieldRateRecord2.value
       );
 
-      await checkYieldRates(context.yieldStreamer, [expectedYieldRateRecord1, expectedYieldRateRecord2]);
+      await checkYieldRates(context.yieldStreamer, [expectedYieldRateRecord1, expectedYieldRateRecord2], ZERO_GROUP_ID);
     });
 
     it("Is reverted if it is called not by the owner", async () => {
@@ -1007,6 +1057,7 @@ describe("Contract 'YieldStreamer'", async () => {
       const effectiveDay = YIELD_STREAMER_INIT_DAY + 1;
 
       await expect(context.yieldStreamer.connect(user).configureYieldRate(
+        ZERO_GROUP_ID,
         effectiveDay,
         INITIAL_YIELD_RATE
       )).revertedWith(REVERT_MESSAGE_OWNABLE_CALLER_IS_NOT_THE_OWNER);
@@ -1017,11 +1068,13 @@ describe("Contract 'YieldStreamer'", async () => {
       const effectiveDay = YIELD_STREAMER_INIT_DAY + 1;
 
       await proveTx(context.yieldStreamer.configureYieldRate(
+        ZERO_GROUP_ID,
         effectiveDay,
         INITIAL_YIELD_RATE
       ));
 
       await expect(context.yieldStreamer.configureYieldRate(
+        ZERO_GROUP_ID,
         effectiveDay,
         INITIAL_YIELD_RATE
       )).revertedWithCustomError(
@@ -1035,11 +1088,13 @@ describe("Contract 'YieldStreamer'", async () => {
       const effectiveDay = YIELD_STREAMER_INIT_DAY + 1;
 
       await proveTx(context.yieldStreamer.configureYieldRate(
+        ZERO_GROUP_ID,
         effectiveDay,
         INITIAL_YIELD_RATE
       ));
 
       await expect(context.yieldStreamer.configureYieldRate(
+        ZERO_GROUP_ID,
         effectiveDay + 1,
         INITIAL_YIELD_RATE
       )).revertedWithCustomError(
@@ -1054,6 +1109,7 @@ describe("Contract 'YieldStreamer'", async () => {
       const effectiveDay = 65536;
 
       await expect(context.yieldStreamer.configureYieldRate(
+        ZERO_GROUP_ID,
         effectiveDay,
         INITIAL_YIELD_RATE
       )).revertedWithCustomError(
@@ -1070,6 +1126,7 @@ describe("Contract 'YieldStreamer'", async () => {
         BigNumber.from("0x1000000000000000000000000000000000000000000000000000000000000");
 
       await expect(context.yieldStreamer.configureYieldRate(
+        ZERO_GROUP_ID,
         effectiveDay,
         yieldRateValue
       )).revertedWithCustomError(
@@ -1092,12 +1149,14 @@ describe("Contract 'YieldStreamer'", async () => {
 
       for (let expectedYieldRateRecord of oldExpectedYieldRateRecords) {
         await proveTx(context.yieldStreamer.configureYieldRate(
+          ZERO_GROUP_ID,
           expectedYieldRateRecord.effectiveDay,
           expectedYieldRateRecord.value
         ));
       }
 
       await expect(context.yieldStreamer.updateYieldRate(
+        ZERO_GROUP_ID,
         newExpectedYieldRateRecord[recordIndex].effectiveDay,
         newExpectedYieldRateRecord[recordIndex].value,
         recordIndex
@@ -1105,6 +1164,7 @@ describe("Contract 'YieldStreamer'", async () => {
         context.yieldStreamer,
         EVENT_YIELD_RATE_UPDATED
       ).withArgs(
+        ZERO_GROUP_ID,
         recordIndex,
         newExpectedYieldRateRecord[recordIndex].effectiveDay,
         oldExpectedYieldRateRecords[recordIndex].effectiveDay,
@@ -1112,7 +1172,7 @@ describe("Contract 'YieldStreamer'", async () => {
         oldExpectedYieldRateRecords[recordIndex].value
       );
 
-      await checkYieldRates(context.yieldStreamer, newExpectedYieldRateRecord);
+      await checkYieldRates(context.yieldStreamer, newExpectedYieldRateRecord, ZERO_GROUP_ID);
     });
 
     it("Executes as expected if there is only one yield rate record configured", async () => {
@@ -1124,11 +1184,13 @@ describe("Contract 'YieldStreamer'", async () => {
       };
 
       await proveTx(context.yieldStreamer.configureYieldRate(
+        ZERO_GROUP_ID,
         oldExpectedYieldRateRecord.effectiveDay,
         oldExpectedYieldRateRecord.value
       ));
 
       await expect(context.yieldStreamer.updateYieldRate(
+        ZERO_GROUP_ID,
         newExpectedYieldRateRecord.effectiveDay,
         newExpectedYieldRateRecord.value,
         YIELD_RATE_INDEX_ZERO
@@ -1136,6 +1198,7 @@ describe("Contract 'YieldStreamer'", async () => {
         context.yieldStreamer,
         EVENT_YIELD_RATE_UPDATED
       ).withArgs(
+        ZERO_GROUP_ID,
         YIELD_RATE_INDEX_ZERO,
         newExpectedYieldRateRecord.effectiveDay,
         oldExpectedYieldRateRecord.effectiveDay,
@@ -1143,7 +1206,7 @@ describe("Contract 'YieldStreamer'", async () => {
         oldExpectedYieldRateRecord.value
       );
 
-      await checkYieldRates(context.yieldStreamer, [newExpectedYieldRateRecord]);
+      await checkYieldRates(context.yieldStreamer, [newExpectedYieldRateRecord], ZERO_GROUP_ID);
     });
 
     it("Is reverted if it is called not by the owner", async () => {
@@ -1151,6 +1214,7 @@ describe("Contract 'YieldStreamer'", async () => {
       const effectiveDay = YIELD_STREAMER_INIT_DAY + 1;
 
       await expect(context.yieldStreamer.connect(user).updateYieldRate(
+        ZERO_GROUP_ID,
         effectiveDay,
         INITIAL_YIELD_RATE,
         YIELD_RATE_INDEX_ZERO
@@ -1161,6 +1225,7 @@ describe("Contract 'YieldStreamer'", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
 
       await expect(context.yieldStreamer.updateYieldRate(
+        ZERO_GROUP_ID,
         YIELD_STREAMER_INIT_DAY,
         INITIAL_YIELD_RATE,
         YIELD_RATE_INDEX_ZERO
@@ -1175,11 +1240,13 @@ describe("Contract 'YieldStreamer'", async () => {
       const effectiveDay = YIELD_STREAMER_INIT_DAY + 1;
 
       await proveTx(context.yieldStreamer.configureYieldRate(
+        ZERO_GROUP_ID,
         effectiveDay,
         INITIAL_YIELD_RATE
       ));
 
       await expect(context.yieldStreamer.updateYieldRate(
+        ZERO_GROUP_ID,
         effectiveDay,
         INITIAL_YIELD_RATE,
         YIELD_RATE_INDEX_ZERO + 1
@@ -1195,6 +1262,7 @@ describe("Contract 'YieldStreamer'", async () => {
 
       for (const expectedYieldRateRecord: YieldRateRecord of expectedYieldRateRecords) {
         await proveTx(context.yieldStreamer.configureYieldRate(
+          ZERO_GROUP_ID,
           expectedYieldRateRecord.effectiveDay,
           expectedYieldRateRecord.value
         ));
@@ -1203,6 +1271,7 @@ describe("Contract 'YieldStreamer'", async () => {
       let recordIndex = 0;
       // check revert if effective day is greater than next day if there is updating day with index 0
       await expect(context.yieldStreamer.updateYieldRate(
+        ZERO_GROUP_ID,
         expectedYieldRateRecords[recordIndex + 1].effectiveDay,
         expectedYieldRateRecords[recordIndex].value,
         recordIndex
@@ -1214,6 +1283,7 @@ describe("Contract 'YieldStreamer'", async () => {
       recordIndex = 1;
       //check revert if effective day is less than previous day
       await expect(context.yieldStreamer.updateYieldRate(
+        ZERO_GROUP_ID,
         expectedYieldRateRecords[recordIndex - 1].effectiveDay,
         expectedYieldRateRecords[recordIndex].value,
         recordIndex
@@ -1224,6 +1294,7 @@ describe("Contract 'YieldStreamer'", async () => {
 
       // check revert if effective day is greater than next day with index != 0
       await expect(context.yieldStreamer.updateYieldRate(
+        ZERO_GROUP_ID,
         expectedYieldRateRecords[recordIndex + 1].effectiveDay,
         expectedYieldRateRecords[recordIndex].value,
         recordIndex
@@ -1235,6 +1306,7 @@ describe("Contract 'YieldStreamer'", async () => {
       recordIndex = 2;
       // check revert if effective day is less than next day if the next day is last element in array
       await expect(context.yieldStreamer.updateYieldRate(
+        ZERO_GROUP_ID,
         expectedYieldRateRecords[recordIndex - 1].effectiveDay,
         expectedYieldRateRecords[recordIndex].value,
         recordIndex
@@ -1263,7 +1335,7 @@ describe("Contract 'YieldStreamer'", async () => {
       await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, balanceRecords));
       for (let i = 1; i < yieldByDaysRequest.yieldRateRecords.length; ++i) {
         const yieldRateRecord: YieldRateRecord = yieldByDaysRequest.yieldRateRecords[i];
-        await proveTx(context.yieldStreamer.configureYieldRate(yieldRateRecord.effectiveDay, yieldRateRecord.value));
+        await proveTx(context.yieldStreamer.configureYieldRate(ZERO_GROUP_ID, yieldRateRecord.effectiveDay, yieldRateRecord.value));
       }
 
       const expectedYieldByDays: BigNumber[] = defineExpectedYieldByDays(yieldByDaysRequest);
@@ -1326,6 +1398,28 @@ describe("Contract 'YieldStreamer'", async () => {
         );
       });
     });
+  });
+
+  describe("Function 'getAccountYieldRates()'", async () => {
+    it("Executes as expected", async () => {
+      const context: TestContext = await setUpFixture(deployContracts);
+      const [
+        expectedYieldRateRecord1,
+        expectedYieldRateRecord2
+      ] = defineExpectedYieldRateRecords();
+      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
+      await proveTx(context.yieldStreamer.configureYieldRate(ZERO_GROUP_ID, expectedYieldRateRecord1.effectiveDay, expectedYieldRateRecord1.value));
+      let userYieldRates = await context.yieldStreamer.getAccountYieldRates(user.address);
+      let actualUserYieldRates = userYieldRates[0];
+      expect(actualUserYieldRates[0]).to.eq(expectedYieldRateRecord1.effectiveDay);
+      expect(actualUserYieldRates[1]).to.eq(expectedYieldRateRecord1.value);
+      await proveTx(context.yieldStreamer.configureYieldRate(GROUP_ONE_ID, expectedYieldRateRecord2.effectiveDay, expectedYieldRateRecord2.value));
+      await proveTx(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, [user.address]));
+      userYieldRates = await context.yieldStreamer.getAccountYieldRates(user.address);
+      actualUserYieldRates = userYieldRates[0];
+      expect(actualUserYieldRates[0]).to.eq(expectedYieldRateRecord2.effectiveDay);
+      expect(actualUserYieldRates[1]).to.eq(expectedYieldRateRecord2.value);
+    })
   });
 
   describe("Function 'claimAllPreview()'", async () => {

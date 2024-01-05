@@ -14,8 +14,8 @@ contract YieldStreamerHarness is YieldStreamer, HarnessAdministrable {
     /**
      * @notice Deletes all records from the yield rate chronological array
      */
-    function deleteYieldRates() external onlyOwner {
-        delete _yieldRates;
+    function deleteYieldRates(bytes32 groupId) external onlyOwner {
+        delete _yieldRates[groupId];
     }
 
     /**
