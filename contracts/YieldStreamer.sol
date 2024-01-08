@@ -350,7 +350,10 @@ contract YieldStreamer is
      * @param groupId The hash identifier of the group
      * @param accounts The array of accounts to be assigned to the group
      */
-    function assignAccountGroup(bytes32 groupId, address[] memory accounts) external onlyBlocklister {
+    function assignAccountGroup(
+        bytes32 groupId,
+        address[] memory accounts
+    ) external onlyBlocklister {
         for (uint256 i = 0; i < accounts.length; i++) {
             if (_groups[accounts[i]] == groupId) {
                 revert GroupAlreadyAssigned(accounts[i]);
@@ -378,10 +381,16 @@ contract YieldStreamer is
      * @param length The length of the new look-back period in days
      */
     function configureLookBackPeriod(uint256 effectiveDay, uint256 length) external onlyOwner {
-        if (_lookBackPeriods.length > 0 && _lookBackPeriods[_lookBackPeriods.length - 1].effectiveDay >= effectiveDay) {
+        if (
+            _lookBackPeriods.length > 0 &&
+            _lookBackPeriods[_lookBackPeriods.length - 1].effectiveDay >= effectiveDay
+        ) {
             revert LookBackPeriodInvalidEffectiveDay();
         }
-        if (_lookBackPeriods.length > 0 && _lookBackPeriods[_lookBackPeriods.length - 1].length == length) {
+        if (
+            _lookBackPeriods.length > 0 &&
+            _lookBackPeriods[_lookBackPeriods.length - 1].length == length
+        ) {
             revert LookBackPeriodLengthAlreadyConfigured();
         }
         if (length == 0) {
@@ -398,7 +407,9 @@ contract YieldStreamer is
             revert LookBackPeriodCountLimit();
         }
 
-        _lookBackPeriods.push(LookBackPeriod({ effectiveDay: _toUint16(effectiveDay), length: _toUint16(length) }));
+        _lookBackPeriods.push(
+            LookBackPeriod({ effectiveDay: _toUint16(effectiveDay), length: _toUint16(length) })
+        );
 
         emit LookBackPeriodConfigured(effectiveDay, length);
     }
@@ -419,7 +430,11 @@ contract YieldStreamer is
      * @param length The length of the new look-back period in days
      * @param index The index of the look-back period in the array
      */
-    function updateLookBackPeriod(uint256 effectiveDay, uint256 length, uint256 index) external onlyOwner {
+    function updateLookBackPeriod(
+        uint256 effectiveDay,
+        uint256 length,
+        uint256 index
+    ) external onlyOwner {
         if (length == 0) {
             revert LookBackPeriodLengthZero();
         }
@@ -432,12 +447,7 @@ contract YieldStreamer is
 
         LookBackPeriod storage period = _lookBackPeriods[index];
 
-        emit LookBackPeriodUpdated(
-            index,
-            effectiveDay,
-            period.effectiveDay,
-            length,
-            period.length);
+        emit LookBackPeriodUpdated(index, effectiveDay, period.effectiveDay, length, period.length);
 
         period.effectiveDay = _toUint16(effectiveDay);
         period.length = _toUint16(length);
@@ -458,17 +468,25 @@ contract YieldStreamer is
      * @param effectiveDay The index of the day the yield rate come into use
      * @param value The value of the yield rate
      */
-    function configureYieldRate(bytes32 groupId, uint256 effectiveDay, uint256 value) external onlyOwner {
+    function configureYieldRate(
+        bytes32 groupId,
+        uint256 effectiveDay,
+        uint256 value
+    ) external onlyOwner {
         YieldRate[] storage yieldRates = _yieldRates[groupId];
 
-        if (yieldRates.length > 0 && yieldRates[yieldRates.length - 1].effectiveDay >= effectiveDay) {
+        if (
+            yieldRates.length > 0 && yieldRates[yieldRates.length - 1].effectiveDay >= effectiveDay
+        ) {
             revert YieldRateInvalidEffectiveDay();
         }
         if (yieldRates.length > 0 && yieldRates[yieldRates.length - 1].value == value) {
             revert YieldRateValueAlreadyConfigured();
         }
 
-        yieldRates.push(YieldRate({ effectiveDay: _toUint16(effectiveDay), value: _toUint240(value) }));
+        yieldRates.push(
+            YieldRate({ effectiveDay: _toUint16(effectiveDay), value: _toUint240(value) })
+        );
 
         emit YieldRateConfigured(groupId, effectiveDay, value);
     }
@@ -491,7 +509,12 @@ contract YieldStreamer is
      * @param value The value of the yield rate
      * @param index The index of the yield rate in the array
      */
-    function updateYieldRate(bytes32 groupId, uint256 effectiveDay, uint256 value, uint256 index) external onlyOwner {
+    function updateYieldRate(
+        bytes32 groupId,
+        uint256 effectiveDay,
+        uint256 value,
+        uint256 index
+    ) external onlyOwner {
         YieldRate[] storage yieldRates = _yieldRates[groupId];
 
         if (index >= yieldRates.length) {
@@ -521,7 +544,8 @@ contract YieldStreamer is
             effectiveDay,
             yieldRate.effectiveDay,
             value,
-            yieldRate.value);
+            yieldRate.value
+        );
 
         yieldRate.effectiveDay = _toUint16(effectiveDay);
         yieldRate.value = _toUint240(value);
@@ -552,7 +576,11 @@ contract YieldStreamer is
     /**
      * @inheritdoc IBalanceTracker
      */
-    function getDailyBalances(address account, uint256 fromDay, uint256 toDay) public view returns (uint256[] memory) {
+    function getDailyBalances(
+        address account,
+        uint256 fromDay,
+        uint256 toDay
+    ) public view returns (uint256[] memory) {
         return IBalanceTracker(_balanceTracker).getDailyBalances(account, fromDay, toDay);
     }
 
@@ -585,7 +613,10 @@ contract YieldStreamer is
      * @dev The requested claim amount must be no less than the `MIN_CLAIM_AMOUNT` value
      * @dev The requested claim amount must be rounded according to the `ROUNDING_COEF` value
      */
-    function claimPreview(address account, uint256 amount) public view returns (ClaimResult memory) {
+    function claimPreview(
+        address account,
+        uint256 amount
+    ) public view returns (ClaimResult memory) {
         if (amount < MIN_CLAIM_AMOUNT) {
             revert ClaimAmountBelowMinimum();
         }
@@ -627,7 +658,12 @@ contract YieldStreamer is
             revert ToDayPriorFromDay();
         }
         uint256[] memory yieldByDays;
-        (yieldByDays, ) = _calculateYieldAndPossibleBalanceByDays(account, fromDay, toDay, nextClaimDebit);
+        (yieldByDays, ) = _calculateYieldAndPossibleBalanceByDays(
+            account,
+            fromDay,
+            toDay,
+            nextClaimDebit
+        );
         return yieldByDays;
     }
 
@@ -724,7 +760,12 @@ contract YieldStreamer is
             return getDailyBalances(account, fromDay, toDay);
         } else {
             uint256[] memory possibleBalanceByDays;
-            (, possibleBalanceByDays) = _calculateYieldAndPossibleBalanceByDays(account, state.day, toDay, state.debit);
+            (, possibleBalanceByDays) = _calculateYieldAndPossibleBalanceByDays(
+                account,
+                state.day,
+                toDay,
+                state.debit
+            );
             uint256 firstDayWithYield = toDay + 2 - possibleBalanceByDays.length;
             uint256[] memory dailyBalances;
             if (fromDay < firstDayWithYield) {
@@ -790,7 +831,8 @@ contract YieldStreamer is
 
         // Define first day yield and initial sum yield
         uint256 sumYield = 0;
-        uint256 dayYield = (_getMinimumInRange(possibleBalanceByDays, 0, periodLength) * rateValue) / RATE_FACTOR;
+        uint256 dayYield = (_getMinimumInRange(possibleBalanceByDays, 0, periodLength) *
+            rateValue) / RATE_FACTOR;
         if (dayYield > nextClaimDebit) {
             sumYield = dayYield - nextClaimDebit;
         }
@@ -841,7 +883,10 @@ contract YieldStreamer is
      * @param account The address of an account to preview the claim for
      * @param amount The amount of yield to be claimed
      */
-    function _claimPreview(address account, uint256 amount) internal view returns (ClaimResult memory) {
+    function _claimPreview(
+        address account,
+        uint256 amount
+    ) internal view returns (ClaimResult memory) {
         (uint256 day, uint256 time) = dayAndTime();
         ClaimState memory state = _claims[account];
         ClaimResult memory result;
@@ -870,7 +915,12 @@ contract YieldStreamer is
              * Calculate the yield by days since the last claim day until yesterday
              */
             uint256[] memory yieldByDays;
-            (yieldByDays, ) = _calculateYieldAndPossibleBalanceByDays(account, result.nextClaimDay, day, state.debit);
+            (yieldByDays, ) = _calculateYieldAndPossibleBalanceByDays(
+                account,
+                result.nextClaimDay,
+                day,
+                state.debit
+            );
             uint256 lastIndex = yieldByDays.length - 1;
 
             /**
@@ -948,7 +998,12 @@ contract YieldStreamer is
             result.nextClaimDebit = state.debit;
 
             uint256[] memory yieldByDays;
-            (yieldByDays, ) = _calculateYieldAndPossibleBalanceByDays(account, day, day, state.debit);
+            (yieldByDays, ) = _calculateYieldAndPossibleBalanceByDays(
+                account,
+                day,
+                day,
+                state.debit
+            );
             result.lastDayYield = yieldByDays[0];
             result.streamYield = calculateStream(result.lastDayYield, time);
 
@@ -1081,8 +1136,14 @@ contract YieldStreamer is
         require(newYieldRates.length == oldYieldRates.length, "YieldStreamer: migration failed");
 
         for (uint256 i = 0; i < oldYieldRates.length; ++i) {
-            require(newYieldRates[i].effectiveDay == oldYieldRates[i].effectiveDay, "YieldStreamer: migration failed");
-            require(newYieldRates[i].value == oldYieldRates[i].value, "YieldStreamer: migration failed");
+            require(
+                newYieldRates[i].effectiveDay == oldYieldRates[i].effectiveDay,
+                "YieldStreamer: migration failed"
+            );
+            require(
+                newYieldRates[i].value == oldYieldRates[i].value,
+                "YieldStreamer: migration failed"
+            );
         }
     }
 

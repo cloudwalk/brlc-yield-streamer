@@ -54,5 +54,8 @@ interface IYieldStreamer {
      * @param account The address to preview the claim for
      * @param amount The portion of yield to be claimed
      */
-    function claimPreview(address account, uint256 amount) external view returns (ClaimResult memory);
+    function claimPreview(
+        address account,
+        uint256 amount
+    ) external view returns (ClaimResult memory);
 }

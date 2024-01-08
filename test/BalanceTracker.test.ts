@@ -44,9 +44,9 @@ interface TestContext {
 }
 
 interface DailyBalancesRequest {
-  address: string,
-  dayFrom: number,
-  dayTo: number,
+  address: string;
+  dayFrom: number;
+  dayTo: number;
 }
 
 async function setUpFixture(func: any) {
@@ -57,13 +57,13 @@ async function setUpFixture(func: any) {
   }
 }
 
-function toDayAndTime(timestampInSeconds: number): { dayIndex: number, secondsOfDay: number } {
+function toDayAndTime(timestampInSeconds: number): { dayIndex: number; secondsOfDay: number } {
   const correctedTimestamp = timestampInSeconds - NEGATIVE_TIME_SHIFT;
   const dayIndex = Math.floor(correctedTimestamp / DAY_IN_SECONDS);
   const secondsOfDay = correctedTimestamp % DAY_IN_SECONDS;
   return {
     dayIndex,
-    secondsOfDay,
+    secondsOfDay
   };
 }
 
@@ -91,12 +91,12 @@ function toBalanceChanges(tokenTransfer: TokenTransfer): BalanceChange[] {
   const addressFromBalanceChange: BalanceChange = {
     executionDay: tokenTransfer.executionDay,
     address: tokenTransfer.addressFrom,
-    amountChange: ZERO_BIG_NUMBER.sub(tokenTransfer.amount),
+    amountChange: ZERO_BIG_NUMBER.sub(tokenTransfer.amount)
   };
   const addressToBalanceChange: BalanceChange = {
     executionDay: tokenTransfer.executionDay,
     address: tokenTransfer.addressTo,
-    amountChange: tokenTransfer.amount,
+    amountChange: tokenTransfer.amount
   };
   return [addressFromBalanceChange, addressToBalanceChange];
 }
@@ -145,10 +145,7 @@ async function checkBalanceRecordsForAccount(
   }
 }
 
-function applyBalanceChange(
-  context: TestContext,
-  balanceChange: BalanceChange,
-): BalanceRecord | undefined {
+function applyBalanceChange(context: TestContext, balanceChange: BalanceChange): BalanceRecord | undefined {
   const { address, amountChange } = balanceChange;
   const { balanceByAddressMap, balanceRecordsByAddressMap } = context;
   if (address == ZERO_ADDRESS || amountChange.eq(ZERO_BIG_NUMBER)) {
@@ -161,7 +158,7 @@ function applyBalanceChange(
     accountAddress: address,
     index: 0,
     day: balanceChange.executionDay - 1,
-    value: balance,
+    value: balance
   };
   if (balanceRecords.length === 0) {
     if (balanceChange.executionDay === context.balanceTrackerInitDay) {
@@ -189,13 +186,13 @@ function defineExpectedDailyBalances(context: TestContext, dailyBalancesRequest:
   if (dayFrom < context.balanceTrackerInitDay) {
     throw new Error(
       `Cannot define daily balances because 'dayFrom' is less than the BalanceTracker init day. ` +
-      `The 'dayFrom' value: ${dayFrom}. The init day: ${context.balanceTrackerInitDay}`
+        `The 'dayFrom' value: ${dayFrom}. The init day: ${context.balanceTrackerInitDay}`
     );
   }
   if (dayFrom > dayTo) {
     throw new Error(
       `Cannot define daily balances because 'dayFrom' is greater than 'dayTo'. ` +
-      `The 'dayFrom' value: ${dayFrom}. The 'dayTo' value: ${dayTo}`
+        `The 'dayFrom' value: ${dayFrom}. The 'dayTo' value: ${dayTo}`
     );
   }
   const dailyBalances: BigNumber[] = [];
@@ -229,9 +226,7 @@ async function deployTokenMock(tokenMock: Contract): Promise<Contract> {
 }
 
 describe("Contract 'BalanceTracker'", async () => {
-
-  const REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED =
-    "Initializable: contract is already initialized";
+  const REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED = "Initializable: contract is already initialized";
 
   const REVERT_ERROR_UNAUTHORIZED_CALLER = "UnauthorizedCaller";
   const REVERT_ERROR_SAFE_CAST_OVERFLOW_UINT16 = "SafeCastOverflowUint16";
@@ -250,14 +245,14 @@ describe("Contract 'BalanceTracker'", async () => {
     if (network.name !== "hardhat") {
       throw new Error(
         "This tests cannot be run on the network other than Hardhat due to: " +
-        "1. The initial nonce of the contract deployer must be zero at the beginning of each test. " +
-        "2. The ability to change block timestamps for checking the contract under test is required."
+          "1. The initial nonce of the contract deployer must be zero at the beginning of each test. " +
+          "2. The ability to change block timestamps for checking the contract under test is required."
       );
     }
     // Resetting the hardhat network to start from scratch and deploy the special token contract mock first
     await network.provider.request({
       method: "hardhat_reset",
-      params: [],
+      params: []
     });
     [deployer, attacker, user1, user2] = await ethers.getSigners();
     tokenMock = await deployTokenMock(tokenMock);
@@ -266,8 +261,8 @@ describe("Contract 'BalanceTracker'", async () => {
   });
 
   async function deployAndConfigureContracts(): Promise<{
-    balanceTracker: Contract,
-    balanceTrackerInitDay: number
+    balanceTracker: Contract;
+    balanceTrackerInitDay: number;
   }> {
     const balanceTracker: Contract = await upgrades.deployProxy(balanceTrackerFactory.connect(deployer));
     await balanceTracker.deployed();
@@ -277,7 +272,7 @@ describe("Contract 'BalanceTracker'", async () => {
     await proveTx(tokenMock.setBalance(user2.address, INIT_TOKEN_BALANCE));
     return {
       balanceTracker,
-      balanceTrackerInitDay,
+      balanceTrackerInitDay
     };
   }
 
@@ -323,18 +318,14 @@ describe("Contract 'BalanceTracker'", async () => {
         await expect(tx).not.to.emit(balanceTracker, "BalanceRecordCreated");
       } else {
         if (!!newBalanceRecord1) {
-          await expect(tx).to.emit(balanceTracker, "BalanceRecordCreated").withArgs(
-            newBalanceRecord1.accountAddress,
-            newBalanceRecord1.day,
-            newBalanceRecord1.value
-          );
+          await expect(tx)
+            .to.emit(balanceTracker, "BalanceRecordCreated")
+            .withArgs(newBalanceRecord1.accountAddress, newBalanceRecord1.day, newBalanceRecord1.value);
         }
         if (!!newBalanceRecord2) {
-          await expect(tx).to.emit(balanceTracker, "BalanceRecordCreated").withArgs(
-            newBalanceRecord2.accountAddress,
-            newBalanceRecord2.day,
-            newBalanceRecord2.value
-          );
+          await expect(tx)
+            .to.emit(balanceTracker, "BalanceRecordCreated")
+            .withArgs(newBalanceRecord2.accountAddress, newBalanceRecord2.day, newBalanceRecord2.value);
         }
       }
     }
@@ -388,7 +379,7 @@ describe("Contract 'BalanceTracker'", async () => {
               executionDay: nextDayAfterInit,
               addressFrom: user1.address,
               addressTo: user2.address,
-              amount: BigNumber.from(123456789),
+              amount: BigNumber.from(123456789)
             };
             await checkTokenTransfers(context, [transfer]);
           });
@@ -400,7 +391,7 @@ describe("Contract 'BalanceTracker'", async () => {
               executionDay: nextDayAfterInit,
               addressFrom: user1.address,
               addressTo: ZERO_ADDRESS,
-              amount: BigNumber.from(123456789),
+              amount: BigNumber.from(123456789)
             };
             await checkTokenTransfers(context, [transfer]);
           });
@@ -412,7 +403,7 @@ describe("Contract 'BalanceTracker'", async () => {
               executionDay: nextDayAfterInit,
               addressFrom: ZERO_ADDRESS,
               addressTo: user2.address,
-              amount: BigNumber.from(123456789),
+              amount: BigNumber.from(123456789)
             };
             await checkTokenTransfers(context, [transfer]);
           });
@@ -426,7 +417,7 @@ describe("Contract 'BalanceTracker'", async () => {
               executionDay: nextDayAfterInit,
               addressFrom: user1.address,
               addressTo: user2.address,
-              amount: ZERO_BIG_NUMBER,
+              amount: ZERO_BIG_NUMBER
             };
             await checkTokenTransfers(context, [transfer]);
           });
@@ -440,7 +431,7 @@ describe("Contract 'BalanceTracker'", async () => {
             executionDay: context.balanceTrackerInitDay,
             addressFrom: user1.address,
             addressTo: user2.address,
-            amount: BigNumber.from(123456789),
+            amount: BigNumber.from(123456789)
           };
           await checkTokenTransfers(context, [transfer]);
         });
@@ -454,13 +445,13 @@ describe("Contract 'BalanceTracker'", async () => {
             executionDay: nextDayAfterInit,
             addressFrom: user1.address,
             addressTo: user2.address,
-            amount: BigNumber.from(123456789),
+            amount: BigNumber.from(123456789)
           };
           const transfer2: TokenTransfer = {
             executionDay: nextDayAfterInit,
             addressFrom: user2.address,
             addressTo: user1.address,
-            amount: BigNumber.from(987654321),
+            amount: BigNumber.from(987654321)
           };
           await checkTokenTransfers(context, [transfer1, transfer2]);
         });
@@ -470,31 +461,25 @@ describe("Contract 'BalanceTracker'", async () => {
     describe("Is reverted if ", async () => {
       it("Is called not by a token", async () => {
         const context: TestContext = await initTestContext();
-        await expect(
-          context.balanceTracker.connect(attacker).afterTokenTransfer(user1.address, user2.address, 123)
-        ).to.be.revertedWithCustomError(
-          context.balanceTracker,
-          REVERT_ERROR_UNAUTHORIZED_CALLER
-        ).withArgs(attacker.address);
+        await expect(context.balanceTracker.connect(attacker).afterTokenTransfer(user1.address, user2.address, 123))
+          .to.be.revertedWithCustomError(context.balanceTracker, REVERT_ERROR_UNAUTHORIZED_CALLER)
+          .withArgs(attacker.address);
       });
 
       describe("A token transfer happens not on the initialization day and the amount is non-zero and", async () => {
         it("The initial token balance is greater than 240-bit unsigned value", async () => {
           const context: TestContext = await initTestContext();
-          await proveTx(tokenMock.setBalance(
-            user1.address,
-            BigNumber.from("0x1000000000000000000000000000000000000000000000000000000000000")
-          ));
+          await proveTx(
+            tokenMock.setBalance(
+              user1.address,
+              BigNumber.from("0x1000000000000000000000000000000000000000000000000000000000000")
+            )
+          );
 
           await increaseBlockchainTimeToSpecificRelativeDay(1);
 
           await expect(
-            tokenMock.simulateHookedTransfer(
-              context.balanceTracker.address,
-              user1.address,
-              user2.address,
-              1
-            )
+            tokenMock.simulateHookedTransfer(context.balanceTracker.address, user1.address, user2.address, 1)
           ).to.be.revertedWithCustomError(context.balanceTracker, REVERT_ERROR_SAFE_CAST_OVERFLOW_UINT240);
         });
 
@@ -506,12 +491,7 @@ describe("Contract 'BalanceTracker'", async () => {
           await increaseBlockchainTimeToSpecificRelativeDay(65537 - currentDay);
 
           await expect(
-            tokenMock.simulateHookedTransfer(
-              context.balanceTracker.address,
-              user1.address,
-              user2.address,
-              1
-            )
+            tokenMock.simulateHookedTransfer(context.balanceTracker.address, user1.address, user2.address, 1)
           ).to.be.revertedWithCustomError(context.balanceTracker, REVERT_ERROR_SAFE_CAST_OVERFLOW_UINT16);
         });
       });
@@ -522,12 +502,9 @@ describe("Contract 'BalanceTracker'", async () => {
     describe("Is reverted if ", async () => {
       it("Is called not by a token", async () => {
         const context: TestContext = await initTestContext();
-        await expect(
-          context.balanceTracker.connect(attacker).beforeTokenTransfer(user1.address, user2.address, 123)
-        ).to.be.revertedWithCustomError(
-          context.balanceTracker,
-          REVERT_ERROR_UNAUTHORIZED_CALLER
-        ).withArgs(attacker.address);
+        await expect(context.balanceTracker.connect(attacker).beforeTokenTransfer(user1.address, user2.address, 123))
+          .to.be.revertedWithCustomError(context.balanceTracker, REVERT_ERROR_UNAUTHORIZED_CALLER)
+          .withArgs(attacker.address);
       });
     });
   });
@@ -551,10 +528,16 @@ describe("Contract 'BalanceTracker'", async () => {
           dayFrom,
           dayTo
         });
-        const actualDailyBalancesForUser1: BigNumber[] =
-          await context.balanceTracker.getDailyBalances(user1.address, dayFrom, dayTo);
-        const actualDailyBalancesForUser2: BigNumber[] =
-          await context.balanceTracker.getDailyBalances(user2.address, dayFrom, dayTo);
+        const actualDailyBalancesForUser1: BigNumber[] = await context.balanceTracker.getDailyBalances(
+          user1.address,
+          dayFrom,
+          dayTo
+        );
+        const actualDailyBalancesForUser2: BigNumber[] = await context.balanceTracker.getDailyBalances(
+          user2.address,
+          dayFrom,
+          dayTo
+        );
         expect(expectedDailyBalancesForUser1).to.deep.equal(actualDailyBalancesForUser1);
         expect(expectedDailyBalancesForUser2).to.deep.equal(actualDailyBalancesForUser2);
       }
@@ -564,19 +547,19 @@ describe("Contract 'BalanceTracker'", async () => {
           executionDay: firstTransferDay,
           addressFrom: user1.address,
           addressTo: user2.address,
-          amount: BigNumber.from(123456789),
+          amount: BigNumber.from(123456789)
         };
         const transfer2: TokenTransfer = {
           executionDay: firstTransferDay + 2,
           addressFrom: user2.address,
           addressTo: user1.address,
-          amount: BigNumber.from(987654321),
+          amount: BigNumber.from(987654321)
         };
         const transfer3: TokenTransfer = {
           executionDay: firstTransferDay + 6,
           addressFrom: user1.address,
           addressTo: user2.address,
-          amount: BigNumber.from(987654320 / 2),
+          amount: BigNumber.from(987654320 / 2)
         };
         return [transfer1, transfer2, transfer3];
       }
@@ -663,8 +646,11 @@ describe("Contract 'BalanceTracker'", async () => {
             SERVICE_ACCOUNT_SPECIAL_TOKEN_BALANCE,
             ZERO_BIG_NUMBER
           ];
-          const actualDailyBalances: BigNumber[] =
-            await context.balanceTracker.getDailyBalances(SERVICE_ACCOUNT_ADDRESS, dayFrom, dayTo);
+          const actualDailyBalances: BigNumber[] = await context.balanceTracker.getDailyBalances(
+            SERVICE_ACCOUNT_ADDRESS,
+            dayFrom,
+            dayTo
+          );
           expect(expectedDailyBalances).to.deep.equal(actualDailyBalances);
         });
       });
@@ -690,5 +676,4 @@ describe("Contract 'BalanceTracker'", async () => {
       });
     });
   });
-
 });

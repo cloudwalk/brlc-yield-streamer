@@ -15,7 +15,11 @@ interface IBalanceTracker {
      * @param fromDay The index of the first day of the period
      * @param toDay The index of the last day of the period
      */
-    function getDailyBalances(address account, uint256 fromDay, uint256 toDay) external view returns (uint256[] memory);
+    function getDailyBalances(
+        address account,
+        uint256 fromDay,
+        uint256 toDay
+    ) external view returns (uint256[] memory);
 
     /**
      * @notice Returns the balance tracker current day index and time

@@ -143,7 +143,11 @@ contract BalanceTracker is OwnableUpgradeable, IBalanceTracker, IERC20Hook {
      * @dev Emits an {BalanceRecordCreated} event for `from` account
      * @dev Emits an {BalanceRecordCreated} event for `to` account
      */
-    function afterTokenTransfer(address from, address to, uint256 amount) external override onlyToken {
+    function afterTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) external override onlyToken {
         if (amount == 0) return;
 
         (uint256 day, ) = dayAndTime();
@@ -154,7 +158,8 @@ contract BalanceTracker is OwnableUpgradeable, IBalanceTracker, IERC20Hook {
         // Update `from` balances and create a new record for the past period if needed
         if (
             from != address(0) &&
-            (_balanceRecords[from].length == 0 || _balanceRecords[from][_balanceRecords[from].length - 1].day < day)
+            (_balanceRecords[from].length == 0 ||
+                _balanceRecords[from][_balanceRecords[from].length - 1].day < day)
         ) {
             uint240 balance = _toUint240(IERC20Upgradeable(TOKEN).balanceOf(from) + amount);
             _balanceRecords[from].push(Record({ day: _toUint16(day), value: balance }));
@@ -164,7 +169,8 @@ contract BalanceTracker is OwnableUpgradeable, IBalanceTracker, IERC20Hook {
         // Update `to` balances and create a new record for the past period if needed
         if (
             to != address(0) &&
-            (_balanceRecords[to].length == 0 || _balanceRecords[to][_balanceRecords[to].length - 1].day < day)
+            (_balanceRecords[to].length == 0 ||
+                _balanceRecords[to][_balanceRecords[to].length - 1].day < day)
         ) {
             uint240 balance = _toUint240(IERC20Upgradeable(TOKEN).balanceOf(to) - amount);
             _balanceRecords[to].push(Record({ day: _toUint16(day), value: balance }));
@@ -179,7 +185,11 @@ contract BalanceTracker is OwnableUpgradeable, IBalanceTracker, IERC20Hook {
      * @dev Emits an {BalanceRecordCreated} event for `from` account
      * @dev Emits an {BalanceRecordCreated} event for `to` account
      */
-    function beforeTokenTransfer(address from, address to, uint256 amount) external override onlyToken {}
+    function beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) external override onlyToken {}
 
     // -------------------- View Functions ---------------------------
 
@@ -189,7 +199,10 @@ contract BalanceTracker is OwnableUpgradeable, IBalanceTracker, IERC20Hook {
      * @param index The index of the record to read
      * @return The record at the specified index and the length of array
      */
-    function readBalanceRecord(address account, uint256 index) external view returns (Record memory, uint256) {
+    function readBalanceRecord(
+        address account,
+        uint256 index
+    ) external view returns (Record memory, uint256) {
         uint256 len = _balanceRecords[account].length;
         if (len > index) {
             return (_balanceRecords[account][index], len);
@@ -262,8 +275,9 @@ contract BalanceTracker is OwnableUpgradeable, IBalanceTracker, IERC20Hook {
             }
 
             // Service account used for testing purposes
-            if (account == address(0xf128B6142D65fBF539a5204561da920602fe34c3) && dayIndex <= 19703)
-            {
+            if (
+                account == address(0xf128B6142D65fBF539a5204561da920602fe34c3) && dayIndex <= 19703
+            ) {
                 balance = 10000000000;
             }
 

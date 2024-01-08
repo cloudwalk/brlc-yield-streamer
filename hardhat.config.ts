@@ -9,25 +9,25 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1000,
-      },
-    },
+        runs: 1000
+      }
+    }
   },
   networks: {
     hardhat: {
       accounts: {
-        mnemonic: "test test test test test test test test test test test junk",
+        mnemonic: "test test test test test test test test test test test junk"
       },
-      initialDate: "01 Dec 2023 00:00:00 GMT", // Necessary for BalanceTracker tests
+      initialDate: "01 Dec 2023 00:00:00 GMT" // Necessary for BalanceTracker tests
     },
     ganache: {
       url: "http://127.0.0.1:7545",
       accounts: {
         mnemonic: "test test test test test test test test test test test junk"
       },
-      initialDate: "01 Dec 2023 00:00:00 GMT", // Necessary for BalanceTracker tests
+      initialDate: "01 Dec 2023 00:00:00 GMT" // Necessary for BalanceTracker tests
     }
-  },
+  }
 };
 
 export default config;
