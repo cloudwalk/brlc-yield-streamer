@@ -519,7 +519,7 @@ describe("Contract 'YieldStreamer'", async () => {
 
   before(async () => {
     [deployer, user, feeReceiver, user2, user3, blocklister] = await ethers.getSigners();
-    tokenMockFactory = await ethers.getContractFactory("ERC20TestMock");
+    tokenMockFactory = await ethers.getContractFactory("ERC20TokenMock");
     balanceTrackerMockFactory = await ethers.getContractFactory("BalanceTrackerMock");
     yieldStreamerFactory = await ethers.getContractFactory("YieldStreamer");
   });
