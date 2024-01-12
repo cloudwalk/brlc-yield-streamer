@@ -20,8 +20,7 @@ abstract contract HarnessAdministrable is OwnableUpgradeable {
 
     /// @notice The memory slot used to store the contract state
     /// @dev It is the same as keccak256("harness administrable storage slot")
-    bytes32 private constant _STORAGE_SLOT =
-        0xfe59a931f94e2aa9825bd975f0e041e1561aab13eea3c8ef2be9da7a34db16e2;
+    bytes32 private constant _STORAGE_SLOT = 0xfe59a931f94e2aa9825bd975f0e041e1561aab13eea3c8ef2be9da7a34db16e2;
 
     // ----------------------- Events ------------------------------------------
 
@@ -120,11 +119,7 @@ abstract contract HarnessAdministrable is OwnableUpgradeable {
     /**
      * @notice Returns the contract stored state structure
      */
-    function _getHarnessAdministrableState()
-        internal
-        pure
-        returns (HarnessAdministrableState storage)
-    {
+    function _getHarnessAdministrableState() internal pure returns (HarnessAdministrableState storage) {
         HarnessAdministrableState storage state;
         /// @solidity memory-safe-assembly
         assembly {

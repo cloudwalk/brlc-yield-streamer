@@ -27,12 +27,7 @@ contract ERC20MockForBalanceTracker {
         return _balances[account];
     }
 
-    function simulateHookedTransfer(
-        address balanceTracker,
-        address from,
-        address to,
-        uint256 amount
-    ) external {
+    function simulateHookedTransfer(address balanceTracker, address from, address to, uint256 amount) external {
         BalanceTracker(balanceTracker).beforeTokenTransfer(from, to, amount);
         if (from != address(0)) {
             _balances[from] -= amount;

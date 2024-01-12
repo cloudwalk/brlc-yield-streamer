@@ -19,8 +19,7 @@ contract BalanceTrackerHarness is BalanceTracker, HarnessAdministrable {
 
     /// @notice The memory slot used to store the contract state
     /// @dev It is the same as keccak256("balance tracker harness storage slot")
-    bytes32 private constant _STORAGE_SLOT =
-        0xceb91ca8f20e7d3bc24614515796ccaa88bb45ed0206676ef6d6620478090c43;
+    bytes32 private constant _STORAGE_SLOT = 0xceb91ca8f20e7d3bc24614515796ccaa88bb45ed0206676ef6d6620478090c43;
 
     /**
      * @notice Sets the initialization day of the balance tracker
@@ -38,11 +37,7 @@ contract BalanceTrackerHarness is BalanceTracker, HarnessAdministrable {
      * @param day The creation day of the new record
      * @param value The value of the new record
      */
-    function addBalanceRecord(
-        address account,
-        uint16 day,
-        uint240 value
-    ) external onlyHarnessAdmin {
+    function addBalanceRecord(address account, uint16 day, uint240 value) external onlyHarnessAdmin {
         _balanceRecords[account].push(Record({ day: day, value: value }));
     }
 
@@ -52,10 +47,7 @@ contract BalanceTrackerHarness is BalanceTracker, HarnessAdministrable {
      * @param account The address of the account to set the balance record array for
      * @param balanceRecords The array of new records to set
      */
-    function setBalanceRecords(
-        address account,
-        Record[] calldata balanceRecords
-    ) external onlyHarnessAdmin {
+    function setBalanceRecords(address account, Record[] calldata balanceRecords) external onlyHarnessAdmin {
         delete _balanceRecords[account];
         uint256 len = balanceRecords.length;
         for (uint256 i = 0; i < len; ++i) {
@@ -127,11 +119,7 @@ contract BalanceTrackerHarness is BalanceTracker, HarnessAdministrable {
     /**
      * @notice Returns the contract stored state structure
      */
-    function _getBalanceTrackerHarnessState()
-        internal
-        pure
-        returns (BalanceTrackerHarnessState storage)
-    {
+    function _getBalanceTrackerHarnessState() internal pure returns (BalanceTrackerHarnessState storage) {
         BalanceTrackerHarnessState storage state;
         /// @solidity memory-safe-assembly
         assembly {
