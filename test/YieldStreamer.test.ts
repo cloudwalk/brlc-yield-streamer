@@ -120,7 +120,7 @@ function defineExpectedDailyBalances(balanceRecords: BalanceRecord[], dayFrom: n
   if (dayFrom > dayTo) {
     throw new Error(
       `Cannot define daily balances because 'dayFrom' is greater than 'dayTo'. ` +
-        `The 'dayFrom' value: ${dayFrom}. The 'dayTo' value: ${dayTo}`
+      `The 'dayFrom' value: ${dayFrom}. The 'dayTo' value: ${dayTo}`
     );
   }
   const dailyBalances: BigNumber[] = [];
@@ -402,12 +402,18 @@ async function checkLookBackPeriods(yieldStreamer: Contract, expectedLookBackPer
   const actualRecordState = await yieldStreamer.getLookBackPeriods();
   const actualRecordArrayLength: number = actualRecordState.length;
 
-  expect(actualRecordArrayLength).to.equal(expectedRecordArrayLength, `Wrong look-back period array length`);
+  expect(actualRecordArrayLength).to.equal(
+    expectedRecordArrayLength,
+    `Wrong look-back period array length`
+  );
 
   for (let i = 0; i < expectedRecordArrayLength; i++) {
     const expectedRecord: LookBackPeriodRecord = expectedLookBackPeriodRecords[i];
 
-    expect(actualRecordState[i].length).to.equal(2, `Wrong look-back structure: expected 2 elements in array`);
+    expect(actualRecordState[i].length).to.equal(
+      2,
+      `Wrong look-back structure: expected 2 elements in array`
+    );
 
     const actualRecord: LookBackPeriodRecord = {
       effectiveDay: actualRecordState[i][0],
@@ -418,11 +424,18 @@ async function checkLookBackPeriods(yieldStreamer: Contract, expectedLookBackPer
       expectedRecord.effectiveDay,
       `Wrong field '_lookBackPeriods[${i}].effectiveDay'`
     );
-    expect(actualRecord.length).to.equal(expectedRecord.length, `Wrong field '_lookBackPeriods[${i}].length'`);
+    expect(actualRecord.length).to.equal(
+      expectedRecord.length,
+      `Wrong field '_lookBackPeriods[${i}].length'`
+    );
   }
 }
 
-async function checkYieldRates(yieldStreamer: Contract, yieldRateRecords: YieldRateRecord[], groupId: string) {
+async function checkYieldRates(
+  yieldStreamer: Contract,
+  yieldRateRecords: YieldRateRecord[],
+  groupId: string
+) {
   const expectedRecordArrayLength = yieldRateRecords.length;
   if (expectedRecordArrayLength == 0) {
     const actualRecordState = await yieldStreamer.getGroupYieldRates(groupId);
@@ -437,12 +450,18 @@ async function checkYieldRates(yieldStreamer: Contract, yieldRateRecords: YieldR
       const actualRecordState = await yieldStreamer.getGroupYieldRates(groupId);
       const actualRecord = actualRecordState;
       const actualRecordArrayLength: number = actualRecordState.length;
-      expect(actualRecordArrayLength).to.equal(expectedRecordArrayLength, `Wrong yield rate array length`);
+      expect(actualRecordArrayLength).to.equal(
+        expectedRecordArrayLength,
+        `Wrong yield rate array length`
+      );
       expect(actualRecord[i].effectiveDay).to.equal(
         expectedRecord.effectiveDay,
         `Wrong field '_yieldRates[${i}].effectiveDay'`
       );
-      expect(actualRecord[i].value).to.equal(expectedRecord.value, `Wrong field '_yieldRates[${i}].value'`);
+      expect(actualRecord[i].value).to.equal(
+        expectedRecord.value,
+        `Wrong field '_yieldRates[${i}].value'`
+      );
     }
   }
 }
@@ -577,17 +596,17 @@ describe("Contract 'YieldStreamer'", async () => {
 
     it("Is reverted if called for the second time", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
-      await expect(context.yieldStreamer.initialize()).to.be.revertedWith(
-        REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED
-      );
+      await expect(
+        context.yieldStreamer.initialize()
+      ).to.be.revertedWith(REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED);
     });
 
     it("Is reverted if the implementation contract is called even for the first time", async () => {
       const yieldStreamerImplementation: Contract = await yieldStreamerFactory.deploy();
       await yieldStreamerImplementation.deployed();
-      await expect(yieldStreamerImplementation.initialize()).to.be.revertedWith(
-        REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED
-      );
+      await expect(
+        yieldStreamerImplementation.initialize()
+      ).to.be.revertedWith(REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED);
     });
   });
 
@@ -611,25 +630,23 @@ describe("Contract 'YieldStreamer'", async () => {
     it("Is reverted if it is called not by the owner", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
 
-      await expect(context.yieldStreamer.connect(user).setFeeReceiver(feeReceiver.address)).to.be.revertedWith(
-        REVERT_MESSAGE_OWNABLE_CALLER_IS_NOT_THE_OWNER
-      );
+      await expect(
+        context.yieldStreamer.connect(user).setFeeReceiver(feeReceiver.address)
+      ).to.be.revertedWith(REVERT_MESSAGE_OWNABLE_CALLER_IS_NOT_THE_OWNER);
     });
 
     it("Is reverted if the same fee receiver is already configured", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
 
-      await expect(context.yieldStreamer.setFeeReceiver(ZERO_ADDRESS)).to.be.revertedWithCustomError(
-        context.yieldStreamer,
-        REVERT_ERROR_FEE_RECEIVER_ALREADY_CONFIGURED
-      );
+      await expect(
+        context.yieldStreamer.setFeeReceiver(ZERO_ADDRESS)
+      ).to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_FEE_RECEIVER_ALREADY_CONFIGURED);
 
       await proveTx(context.yieldStreamer.setFeeReceiver(feeReceiver.address));
 
-      await expect(context.yieldStreamer.setFeeReceiver(feeReceiver.address)).to.be.revertedWithCustomError(
-        context.yieldStreamer,
-        REVERT_ERROR_FEE_RECEIVER_ALREADY_CONFIGURED
-      );
+      await expect(
+        context.yieldStreamer.setFeeReceiver(feeReceiver.address)
+      ).to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_FEE_RECEIVER_ALREADY_CONFIGURED);
     });
   });
 
@@ -661,17 +678,15 @@ describe("Contract 'YieldStreamer'", async () => {
     it("Is reverted if the same balance tracker is already configured", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
 
-      await expect(context.yieldStreamer.setBalanceTracker(ZERO_ADDRESS)).to.be.revertedWithCustomError(
-        context.yieldStreamer,
-        REVERT_ERROR_BALANCE_TRACKER_ALREADY_CONFIGURED
-      );
+      await expect(
+        context.yieldStreamer.setBalanceTracker(ZERO_ADDRESS)
+      ).to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_BALANCE_TRACKER_ALREADY_CONFIGURED);
 
       await proveTx(context.yieldStreamer.setBalanceTracker(BALANCE_TRACKER_ADDRESS_STUB));
 
-      await expect(context.yieldStreamer.setBalanceTracker(BALANCE_TRACKER_ADDRESS_STUB)).to.be.revertedWithCustomError(
-        context.yieldStreamer,
-        REVERT_ERROR_BALANCE_TRACKER_ALREADY_CONFIGURED
-      );
+      await expect(
+        context.yieldStreamer.setBalanceTracker(BALANCE_TRACKER_ADDRESS_STUB)
+      ).to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_BALANCE_TRACKER_ALREADY_CONFIGURED);
     });
   });
 
@@ -723,9 +738,10 @@ describe("Contract 'YieldStreamer'", async () => {
           expectedLookBackPeriodRecord.effectiveDay,
           expectedLookBackPeriodRecord.length
         )
-      )
-        .to.emit(context.yieldStreamer, EVENT_LOOK_BACK_PERIOD_CONFIGURED)
-        .withArgs(expectedLookBackPeriodRecord.effectiveDay, expectedLookBackPeriodRecord.length);
+      ).to.emit(
+        context.yieldStreamer,
+        EVENT_LOOK_BACK_PERIOD_CONFIGURED
+      ).withArgs(expectedLookBackPeriodRecord.effectiveDay, expectedLookBackPeriodRecord.length);
 
       await checkLookBackPeriods(context.yieldStreamer, [expectedLookBackPeriodRecord]);
     });
@@ -817,15 +833,16 @@ describe("Contract 'YieldStreamer'", async () => {
           expectedLookBackPeriodRecord.length,
           LOOK_BACK_PERIOD_INDEX_ZERO
         )
-      )
-        .to.emit(context.yieldStreamer, EVENT_LOOK_BACK_PERIOD_UPDATED)
-        .withArgs(
-          LOOK_BACK_PERIOD_INDEX_ZERO,
-          YIELD_STREAMER_INIT_DAY + 1,
-          YIELD_STREAMER_INIT_DAY,
-          LOOK_BACK_PERIOD_LENGTH + 1,
-          LOOK_BACK_PERIOD_LENGTH
-        );
+      ).to.emit(
+        context.yieldStreamer,
+        EVENT_LOOK_BACK_PERIOD_UPDATED
+      ).withArgs(
+        LOOK_BACK_PERIOD_INDEX_ZERO,
+        YIELD_STREAMER_INIT_DAY + 1,
+        YIELD_STREAMER_INIT_DAY,
+        LOOK_BACK_PERIOD_LENGTH + 1,
+        LOOK_BACK_PERIOD_LENGTH
+      );
 
       await checkLookBackPeriods(context.yieldStreamer, [expectedLookBackPeriodRecord]);
     });
@@ -908,9 +925,14 @@ describe("Contract 'YieldStreamer'", async () => {
           expectedYieldRateRecord1.effectiveDay,
           expectedYieldRateRecord1.value
         )
-      )
-        .to.emit(context.yieldStreamer, EVENT_YIELD_RATE_CONFIGURED)
-        .withArgs(ZERO_GROUP_ID, expectedYieldRateRecord1.effectiveDay, expectedYieldRateRecord1.value);
+      ).to.emit(
+        context.yieldStreamer,
+        EVENT_YIELD_RATE_CONFIGURED
+      ).withArgs(
+        ZERO_GROUP_ID,
+        expectedYieldRateRecord1.effectiveDay,
+        expectedYieldRateRecord1.value
+      );
 
       await expect(
         context.yieldStreamer.configureYieldRate(
@@ -918,9 +940,14 @@ describe("Contract 'YieldStreamer'", async () => {
           expectedYieldRateRecord2.effectiveDay,
           expectedYieldRateRecord2.value
         )
-      )
-        .to.emit(context.yieldStreamer, EVENT_YIELD_RATE_CONFIGURED)
-        .withArgs(ZERO_GROUP_ID, expectedYieldRateRecord2.effectiveDay, expectedYieldRateRecord2.value);
+      ).to.emit(
+        context.yieldStreamer,
+        EVENT_YIELD_RATE_CONFIGURED
+      ).withArgs(
+        ZERO_GROUP_ID,
+        expectedYieldRateRecord2.effectiveDay,
+        expectedYieldRateRecord2.value
+      );
 
       await checkYieldRates(context.yieldStreamer, [expectedYieldRateRecord1, expectedYieldRateRecord2], ZERO_GROUP_ID);
     });
@@ -1008,16 +1035,17 @@ describe("Contract 'YieldStreamer'", async () => {
           newExpectedYieldRateRecord[recordIndex].value,
           recordIndex
         )
-      )
-        .to.emit(context.yieldStreamer, EVENT_YIELD_RATE_UPDATED)
-        .withArgs(
-          ZERO_GROUP_ID,
-          recordIndex,
-          newExpectedYieldRateRecord[recordIndex].effectiveDay,
-          oldExpectedYieldRateRecords[recordIndex].effectiveDay,
-          newExpectedYieldRateRecord[recordIndex].value,
-          oldExpectedYieldRateRecords[recordIndex].value
-        );
+      ).to.emit(
+        context.yieldStreamer,
+        EVENT_YIELD_RATE_UPDATED
+      ).withArgs(
+        ZERO_GROUP_ID,
+        recordIndex,
+        newExpectedYieldRateRecord[recordIndex].effectiveDay,
+        oldExpectedYieldRateRecords[recordIndex].effectiveDay,
+        newExpectedYieldRateRecord[recordIndex].value,
+        oldExpectedYieldRateRecords[recordIndex].value
+      );
 
       await checkYieldRates(context.yieldStreamer, newExpectedYieldRateRecord, ZERO_GROUP_ID);
     });
@@ -1045,16 +1073,17 @@ describe("Contract 'YieldStreamer'", async () => {
           newExpectedYieldRateRecord.value,
           YIELD_RATE_INDEX_ZERO
         )
-      )
-        .to.emit(context.yieldStreamer, EVENT_YIELD_RATE_UPDATED)
-        .withArgs(
-          ZERO_GROUP_ID,
-          YIELD_RATE_INDEX_ZERO,
-          newExpectedYieldRateRecord.effectiveDay,
-          oldExpectedYieldRateRecord.effectiveDay,
-          newExpectedYieldRateRecord.value,
-          oldExpectedYieldRateRecord.value
-        );
+      ).to.emit(
+        context.yieldStreamer,
+        EVENT_YIELD_RATE_UPDATED
+      ).withArgs(
+        ZERO_GROUP_ID,
+        YIELD_RATE_INDEX_ZERO,
+        newExpectedYieldRateRecord.effectiveDay,
+        oldExpectedYieldRateRecord.effectiveDay,
+        newExpectedYieldRateRecord.value,
+        oldExpectedYieldRateRecord.value
+      );
 
       await checkYieldRates(context.yieldStreamer, [newExpectedYieldRateRecord], ZERO_GROUP_ID);
     });
@@ -1064,9 +1093,12 @@ describe("Contract 'YieldStreamer'", async () => {
       const effectiveDay = YIELD_STREAMER_INIT_DAY + 1;
 
       await expect(
-        context.yieldStreamer
-          .connect(user)
-          .updateYieldRate(ZERO_GROUP_ID, effectiveDay, INITIAL_YIELD_RATE, YIELD_RATE_INDEX_ZERO)
+        context.yieldStreamer.connect(user).updateYieldRate(
+          ZERO_GROUP_ID,
+          effectiveDay,
+          INITIAL_YIELD_RATE,
+          YIELD_RATE_INDEX_ZERO
+        )
       ).revertedWith(REVERT_MESSAGE_OWNABLE_CALLER_IS_NOT_THE_OWNER);
     });
 
@@ -1466,26 +1498,23 @@ describe("Contract 'YieldStreamer'", async () => {
         await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, claimRequest.balanceRecords));
         await proveTx(context.balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
 
-        await expect(context.yieldStreamer.connect(user).claim(claimRequest.amount)).to.be.revertedWithCustomError(
-          context.yieldStreamer,
-          REVERT_ERROR_CLAIM_REJECTION_DUE_TO_SHORTFALL
-        );
+        await expect(
+          context.yieldStreamer.connect(user).claim(claimRequest.amount)
+        ).to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CLAIM_REJECTION_DUE_TO_SHORTFALL);
       });
 
       it("The amount is bellow the allowed minimum", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
-        await expect(context.yieldStreamer.connect(user).claim(MIN_CLAIM_AMOUNT.sub(1))).to.be.revertedWithCustomError(
-          context.yieldStreamer,
-          REVERT_ERROR_CLAIM_AMOUNT_BELOW_MINIMUM
-        );
+        await expect(
+          context.yieldStreamer.connect(user).claim(MIN_CLAIM_AMOUNT.sub(1))
+        ).to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CLAIM_AMOUNT_BELOW_MINIMUM);
       });
 
       it("The amount is non-rounded", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
-        await expect(context.yieldStreamer.connect(user).claim(MIN_CLAIM_AMOUNT.add(1))).to.be.revertedWithCustomError(
-          context.yieldStreamer,
-          REVERT_ERROR_CLAIM_AMOUNT_NON_ROUNDED
-        );
+        await expect(
+          context.yieldStreamer.connect(user).claim(MIN_CLAIM_AMOUNT.add(1))
+        ).to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CLAIM_AMOUNT_NON_ROUNDED);
       });
     });
   });

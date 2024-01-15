@@ -432,7 +432,13 @@ contract YieldStreamer is
 
         LookBackPeriod storage period = _lookBackPeriods[index];
 
-        emit LookBackPeriodUpdated(index, effectiveDay, period.effectiveDay, length, period.length);
+        emit LookBackPeriodUpdated(
+            index,
+            effectiveDay,
+            period.effectiveDay,
+            length,
+            period.length
+        );
 
         period.effectiveDay = _toUint16(effectiveDay);
         period.length = _toUint16(length);
@@ -510,7 +516,14 @@ contract YieldStreamer is
 
         YieldRate storage yieldRate = yieldRates[index];
 
-        emit YieldRateUpdated(groupId, index, effectiveDay, yieldRate.effectiveDay, value, yieldRate.value);
+        emit YieldRateUpdated(
+            groupId,
+            index,
+            effectiveDay,
+            yieldRate.effectiveDay,
+            value,
+            yieldRate.value
+        );
 
         yieldRate.effectiveDay = _toUint16(effectiveDay);
         yieldRate.value = _toUint240(value);

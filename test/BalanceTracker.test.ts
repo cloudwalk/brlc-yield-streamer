@@ -186,13 +186,13 @@ function defineExpectedDailyBalances(context: TestContext, dailyBalancesRequest:
   if (dayFrom < context.balanceTrackerInitDay) {
     throw new Error(
       `Cannot define daily balances because 'dayFrom' is less than the BalanceTracker init day. ` +
-        `The 'dayFrom' value: ${dayFrom}. The init day: ${context.balanceTrackerInitDay}`
+      `The 'dayFrom' value: ${dayFrom}. The init day: ${context.balanceTrackerInitDay}`
     );
   }
   if (dayFrom > dayTo) {
     throw new Error(
       `Cannot define daily balances because 'dayFrom' is greater than 'dayTo'. ` +
-        `The 'dayFrom' value: ${dayFrom}. The 'dayTo' value: ${dayTo}`
+      `The 'dayFrom' value: ${dayFrom}. The 'dayTo' value: ${dayTo}`
     );
   }
   const dailyBalances: BigNumber[] = [];
@@ -245,8 +245,8 @@ describe("Contract 'BalanceTracker'", async () => {
     if (network.name !== "hardhat") {
       throw new Error(
         "This tests cannot be run on the network other than Hardhat due to: " +
-          "1. The initial nonce of the contract deployer must be zero at the beginning of each test. " +
-          "2. The ability to change block timestamps for checking the contract under test is required."
+        "1. The initial nonce of the contract deployer must be zero at the beginning of each test. " +
+        "2. The ability to change block timestamps for checking the contract under test is required."
       );
     }
     // Resetting the hardhat network to start from scratch and deploy the special token contract mock first
@@ -320,12 +320,20 @@ describe("Contract 'BalanceTracker'", async () => {
         if (!!newBalanceRecord1) {
           await expect(tx)
             .to.emit(balanceTracker, "BalanceRecordCreated")
-            .withArgs(newBalanceRecord1.accountAddress, newBalanceRecord1.day, newBalanceRecord1.value);
+            .withArgs(
+              newBalanceRecord1.accountAddress,
+              newBalanceRecord1.day,
+              newBalanceRecord1.value
+            );
         }
         if (!!newBalanceRecord2) {
           await expect(tx)
             .to.emit(balanceTracker, "BalanceRecordCreated")
-            .withArgs(newBalanceRecord2.accountAddress, newBalanceRecord2.day, newBalanceRecord2.value);
+            .withArgs(
+              newBalanceRecord2.accountAddress,
+              newBalanceRecord2.day,
+              newBalanceRecord2.value
+            );
         }
       }
     }
@@ -346,17 +354,17 @@ describe("Contract 'BalanceTracker'", async () => {
 
     it("Is reverted if called for the second time", async () => {
       const { balanceTracker } = await setUpFixture(deployAndConfigureContracts);
-      await expect(balanceTracker.initialize()).to.be.revertedWith(
-        REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED
-      );
+      await expect(
+        balanceTracker.initialize()
+      ).to.be.revertedWith(REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED);
     });
 
     it("Is reverted if the implementation contract is called even for the first time", async () => {
       const balanceTrackerImplementation: Contract = await balanceTrackerFactory.deploy();
       await balanceTrackerImplementation.deployed();
-      await expect(balanceTrackerImplementation.initialize()).to.be.revertedWith(
-        REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED
-      );
+      await expect(
+        balanceTrackerImplementation.initialize()
+      ).to.be.revertedWith(REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED);
     });
   });
 
@@ -479,7 +487,12 @@ describe("Contract 'BalanceTracker'", async () => {
           await increaseBlockchainTimeToSpecificRelativeDay(1);
 
           await expect(
-            tokenMock.simulateHookedTransfer(context.balanceTracker.address, user1.address, user2.address, 1)
+            tokenMock.simulateHookedTransfer(
+              context.balanceTracker.address,
+              user1.address,
+              user2.address,
+              1
+            )
           ).to.be.revertedWithCustomError(context.balanceTracker, REVERT_ERROR_SAFE_CAST_OVERFLOW_UINT240);
         });
 
@@ -491,7 +504,12 @@ describe("Contract 'BalanceTracker'", async () => {
           await increaseBlockchainTimeToSpecificRelativeDay(65537 - currentDay);
 
           await expect(
-            tokenMock.simulateHookedTransfer(context.balanceTracker.address, user1.address, user2.address, 1)
+            tokenMock.simulateHookedTransfer(
+              context.balanceTracker.address,
+              user1.address,
+              user2.address,
+              1
+            )
           ).to.be.revertedWithCustomError(context.balanceTracker, REVERT_ERROR_SAFE_CAST_OVERFLOW_UINT16);
         });
       });
