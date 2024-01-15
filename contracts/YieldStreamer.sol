@@ -62,14 +62,17 @@ contract YieldStreamer is
     /// @notice The address of the token balance tracker
     address internal _balanceTracker;
 
-    /// @notice The array of yield rates in chronological order
-    YieldRate[] internal _yieldRates;
+    /// @notice The mapping of yield rates by group identifier
+    mapping(bytes32 => YieldRate[]) internal _yieldRates;
 
     /// @notice The array of look-back periods in chronological order
     LookBackPeriod[] internal _lookBackPeriods;
 
     /// @notice The mapping of account to its next claim initial state
     mapping(address => ClaimState) internal _claims;
+
+    /// @notice The mapping of account to its group assignment
+    mapping(address => bytes32) internal _groups;
 
     // -------------------- Events -----------------------------------
 
@@ -117,14 +120,16 @@ contract YieldStreamer is
     /**
      * @notice Emitted when a new yield rate is added to the chronological array
      *
+     * @param groupId The hash identifier of the group
      * @param effectiveDay The index of the day the yield rate come into use
      * @param value The value of the yield rate
      */
-    event YieldRateConfigured(uint256 effectiveDay, uint256 value);
+    event YieldRateConfigured(bytes32 indexed groupId, uint256 effectiveDay, uint256 value);
 
     /**
      * @notice Emitted when an yield rate is updated
      *
+     * @param groupId The hash identifier of the group
      * @param index The The index of the yield rate array in the chronological array
      * @param newEffectiveDay The new effective day of the updated yield rate come into use
      * @param oldEffectiveDay The old effective day of the updated yield rate
@@ -132,12 +137,21 @@ contract YieldStreamer is
      * @param oldValue The old yield rate value
      */
     event YieldRateUpdated(
+        bytes32 indexed groupId,
         uint256 index,
         uint256 newEffectiveDay,
         uint256 oldEffectiveDay,
         uint256 newValue,
         uint256 oldValue
     );
+
+    /**
+     * @notice Emitted when an account is assigned to the group
+     *
+     * @param groupId The hash identifier of the group
+     * @param account The address of the account
+     */
+    event AssignAccountGroup(bytes32 indexed groupId, address account);
 
     // -------------------- Errors -----------------------------------
 
@@ -185,6 +199,12 @@ contract YieldStreamer is
      * @notice Thrown when the index of a yield rate is out of range
      */
     error YieldRateWrongIndex();
+
+    /**
+     * @notice Thrown when the account is already assigned to the group
+     * @param account The address of the account with the group already assigned
+     */
+    error GroupAlreadyAssigned(address account);
 
     /**
      * @notice Thrown when the requested claim is rejected due to its amount is greater than the available yield
@@ -318,6 +338,31 @@ contract YieldStreamer is
     }
 
     /**
+     * @notice Assigns accounts to the group
+     *
+     * Requirements:
+     *
+     * - Can only be called by the blocklister role
+     * - For each account the new group must not be the same as the current one
+     *
+     * Emits an {AssignAccountGroup} event
+     *
+     * @param groupId The hash identifier of the group
+     * @param accounts The array of accounts to be assigned to the group
+     */
+    function assignAccountGroup(bytes32 groupId, address[] memory accounts) external onlyBlocklister {
+        for (uint256 i = 0; i < accounts.length; i++) {
+            if (_groups[accounts[i]] == groupId) {
+                revert GroupAlreadyAssigned(accounts[i]);
+            }
+
+            _groups[accounts[i]] = groupId;
+
+            emit AssignAccountGroup(groupId, accounts[i]);
+        }
+    }
+
+    /**
      * @notice Adds a new look-back period to the chronological array
      *
      * Requirements:
@@ -404,24 +449,28 @@ contract YieldStreamer is
      * Requirements:
      *
      * - Can only be called by the contract owner
-     * - The new day must be greater than the last day
+     * - The new effective day must be greater than the last one
+     * - Thre new yield rate value must not be the same as the last one
      *
      * Emits an {YieldRateConfigured} event
      *
+     * @param groupId The hash identifier of the group
      * @param effectiveDay The index of the day the yield rate come into use
      * @param value The value of the yield rate
      */
-    function configureYieldRate(uint256 effectiveDay, uint256 value) external onlyOwner {
-        if (_yieldRates.length > 0 && _yieldRates[_yieldRates.length - 1].effectiveDay >= effectiveDay) {
+    function configureYieldRate(bytes32 groupId, uint256 effectiveDay, uint256 value) external onlyOwner {
+        YieldRate[] storage yieldRates = _yieldRates[groupId];
+
+        if (yieldRates.length > 0 && yieldRates[yieldRates.length - 1].effectiveDay >= effectiveDay) {
             revert YieldRateInvalidEffectiveDay();
         }
-        if (_yieldRates.length > 0 && _yieldRates[_yieldRates.length - 1].value == value) {
+        if (yieldRates.length > 0 && yieldRates[yieldRates.length - 1].value == value) {
             revert YieldRateValueAlreadyConfigured();
         }
 
-        _yieldRates.push(YieldRate({ effectiveDay: _toUint16(effectiveDay), value: _toUint240(value) }));
+        yieldRates.push(YieldRate({ effectiveDay: _toUint16(effectiveDay), value: _toUint240(value) }));
 
-        emit YieldRateConfigured(effectiveDay, value);
+        emit YieldRateConfigured(groupId, effectiveDay, value);
     }
 
     /**
@@ -437,33 +486,37 @@ contract YieldStreamer is
      *
      * Emits an {YieldRateUpdated} event
      *
+     * @param groupId The hash identifier of the group
      * @param effectiveDay The index of the day the yield rate come into use
      * @param value The value of the yield rate
      * @param index The index of the yield rate in the array
      */
-    function updateYieldRate(uint256 effectiveDay, uint256 value, uint256 index) external onlyOwner {
-        if (index >= _yieldRates.length) {
+    function updateYieldRate(bytes32 groupId, uint256 effectiveDay, uint256 value, uint256 index) external onlyOwner {
+        YieldRate[] storage yieldRates = _yieldRates[groupId];
+
+        if (index >= yieldRates.length) {
             revert YieldRateWrongIndex();
         }
 
-        uint256 lastIndex = _yieldRates.length - 1;
+        uint256 lastIndex = yieldRates.length - 1;
 
         if (lastIndex != 0) {
             int256 intEffectiveDay = int256(effectiveDay);
             int256 previousEffectiveDay = index != 0
-                ? int256(uint256(_yieldRates[index - 1].effectiveDay))
+                ? int256(uint256(yieldRates[index - 1].effectiveDay))
                 : type(int256).min;
             int256 nextEffectiveDay = index != lastIndex
-                ? int256(uint256(_yieldRates[index + 1].effectiveDay))
+                ? int256(uint256(yieldRates[index + 1].effectiveDay))
                 : type(int256).max;
             if (intEffectiveDay <= previousEffectiveDay || intEffectiveDay >= nextEffectiveDay) {
                 revert YieldRateInvalidEffectiveDay();
             }
         }
 
-        YieldRate storage yieldRate = _yieldRates[index];
+        YieldRate storage yieldRate = yieldRates[index];
 
         emit YieldRateUpdated(
+            groupId,
             index,
             effectiveDay,
             yieldRate.effectiveDay,
@@ -579,35 +632,29 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Reads the look-back period chronological array
-     *
-     * @param index The index of the look-back period in the array
-     * @return The details of the look-back period and the length of the array
+     * @notice Returns an array of yield rates for a given account
+     * @param account The address of the account
+     * @return The array of yield rates
      */
-    function getLookBackPeriod(uint256 index) public view returns (LookBackPeriod memory, uint256) {
-        uint256 len = _lookBackPeriods.length;
-        if (len > index) {
-            return (_lookBackPeriods[index], len);
-        } else {
-            LookBackPeriod memory emptyItem;
-            return (emptyItem, len);
-        }
+    function getAccountYieldRates(address account) public view returns (YieldRate[] memory) {
+        return _yieldRates[_groups[account]];
     }
 
     /**
-     * @notice Reads the yield rate chronological array
+     * @notice Returns an array of yield rates for a given group
      *
-     * @param index The index of the yield rate in the array
-     * @return The details of the yield rate and the length of the array
+     * @param groupId The hash identifier of the group
+     * @return The array of yield rates
      */
-    function getYieldRate(uint256 index) public view returns (YieldRate memory, uint256) {
-        uint256 len = _yieldRates.length;
-        if (len > index) {
-            return (_yieldRates[index], len);
-        } else {
-            YieldRate memory emptyItem;
-            return (emptyItem, len);
-        }
+    function getGroupYieldRates(bytes32 groupId) public view returns (YieldRate[] memory) {
+        return _yieldRates[groupId];
+    }
+
+    /**
+     * @notice Returns an array of look-back periods
+     */
+    function getLookBackPeriods() public view returns (LookBackPeriod[] memory) {
+        return _lookBackPeriods;
     }
 
     /**
@@ -699,6 +746,7 @@ contract YieldStreamer is
     }
 
     // -------------------- Internal Functions -----------------------
+
     /**
      * @notice Calculates the daily yield and possible balance of an account for a specified period of days
      *
@@ -716,8 +764,10 @@ contract YieldStreamer is
         /**
          * Fetch the yield rate
          */
-        uint256 rateIndex = _yieldRates.length;
-        while (_yieldRates[--rateIndex].effectiveDay > fromDay && rateIndex > 0) {}
+        YieldRate[] storage yieldRates = _yieldRates[_groups[account]];
+
+        uint256 rateIndex = yieldRates.length;
+        while (yieldRates[--rateIndex].effectiveDay > fromDay && rateIndex > 0) {}
 
         /**
          * Fetch the look-back period
@@ -730,10 +780,10 @@ contract YieldStreamer is
         uint256 yieldRange = toDay - fromDay + 1;
         possibleBalanceByDays = getDailyBalances(account, fromDay + 1 - periodLength, toDay + 1);
         yieldByDays = new uint256[](yieldRange);
-        uint256 rateValue = _yieldRates[rateIndex].value;
+        uint256 rateValue = yieldRates[rateIndex].value;
         uint256 nextRateDay;
-        if (rateIndex != _yieldRates.length - 1) {
-            nextRateDay = _yieldRates[++rateIndex].effectiveDay;
+        if (rateIndex != yieldRates.length - 1) {
+            nextRateDay = yieldRates[++rateIndex].effectiveDay;
         } else {
             nextRateDay = toDay + 1;
         }
@@ -750,9 +800,9 @@ contract YieldStreamer is
         // Define yield for other days
         for (uint256 i = 1; i < yieldRange; ++i) {
             if (fromDay + i == nextRateDay) {
-                rateValue = _yieldRates[rateIndex].value;
-                if (rateIndex != _yieldRates.length - 1) {
-                    nextRateDay = _yieldRates[++rateIndex].effectiveDay;
+                rateValue = yieldRates[rateIndex].value;
+                if (rateIndex != yieldRates.length - 1) {
+                    nextRateDay = yieldRates[++rateIndex].effectiveDay;
                 }
             }
             uint256 minBalance = _getMinimumInRange(possibleBalanceByDays, i, i + periodLength);
@@ -986,9 +1036,59 @@ contract YieldStreamer is
         return roundedAmount;
     }
 
+    // -------------------- Service Functions -----------------------
+
+    struct YieldRateArraySlot {
+        YieldRate[] value;
+    }
+
+    function migrate() external {
+        require(_yieldRates[bytes32(0x0)].length == 0, "YieldStreamer: migration failed");
+
+        // Get the slot number to read from
+        uint256 slot;
+        assembly {
+            slot := _yieldRates.slot
+        }
+
+        // Read the yield rates array from the slot
+        YieldRateArraySlot storage yieldRateArraySlot;
+        assembly {
+            yieldRateArraySlot.slot := slot
+        }
+
+        require(yieldRateArraySlot.value.length != 0, "YieldStreamer: migration failed");
+
+        // Copy the yield rates array to the memory array
+        YieldRate[] memory oldYieldRates = new YieldRate[](yieldRateArraySlot.value.length);
+        for (uint256 i = 0; i < yieldRateArraySlot.value.length; ++i) {
+            oldYieldRates[i] = yieldRateArraySlot.value[i];
+        }
+
+        // Cleanup and delete the yield rates array from the storage
+        delete yieldRateArraySlot.value;
+
+        require(yieldRateArraySlot.value.length == 0, "YieldStreamer: migration failed");
+
+        // Copy the yield rates from memory to the storage
+        for (uint256 i = 0; i < oldYieldRates.length; ++i) {
+            _yieldRates[bytes32(0x0)].push(oldYieldRates[i]);
+        }
+
+        // Verify that the migration was successful
+        YieldRate[] storage newYieldRates = _yieldRates[bytes32(0x0)];
+
+        require(newYieldRates.length == oldYieldRates.length, "YieldStreamer: migration failed");
+
+        for (uint256 i = 0; i < oldYieldRates.length; ++i) {
+            require(newYieldRates[i].effectiveDay == oldYieldRates[i].effectiveDay, "YieldStreamer: migration failed");
+            require(newYieldRates[i].value == oldYieldRates[i].value, "YieldStreamer: migration failed");
+        }
+    }
+
     /**
      * @dev This empty reserved space is put in place to allow future versions
      * to add new variables without shifting down storage in the inheritance chain
      */
-    uint256[45] private __gap;
+    uint256[44] private __gap;
 }
