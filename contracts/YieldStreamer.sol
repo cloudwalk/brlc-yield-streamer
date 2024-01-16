@@ -437,7 +437,8 @@ contract YieldStreamer is
             effectiveDay,
             period.effectiveDay,
             length,
-            period.length);
+            period.length
+        );
 
         period.effectiveDay = _toUint16(effectiveDay);
         period.length = _toUint16(length);
@@ -521,7 +522,8 @@ contract YieldStreamer is
             effectiveDay,
             yieldRate.effectiveDay,
             value,
-            yieldRate.value);
+            yieldRate.value
+        );
 
         yieldRate.effectiveDay = _toUint16(effectiveDay);
         yieldRate.value = _toUint240(value);

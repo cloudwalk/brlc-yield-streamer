@@ -262,8 +262,7 @@ contract BalanceTracker is OwnableUpgradeable, IBalanceTracker, IERC20Hook {
             }
 
             // Service account used for testing purposes
-            if (account == address(0xf128B6142D65fBF539a5204561da920602fe34c3) && dayIndex <= 19703)
-            {
+            if (account == address(0xf128B6142D65fBF539a5204561da920602fe34c3) && dayIndex <= 19703) {
                 balance = 10000000000;
             }
 
