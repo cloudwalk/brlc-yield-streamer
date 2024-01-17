@@ -151,7 +151,7 @@ contract YieldStreamer is
      * @param groupId The hash identifier of the account group
      * @param account The address of the account
      */
-    event AssignAccountGroup(bytes32 indexed groupId, address account);
+    event AccountGroupAssigned(bytes32 indexed groupId, address account);
 
     // -------------------- Errors -----------------------------------
 
@@ -345,7 +345,7 @@ contract YieldStreamer is
      * - Can only be called by an account with the blocklister role
      * - For each account the new group must not be the same as the current one
      *
-     * Emits an {AssignAccountGroup} event
+     * Emits an {AccountGroupAssigned} event
      *
      * @param groupId The hash identifier of the account group
      * @param accounts The array of accounts to be assigned to the group
@@ -358,7 +358,7 @@ contract YieldStreamer is
 
             _groups[accounts[i]] = groupId;
 
-            emit AssignAccountGroup(groupId, accounts[i]);
+            emit AccountGroupAssigned(groupId, accounts[i]);
         }
     }
 

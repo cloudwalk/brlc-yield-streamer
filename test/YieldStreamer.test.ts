@@ -526,7 +526,7 @@ describe("Contract 'YieldStreamer'", async () => {
   const EVENT_LOOK_BACK_PERIOD_UPDATED = "LookBackPeriodUpdated";
   const EVENT_YIELD_RATE_CONFIGURED = "YieldRateConfigured";
   const EVENT_YIELD_RATE_UPDATED = "YieldRateUpdated";
-  const EVENT_ACCOUNT_ASSIGNED_TO_GROUP = "AssignAccountGroup";
+  const EVENT_ACCOUNT_TO_GROUP_ASSIGNED = "AccountGroupAssigned";
 
   let tokenMockFactory: ContractFactory;
   let balanceTrackerMockFactory: ContractFactory;
@@ -701,11 +701,11 @@ describe("Contract 'YieldStreamer'", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
       expect(await context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
-        .to.emit(context.yieldStreamer, EVENT_ACCOUNT_ASSIGNED_TO_GROUP)
+        .to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
         .withArgs(user.address, GROUP_ONE_ID)
-        .to.emit(context.yieldStreamer, EVENT_ACCOUNT_ASSIGNED_TO_GROUP)
+        .to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
         .withArgs(user2.address, GROUP_ONE_ID)
-        .to.emit(context.yieldStreamer, EVENT_ACCOUNT_ASSIGNED_TO_GROUP)
+        .to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
         .withArgs(user3.address, GROUP_ONE_ID);
     });
 
