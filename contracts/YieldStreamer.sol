@@ -1038,56 +1038,6 @@ contract YieldStreamer is
         return roundedAmount;
     }
 
-    // -------------------- Service Functions -----------------------
-
-    struct YieldRateArraySlot {
-        YieldRate[] value;
-    }
-
-    function migrate() external {
-        require(_yieldRates[bytes32(0x0)].length == 0, "YieldStreamer: migration failed");
-
-        // Get the slot number to read from
-        uint256 slot;
-        assembly {
-            slot := _yieldRates.slot
-        }
-
-        // Read the yield rates array from the slot
-        YieldRateArraySlot storage yieldRateArraySlot;
-        assembly {
-            yieldRateArraySlot.slot := slot
-        }
-
-        require(yieldRateArraySlot.value.length != 0, "YieldStreamer: migration failed");
-
-        // Copy the yield rates array to the memory array
-        YieldRate[] memory oldYieldRates = new YieldRate[](yieldRateArraySlot.value.length);
-        for (uint256 i = 0; i < yieldRateArraySlot.value.length; ++i) {
-            oldYieldRates[i] = yieldRateArraySlot.value[i];
-        }
-
-        // Cleanup and delete the yield rates array from the storage
-        delete yieldRateArraySlot.value;
-
-        require(yieldRateArraySlot.value.length == 0, "YieldStreamer: migration failed");
-
-        // Copy the yield rates from memory to the storage
-        for (uint256 i = 0; i < oldYieldRates.length; ++i) {
-            _yieldRates[bytes32(0x0)].push(oldYieldRates[i]);
-        }
-
-        // Verify that the migration was successful
-        YieldRate[] storage newYieldRates = _yieldRates[bytes32(0x0)];
-
-        require(newYieldRates.length == oldYieldRates.length, "YieldStreamer: migration failed");
-
-        for (uint256 i = 0; i < oldYieldRates.length; ++i) {
-            require(newYieldRates[i].effectiveDay == oldYieldRates[i].effectiveDay, "YieldStreamer: migration failed");
-            require(newYieldRates[i].value == oldYieldRates[i].value, "YieldStreamer: migration failed");
-        }
-    }
-
     /**
      * @dev This empty reserved space is put in place to allow future versions
      * to add new variables without shifting down storage in the inheritance chain
