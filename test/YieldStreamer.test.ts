@@ -1873,4 +1873,42 @@ describe("Contract 'YieldStreamer'", async () => {
       });
     });
   });
+
+  // This section is only to achieve 100% coverage of the balance tracker mock contract
+  describe("Function 'getDailyBalances()'", async () => {
+    describe("Is reverted if", async () => {
+      it("The 'from' day is prior the init day", async () => {
+        const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+        await expect(
+          context.yieldStreamer.getDailyBalances(
+            user.address,
+            BALANCE_TRACKER_INIT_DAY - 1,
+            BALANCE_TRACKER_INIT_DAY
+          )
+        ).to.reverted
+      });
+
+      it("The 'to' day is prior the 'from' day", async () => {
+        const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+        await expect(
+          context.yieldStreamer.getDailyBalances(
+            user.address,
+            YIELD_STREAMER_INIT_DAY,
+            YIELD_STREAMER_INIT_DAY - 1
+          )
+        ).to.reverted
+      });
+
+      it("There are no balance records", async () => {
+        const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+        await expect(
+          context.yieldStreamer.getDailyBalances(
+            user.address,
+            YIELD_STREAMER_INIT_DAY,
+            YIELD_STREAMER_INIT_DAY
+          )
+        ).to.reverted
+      });
+    });
+  });
 });
