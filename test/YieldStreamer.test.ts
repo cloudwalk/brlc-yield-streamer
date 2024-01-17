@@ -433,36 +433,38 @@ async function checkLookBackPeriods(yieldStreamer: Contract, expectedLookBackPer
 
 async function checkYieldRates(
   yieldStreamer: Contract,
-  yieldRateRecords: YieldRateRecord[],
+  expectedYieldRateRecords: YieldRateRecord[],
   groupId: string
 ) {
-  const expectedRecordArrayLength = yieldRateRecords.length;
-  if (expectedRecordArrayLength == 0) {
-    const actualRecordState = await yieldStreamer.getGroupYieldRates(groupId);
-    const actualRecordArrayLength = actualRecordState.length;
-    expect(actualRecordArrayLength).to.equal(
-      expectedRecordArrayLength,
-      `Wrong yield rate array length. The array should be empty`
+  const actualYieldRateRecords = await yieldStreamer.getGroupYieldRates(groupId);
+  const expectedRecordArrayLength = expectedYieldRateRecords.length;
+  const actualRecordArrayLength: number = actualYieldRateRecords.length;
+  expect(actualRecordArrayLength).to.equal(
+    expectedRecordArrayLength,
+    `Wrong yield rate array length for the account group with ID: ${groupId}`
+  );
+
+  for (let i = 0; i < expectedRecordArrayLength; i++) {
+    const expectedRecord: YieldRateRecord = expectedYieldRateRecords[i];
+
+    expect(actualYieldRateRecords[i].length).to.equal(
+      2,
+      `Wrong yield rate record structure for _yieldRates[${groupId}][${i}]: expected 2 elements in array`
     );
-  } else {
-    for (let i = 0; i < expectedRecordArrayLength; ++i) {
-      const expectedRecord: YieldRateRecord = yieldRateRecords[i];
-      const actualRecordState = await yieldStreamer.getGroupYieldRates(groupId);
-      const actualRecord = actualRecordState;
-      const actualRecordArrayLength: number = actualRecordState.length;
-      expect(actualRecordArrayLength).to.equal(
-        expectedRecordArrayLength,
-        `Wrong yield rate array length`
-      );
-      expect(actualRecord[i].effectiveDay).to.equal(
-        expectedRecord.effectiveDay,
-        `Wrong field '_yieldRates[${i}].effectiveDay'`
-      );
-      expect(actualRecord[i].value).to.equal(
-        expectedRecord.value,
-        `Wrong field '_yieldRates[${i}].value'`
-      );
-    }
+
+    const actualRecord: YieldRateRecord = {
+      effectiveDay: actualYieldRateRecords[i][0],
+      value: BigNumber.from(actualYieldRateRecords[i][1]),
+    };
+
+    expect(actualRecord.effectiveDay).to.equal(
+      expectedRecord.effectiveDay,
+      `Wrong field '_yieldRates[${groupId}][${i}].effectiveDay'`
+    );
+    expect(actualRecord.value).to.equal(
+      expectedRecord.value,
+      `Wrong field '_yieldRates[${groupId}][${i}].length'`
+    );
   }
 }
 
@@ -709,7 +711,7 @@ describe("Contract 'YieldStreamer'", async () => {
 
     it("Is reverted if caller is not the blocklister", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
-      expect(context.yieldStreamer.connect(user).assignAccountGroup(users, GROUP_ONE_ID))
+      await expect(context.yieldStreamer.connect(user).assignAccountGroup(GROUP_ONE_ID, users))
         .to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CALLER_NOT_BLOCKLISTER)
         .withArgs(user.address);
     });
@@ -717,8 +719,7 @@ describe("Contract 'YieldStreamer'", async () => {
     it("Is reverted if user is already assigned to group", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
-      users = [user.address];
-      await context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users);
+      await proveTx(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, [user3.address]));
       expect(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
         .to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_GROUP_ALREADY_ASSIGNED)
         .withArgs(user.address);
@@ -921,7 +922,7 @@ describe("Contract 'YieldStreamer'", async () => {
 
       await expect(
         context.yieldStreamer.configureYieldRate(
-          ZERO_GROUP_ID,
+          GROUP_ONE_ID,
           expectedYieldRateRecord1.effectiveDay,
           expectedYieldRateRecord1.value
         )
@@ -929,14 +930,14 @@ describe("Contract 'YieldStreamer'", async () => {
         context.yieldStreamer,
         EVENT_YIELD_RATE_CONFIGURED
       ).withArgs(
-        ZERO_GROUP_ID,
+        GROUP_ONE_ID,
         expectedYieldRateRecord1.effectiveDay,
         expectedYieldRateRecord1.value
       );
 
       await expect(
         context.yieldStreamer.configureYieldRate(
-          ZERO_GROUP_ID,
+          GROUP_ONE_ID,
           expectedYieldRateRecord2.effectiveDay,
           expectedYieldRateRecord2.value
         )
@@ -944,12 +945,13 @@ describe("Contract 'YieldStreamer'", async () => {
         context.yieldStreamer,
         EVENT_YIELD_RATE_CONFIGURED
       ).withArgs(
-        ZERO_GROUP_ID,
+        GROUP_ONE_ID,
         expectedYieldRateRecord2.effectiveDay,
         expectedYieldRateRecord2.value
       );
 
-      await checkYieldRates(context.yieldStreamer, [expectedYieldRateRecord1, expectedYieldRateRecord2], ZERO_GROUP_ID);
+      await checkYieldRates(context.yieldStreamer, [expectedYieldRateRecord1, expectedYieldRateRecord2], GROUP_ONE_ID);
+      await checkYieldRates(context.yieldStreamer, [], ZERO_GROUP_ID);
     });
 
     it("Is reverted if it is called not by the owner", async () => {
@@ -1271,31 +1273,35 @@ describe("Contract 'YieldStreamer'", async () => {
   describe("Function 'getAccountYieldRates()'", async () => {
     it("Executes as expected", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
-      const [expectedYieldRateRecord1, expectedYieldRateRecord2] = defineExpectedYieldRateRecords();
+      const [
+        expectedYieldRateRecord1,
+        expectedYieldRateRecord2
+      ] = defineExpectedYieldRateRecords();
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
-      await proveTx(
-        context.yieldStreamer.configureYieldRate(
-          ZERO_GROUP_ID,
-          expectedYieldRateRecord1.effectiveDay,
-          expectedYieldRateRecord1.value
-        )
-      );
+      await proveTx(context.yieldStreamer.configureYieldRate(
+        ZERO_GROUP_ID,
+        expectedYieldRateRecord1.effectiveDay,
+        expectedYieldRateRecord1.value
+      ));
+      await proveTx(context.yieldStreamer.configureYieldRate(
+        GROUP_ONE_ID,
+        expectedYieldRateRecord2.effectiveDay,
+        expectedYieldRateRecord2.value
+      ));
+      expect(expectedYieldRateRecord1.effectiveDay).not.to.equal(expectedYieldRateRecord2.effectiveDay);
+      expect(expectedYieldRateRecord1.value).not.to.equal(expectedYieldRateRecord2.value);
+
       let userYieldRates = await context.yieldStreamer.getAccountYieldRates(user.address);
-      let actualUserYieldRates = userYieldRates[0];
-      expect(actualUserYieldRates[0]).to.eq(expectedYieldRateRecord1.effectiveDay);
-      expect(actualUserYieldRates[1]).to.eq(expectedYieldRateRecord1.value);
-      await proveTx(
-        context.yieldStreamer.configureYieldRate(
-          GROUP_ONE_ID,
-          expectedYieldRateRecord2.effectiveDay,
-          expectedYieldRateRecord2.value
-        )
-      );
+      let actualUserYieldRateRecord = userYieldRates[0];
+      expect(actualUserYieldRateRecord[0]).to.eq(expectedYieldRateRecord1.effectiveDay);
+      expect(actualUserYieldRateRecord[1]).to.eq(expectedYieldRateRecord1.value);
+
       await proveTx(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, [user.address]));
+
       userYieldRates = await context.yieldStreamer.getAccountYieldRates(user.address);
-      actualUserYieldRates = userYieldRates[0];
-      expect(actualUserYieldRates[0]).to.eq(expectedYieldRateRecord2.effectiveDay);
-      expect(actualUserYieldRates[1]).to.eq(expectedYieldRateRecord2.value);
+      actualUserYieldRateRecord = userYieldRates[0];
+      expect(actualUserYieldRateRecord[0]).to.eq(expectedYieldRateRecord2.effectiveDay);
+      expect(actualUserYieldRateRecord[1]).to.eq(expectedYieldRateRecord2.value);
     });
   });
 
