@@ -62,7 +62,7 @@ contract YieldStreamer is
     /// @notice The address of the token balance tracker
     address internal _balanceTracker;
 
-    /// @notice The mapping of yield rates by group identifier
+    /// @notice The mapping of yield rates by account group identifier
     mapping(bytes32 => YieldRate[]) internal _yieldRates;
 
     /// @notice The array of look-back periods in chronological order
@@ -120,7 +120,7 @@ contract YieldStreamer is
     /**
      * @notice Emitted when a new yield rate is added to the chronological array
      *
-     * @param groupId The hash identifier of the group
+     * @param groupId The hash identifier of the account group
      * @param effectiveDay The index of the day the yield rate come into use
      * @param value The value of the yield rate
      */
@@ -129,7 +129,7 @@ contract YieldStreamer is
     /**
      * @notice Emitted when an yield rate is updated
      *
-     * @param groupId The hash identifier of the group
+     * @param groupId The hash identifier of the account group
      * @param index The The index of the yield rate array in the chronological array
      * @param newEffectiveDay The new effective day of the updated yield rate come into use
      * @param oldEffectiveDay The old effective day of the updated yield rate
@@ -146,9 +146,9 @@ contract YieldStreamer is
     );
 
     /**
-     * @notice Emitted when an account is assigned to the group
+     * @notice Emitted when an account is assigned to a group
      *
-     * @param groupId The hash identifier of the group
+     * @param groupId The hash identifier of the account group
      * @param account The address of the account
      */
     event AssignAccountGroup(bytes32 indexed groupId, address account);
@@ -338,16 +338,16 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Assigns accounts to the group
+     * @notice Assigns accounts to a group
      *
      * Requirements:
      *
-     * - Can only be called by the blocklister role
+     * - Can only be called by an account with the blocklister role
      * - For each account the new group must not be the same as the current one
      *
      * Emits an {AssignAccountGroup} event
      *
-     * @param groupId The hash identifier of the group
+     * @param groupId The hash identifier of the account group
      * @param accounts The array of accounts to be assigned to the group
      */
     function assignAccountGroup(bytes32 groupId, address[] memory accounts) external onlyBlocklister {
@@ -404,7 +404,7 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Updates the look-back period at the specified index
+     * @notice Updates the look-back period at a specified index
      *
      * Requirements:
      *
@@ -445,17 +445,17 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Adds a new yield rate to the chronological array
+     * @notice Adds a new yield rate to the chronological array for a specified account group
      *
      * Requirements:
      *
      * - Can only be called by the contract owner
      * - The new effective day must be greater than the last one
-     * - Thre new yield rate value must not be the same as the last one
+     * - The new yield rate value must not be the same as the last one
      *
      * Emits an {YieldRateConfigured} event
      *
-     * @param groupId The hash identifier of the group
+     * @param groupId The hash identifier of the account group
      * @param effectiveDay The index of the day the yield rate come into use
      * @param value The value of the yield rate
      */
@@ -475,7 +475,7 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Updates the yield rate at the specified index
+     * @notice Updates the yield rate at a specified index
      *
      * Requirements:
      *
@@ -487,7 +487,7 @@ contract YieldStreamer is
      *
      * Emits an {YieldRateUpdated} event
      *
-     * @param groupId The hash identifier of the group
+     * @param groupId The hash identifier of the account group
      * @param effectiveDay The index of the day the yield rate come into use
      * @param value The value of the yield rate
      * @param index The index of the yield rate in the array
@@ -598,7 +598,7 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Returns the last claim details for the specified account
+     * @notice Returns the last claim details for a specified account
      *
      * @param account The address of an account to get the claim details for
      */
@@ -643,9 +643,9 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Returns an array of yield rates for a given group
+     * @notice Returns an array of yield rates for a given account group
      *
-     * @param groupId The hash identifier of the group
+     * @param groupId The hash identifier of the account group
      * @return The array of yield rates
      */
     function getGroupYieldRates(bytes32 groupId) public view returns (YieldRate[] memory) {
@@ -660,7 +660,7 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Calculates the stream yield for the specified amount and time
+     * @notice Calculates the stream yield for a specified amount and time
      *
      * @param amount The amount to calculate the stream yield for
      * @param time The time to calculate the stream yield for
@@ -816,7 +816,7 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Searches a minimum value in an array for the specified range of indexes
+     * @notice Searches a minimum value in an array for a specified range of indexes
      *
      * @param array The array to search in
      * @param begIndex The index of the array from which the search begins, including that index
@@ -838,7 +838,7 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Returns the preview result of claiming the specified amount of yield
+     * @notice Returns the preview result of claiming for a specified account and amount
      *
      * @param account The address of an account to preview the claim for
      * @param amount The amount of yield to be claimed
@@ -981,7 +981,7 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Claims the specified amount of yield for an account
+     * @notice Claims a specified amount of yield for an account
      *
      * @param account The address of an account to claim the yield for
      * @param amount The amount of yield to claim
