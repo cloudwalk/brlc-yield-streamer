@@ -457,7 +457,7 @@ async function checkYieldRates(
 
     const actualRecord: YieldRateRecord = {
       effectiveDay: actualYieldRateRecords[i][0],
-      value: BigNumber.from(actualYieldRateRecords[i][1]),
+      value: BigNumber.from(actualYieldRateRecords[i][1])
     };
 
     expect(actualRecord.effectiveDay).to.equal(
@@ -1162,7 +1162,7 @@ describe("Contract 'YieldStreamer'", async () => {
       ).revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_YIELD_RATE_INVALID_EFFECTIVE_DAY);
 
       recordIndex = 1;
-      //check revert if effective day is less than previous day
+      // Check revert if effective day is less than previous day
       await expect(
         context.yieldStreamer.updateYieldRate(
           ZERO_GROUP_ID,
@@ -1612,7 +1612,7 @@ describe("Contract 'YieldStreamer'", async () => {
       );
     });
 
-    it("Case 2: four consecutive partial claims, two stop at some day, two stop at yesterday, then revert", async () => {
+    it("Case 2: four partial claims, two stop at some day, two stop at yesterday, then revert", async () => {
       const context: TestContext = await setUpFixture(deployAndConfigureContracts);
       await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, balanceRecords));
 
@@ -1882,7 +1882,7 @@ describe("Contract 'YieldStreamer'", async () => {
             BALANCE_TRACKER_INIT_DAY - 1,
             BALANCE_TRACKER_INIT_DAY
           )
-        ).to.reverted
+        ).to.reverted;
       });
 
       it("The 'to' day is prior the 'from' day", async () => {
@@ -1893,7 +1893,7 @@ describe("Contract 'YieldStreamer'", async () => {
             YIELD_STREAMER_INIT_DAY,
             YIELD_STREAMER_INIT_DAY - 1
           )
-        ).to.reverted
+        ).to.reverted;
       });
 
       it("There are no balance records", async () => {
@@ -1904,7 +1904,7 @@ describe("Contract 'YieldStreamer'", async () => {
             YIELD_STREAMER_INIT_DAY,
             YIELD_STREAMER_INIT_DAY
           )
-        ).to.reverted
+        ).to.reverted;
       });
     });
   });
