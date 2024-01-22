@@ -40,10 +40,18 @@ describe("Contract 'ERC20HookMock'", async () => {
     return { hookable };
   }
 
+  describe("Function 'constructor()'", async () => {
+    it("Configures the contract as expected", async () => {
+      const { hookable } = await setUpFixture(deployHookable);
+      expect(await hookable.revertWithPanic()).to.equal(false);
+      expect(await hookable.revertWithReasonMessage()).to.equal(false);
+      expect(await hookable.revertWithoutReasonMessage()).to.equal(false);
+    });
+  });
+
   describe("Function 'setRevertWithPanic()'", async () => {
     it("Executes as expected", async () => {
       const { hookable } = await setUpFixture(deployHookable);
-      expect(await hookable.revertWithPanic()).to.equal(false);
       await proveTx(hookable.connect(deployer).setRevertWithPanic(true));
       expect(await hookable.revertWithPanic()).to.equal(true);
       await proveTx(hookable.connect(deployer).setRevertWithPanic(false));
@@ -54,7 +62,6 @@ describe("Contract 'ERC20HookMock'", async () => {
   describe("Function 'setRevertWithReasonMessage()'", async () => {
     it("Executes as expected", async () => {
       const { hookable } = await setUpFixture(deployHookable);
-      expect(await hookable.revertWithReasonMessage()).to.equal(false);
       await proveTx(hookable.connect(deployer).setRevertWithReasonMessage(true));
       expect(await hookable.revertWithReasonMessage()).to.equal(true);
       await proveTx(hookable.connect(deployer).setRevertWithReasonMessage(false));
@@ -65,7 +72,6 @@ describe("Contract 'ERC20HookMock'", async () => {
   describe("Function 'setRevertWithoutReasonMessage()'", async () => {
     it("Executes as expected", async () => {
       const { hookable } = await setUpFixture(deployHookable);
-      expect(await hookable.revertWithoutReasonMessage()).to.equal(false);
       await proveTx(hookable.connect(deployer).setRevertWithoutReasonMessage(true));
       expect(await hookable.revertWithoutReasonMessage()).to.equal(true);
       await proveTx(hookable.connect(deployer).setRevertWithoutReasonMessage(false));
@@ -76,9 +82,6 @@ describe("Contract 'ERC20HookMock'", async () => {
   describe("Function 'beforeTokenTransfer()'", async () => {
     it("Executes as expected and emits the correct event", async () => {
       const { hookable } = await setUpFixture(deployHookable);
-      expect(await hookable.revertWithPanic()).to.equal(false);
-      expect(await hookable.revertWithReasonMessage()).to.equal(false);
-      expect(await hookable.revertWithoutReasonMessage()).to.equal(false);
       await proveTx(hookable.connect(deployer).setRevertWithPanic(true));
       await expect(
         hookable.beforeTokenTransfer(user1.address, user2.address, TOKEN_AMOUNT)
@@ -103,9 +106,6 @@ describe("Contract 'ERC20HookMock'", async () => {
   describe("Function 'afterTokenTransfer()'", async () => {
     it("Executes as expected and emits the correct event", async () => {
       const { hookable } = await setUpFixture(deployHookable);
-      expect(await hookable.revertWithPanic()).to.equal(false);
-      expect(await hookable.revertWithReasonMessage()).to.equal(false);
-      expect(await hookable.revertWithoutReasonMessage()).to.equal(false);
       await proveTx(hookable.connect(deployer).setRevertWithPanic(true));
       await expect(
         hookable.afterTokenTransfer(user1.address, user2.address, TOKEN_AMOUNT)

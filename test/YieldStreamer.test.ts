@@ -1534,7 +1534,7 @@ describe("Contract 'YieldStreamer'", async () => {
       const totalYield: BigNumber = claimRequest.amount;
       const totalYieldWithoutFee: BigNumber = totalYield.sub(expectedClaimResult.fee);
 
-      const tx: TransactionResponse = await context.yieldStreamer.connect(user).claim(claimRequest.amount);
+      const tx: TransactionResponse = await context.yieldStreamer.connect(user).claim(totalYield);
 
       await expect(tx)
         .to.emit(context.yieldStreamer, EVENT_CLAIM)
