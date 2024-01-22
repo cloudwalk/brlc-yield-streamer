@@ -360,7 +360,10 @@ function defineExpectedClaimAllResult(claimRequest: ClaimRequest): ClaimResult {
   return claimResult;
 }
 
-function compareClaimPreviews(actualClaimPreviewResult: any, expectedClaimPreviewResult: ClaimResult) {
+function compareClaimPreviews(
+  actualClaimPreviewResult: Record<string, BigNumber>,
+  expectedClaimPreviewResult: ClaimResult
+) {
   expect(actualClaimPreviewResult.nextClaimDay.toString()).to.equal(
     expectedClaimPreviewResult.nextClaimDay.toString(),
     "The 'nextClaimDay' field is wrong"
@@ -468,7 +471,7 @@ async function checkYieldRates(
   }
 }
 
-async function setUpFixture(func: any) {
+async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   if (network.name === "hardhat") {
     return loadFixture(func);
   } else {
@@ -693,7 +696,7 @@ describe("Contract 'YieldStreamer'", async () => {
   });
 
   describe("Function 'assignAccountGroup()'", async () => {
-    let users: any;
+    let users: string[];
     before(async () => {
       users = [user.address, user2.address, user3.address];
     });
@@ -1017,10 +1020,10 @@ describe("Contract 'YieldStreamer'", async () => {
       const recordIndex = Math.floor(oldExpectedYieldRateRecords.length / 2);
       newExpectedYieldRateRecord[recordIndex] = {
         effectiveDay: oldExpectedYieldRateRecords[recordIndex].effectiveDay + 1,
-        value: BigNumber.from(oldExpectedYieldRateRecords[recordIndex].value + 1)
+        value: BigNumber.from(oldExpectedYieldRateRecords[recordIndex].value.add(1))
       };
 
-      for (let expectedYieldRateRecord of oldExpectedYieldRateRecords) {
+      for (const expectedYieldRateRecord of oldExpectedYieldRateRecords) {
         await proveTx(
           context.yieldStreamer.configureYieldRate(
             ZERO_GROUP_ID,
@@ -1057,7 +1060,7 @@ describe("Contract 'YieldStreamer'", async () => {
       const [oldExpectedYieldRateRecord] = defineExpectedYieldRateRecords();
       const newExpectedYieldRateRecord: YieldRateRecord = {
         effectiveDay: oldExpectedYieldRateRecord.effectiveDay + 1,
-        value: BigNumber.from(oldExpectedYieldRateRecord.value + 1)
+        value: BigNumber.from(oldExpectedYieldRateRecord.value.add(1))
       };
 
       await proveTx(
@@ -1137,7 +1140,7 @@ describe("Contract 'YieldStreamer'", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       const expectedYieldRateRecords: YieldRateRecord[] = defineExpectedYieldRateRecords();
 
-      for (const expectedYieldRateRecord: YieldRateRecord of expectedYieldRateRecords) {
+      for (const expectedYieldRateRecord of expectedYieldRateRecords) {
         await proveTx(
           context.yieldStreamer.configureYieldRate(
             ZERO_GROUP_ID,
@@ -1352,7 +1355,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals a half of the possible primary yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(expectedClaimAllResult.primaryYield.div(2));
@@ -1362,7 +1364,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals the possible primary yield plus a third of the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(
@@ -1374,7 +1375,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount is greater than possible primary yield plus the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
         const expectedShortfall = roundUpward(BigNumber.from(1));
 
@@ -1446,7 +1446,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals a half of the possible primary yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(expectedClaimAllResult.primaryYield.div(2));
@@ -1456,7 +1455,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals the possible primary yield plus a half of the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(
@@ -1495,7 +1493,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount is greater than possible primary yield plus the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
         const expectedShortfall = roundUpward(BigNumber.from(1));
 
