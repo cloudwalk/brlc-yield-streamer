@@ -38,6 +38,9 @@ contract YieldStreamer is
     /// @notice The minimum amount that is allowed to be claimed
     uint256 public constant MIN_CLAIM_AMOUNT = 1000000;
 
+    /// @notice The maximum daily balance cap allowed for calculation claim
+    uint256 public constant MAX_BALANCE_CAP = 200000000000;
+
     /// @notice The initial state of the next claim for an account
     struct ClaimState {
         uint16 day;    // The index of the day from which the yield will be calculated next time
@@ -834,6 +837,11 @@ contract YieldStreamer is
                 min = value;
             }
         }
+
+        if (min > MAX_BALANCE_CAP) {
+            min = MAX_BALANCE_CAP;
+        }
+
         return min;
     }
 
