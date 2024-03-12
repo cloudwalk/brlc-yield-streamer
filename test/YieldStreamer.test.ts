@@ -10,7 +10,7 @@ const ZERO_ADDRESS = ethers.constants.AddressZero;
 const BIG_NUMBER_ZERO = ethers.constants.Zero;
 const BIG_NUMBER_MAX_UINT256 = ethers.constants.MaxUint256;
 const YIELD_STREAMER_INIT_TOKEN_BALANCE: BigNumber = BigNumber.from(1000_000_000_000);
-const USER_CURRENT_TOKEN_BALANCE: BigNumber = BigNumber.from(1000_000_000_000);
+const USER_CURRENT_TOKEN_BALANCE: BigNumber = BigNumber.from(100_000_000_000);
 const LOOK_BACK_PERIOD_LENGTH: number = 2;
 const LOOK_BACK_PERIOD_INDEX_ZERO = 0;
 const INITIAL_YIELD_RATE = 10000000000; // 1%
@@ -20,6 +20,7 @@ const YIELD_RATE_INDEX_ZERO = 0;
 const FEE_RATE: BigNumber = BigNumber.from(225000000000);
 const RATE_FACTOR: BigNumber = BigNumber.from(1000000000000);
 const MIN_CLAIM_AMOUNT: BigNumber = BigNumber.from(1000000);
+const MAX_BALANCE_CAP: BigNumber = BigNumber.from(200000000000);
 const ROUNDING_COEF: BigNumber = BigNumber.from(10000);
 const BALANCE_TRACKER_ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
 const ZERO_GROUP_ID = ethers.utils.formatBytes32String("");
@@ -91,14 +92,14 @@ interface ClaimState {
 
 const balanceRecordsCase1: BalanceRecord[] = [
   { day: BALANCE_TRACKER_INIT_DAY, value: BigNumber.from(0) },
-  { day: BALANCE_TRACKER_INIT_DAY + 1, value: BigNumber.from(8000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 2, value: BigNumber.from(7000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 3, value: BigNumber.from(6000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 4, value: BigNumber.from(5000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 5, value: BigNumber.from(1000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 6, value: BigNumber.from(3000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 7, value: BigNumber.from(2000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 8, value: BigNumber.from(1000_000_000_000) }
+  { day: BALANCE_TRACKER_INIT_DAY + 1, value: BigNumber.from(800_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 2, value: BigNumber.from(700_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 3, value: BigNumber.from(600_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 4, value: BigNumber.from(500_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 5, value: BigNumber.from(100_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 6, value: BigNumber.from(300_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 7, value: BigNumber.from(200_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 8, value: BigNumber.from(100_000_000_000) }
 ];
 
 const yieldRateRecordCase1: YieldRateRecord = {
@@ -147,11 +148,18 @@ function defineExpectedDailyBalances(balanceRecords: BalanceRecord[], dayFrom: n
 }
 
 function min(bigNumber1: BigNumber, bigNumber2: BigNumber): BigNumber {
+  let res: BigNumber;
   if (bigNumber1.lt(bigNumber2)) {
-    return bigNumber1;
+    res = bigNumber1;
   } else {
-    return bigNumber2;
+    res = bigNumber2;
   }
+
+  if (res.gt(MAX_BALANCE_CAP)) {
+    res = MAX_BALANCE_CAP;
+  }
+
+  return res;
 }
 
 function roundDown(value: BigNumber): BigNumber {
