@@ -20,7 +20,7 @@ const YIELD_RATE_INDEX_ZERO = 0;
 const FEE_RATE: BigNumber = BigNumber.from(225000000000);
 const RATE_FACTOR: BigNumber = BigNumber.from(1000000000000);
 const MIN_CLAIM_AMOUNT: BigNumber = BigNumber.from(1000000);
-const MAX_BALANCE_CAP: BigNumber = BigNumber.from(200000000000);
+const MAX_BALANCE_CAP: BigNumber = BigNumber.from(200_000_000_000);
 const ROUNDING_COEF: BigNumber = BigNumber.from(10000);
 const BALANCE_TRACKER_ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
 const ZERO_GROUP_ID = ethers.utils.formatBytes32String("");
@@ -1315,7 +1315,7 @@ describe("Contract 'YieldStreamer'", async () => {
 
   describe("Function 'claimAllPreview()'", async () => {
     describe("Executes as expected if", async () => {
-      const claimRequest: ClaimRequest = {
+      let claimRequest: ClaimRequest = {
         amount: BIG_NUMBER_MAX_UINT256,
         firstYieldDay: YIELD_STREAMER_INIT_DAY,
         claimDay: YIELD_STREAMER_INIT_DAY + 10,
@@ -1332,6 +1332,36 @@ describe("Contract 'YieldStreamer'", async () => {
         const expectedClaimResult: ClaimResult = defineExpectedClaimResult(claimRequest);
         const actualClaimResult = await context.yieldStreamer.claimAllPreview(user.address);
         compareClaimPreviews(actualClaimResult, expectedClaimResult);
+      });
+      it("Token min daily balance becomes larger than 250k", async () => {
+        claimRequest.claimDay = YIELD_STREAMER_INIT_DAY + 3;
+        const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+        let actualClaimResults: Array<ClaimResult> = new Array(3);
+        let expectedClaimResults: Array<ClaimResult> = new Array(3);
+        let balanceRecords: BalanceRecord[] = [
+          { day: BALANCE_TRACKER_INIT_DAY, value: BigNumber.from(500_000_000_000) },
+          { day: BALANCE_TRACKER_INIT_DAY + 1, value: BigNumber.from(150_000_000_000) },
+          { day: BALANCE_TRACKER_INIT_DAY + 2, value: BigNumber.from(300_000_000_000) },
+        ];
+
+        await proveTx(context.balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
+
+        for (let i = 0; i < actualClaimResults.length; i++) {
+          await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, balanceRecords));
+          actualClaimResults[i] = await context.yieldStreamer.claimAllPreview(user.address);
+          claimRequest.balanceRecords = balanceRecords;
+          expectedClaimResults[i] = defineExpectedClaimResult(claimRequest);
+          balanceRecords[1].value = balanceRecords[1].value.add(BigNumber.from(50_000_000_000));
+          compareClaimPreviews(actualClaimResults[i], expectedClaimResults[i]);
+        }
+
+        compareClaimPreviews(actualClaimResults[1], actualClaimResults[2]);
+        expect(actualClaimResults[0].yield).to.be.lt(actualClaimResults[1].yield);
+        expect(actualClaimResults[0].nextClaimDebit).to.be.lt(actualClaimResults[1].nextClaimDebit);
+        expect(actualClaimResults[0].primaryYield).to.be.lt(actualClaimResults[1].primaryYield);
+        expect(actualClaimResults[0].streamYield).to.be.lt(actualClaimResults[1].streamYield);
+        expect(actualClaimResults[0].lastDayYield).to.be.lt(actualClaimResults[1].lastDayYield);
+        expect(actualClaimResults[0].fee).to.be.lt(actualClaimResults[1].fee);
       });
     });
   });
