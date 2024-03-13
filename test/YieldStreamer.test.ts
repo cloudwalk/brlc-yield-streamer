@@ -20,7 +20,7 @@ const YIELD_RATE_INDEX_ZERO = 0;
 const FEE_RATE: BigNumber = BigNumber.from(225000000000);
 const RATE_FACTOR: BigNumber = BigNumber.from(1000000000000);
 const MIN_CLAIM_AMOUNT: BigNumber = BigNumber.from(1000000);
-const MAX_BALANCE_CAP: BigNumber = BigNumber.from(200_000_000_000);
+const DAILY_BALANCE_CAP: BigNumber = BigNumber.from(200_000_000_000);
 const ROUNDING_COEF: BigNumber = BigNumber.from(10000);
 const BALANCE_TRACKER_ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
 const ZERO_GROUP_ID = ethers.utils.formatBytes32String("");
@@ -147,7 +147,7 @@ function defineExpectedDailyBalances(balanceRecords: BalanceRecord[], dayFrom: n
   return dailyBalances;
 }
 
-function min(bigNumber1: BigNumber, bigNumber2: BigNumber): BigNumber {
+function defineMinBalance(bigNumber1: BigNumber, bigNumber2: BigNumber): BigNumber {
   let res: BigNumber;
   if (bigNumber1.lt(bigNumber2)) {
     res = bigNumber1;
@@ -155,8 +155,8 @@ function min(bigNumber1: BigNumber, bigNumber2: BigNumber): BigNumber {
     res = bigNumber2;
   }
 
-  if (res.gt(MAX_BALANCE_CAP)) {
-    res = MAX_BALANCE_CAP;
+  if (res.gt(DAILY_BALANCE_CAP)) {
+    res = DAILY_BALANCE_CAP;
   }
 
   return res;
@@ -207,7 +207,7 @@ function defineExpectedYieldByDays(yieldByDaysRequest: YieldByDaysRequest): BigN
   let sumYield: BigNumber = BIG_NUMBER_ZERO;
   for (let i = 0; i < len; ++i) {
     const yieldRate: BigNumber = defineYieldRate(yieldRateRecords, dayFrom + i);
-    const minBalance: BigNumber = balances.slice(i, lookBackPeriodLength + i).reduce(min);
+    const minBalance: BigNumber = balances.slice(i, lookBackPeriodLength + i).reduce(defineMinBalance);
     const yieldValue: BigNumber = minBalance.mul(yieldRate).div(RATE_FACTOR);
     if (i == 0) {
       if (yieldValue.gt(claimDebit)) {
@@ -1315,7 +1315,7 @@ describe("Contract 'YieldStreamer'", async () => {
 
   describe("Function 'claimAllPreview()'", async () => {
     describe("Executes as expected if", async () => {
-      let claimRequest: ClaimRequest = {
+      const claimRequest: ClaimRequest = {
         amount: BIG_NUMBER_MAX_UINT256,
         firstYieldDay: YIELD_STREAMER_INIT_DAY,
         claimDay: YIELD_STREAMER_INIT_DAY + 10,
