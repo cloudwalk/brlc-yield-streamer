@@ -39,7 +39,7 @@ contract YieldStreamer is
     uint256 public constant MIN_CLAIM_AMOUNT = 1000000;
 
     /// @notice The maximum daily balance cap allowed for calculation claim
-    uint256 public constant MAX_BALANCE_CAP = 200000000000;
+    uint256 public constant DAILY_BALANCE_CAP = 200000000000;
 
     /// @notice The initial state of the next claim for an account
     struct ClaimState {
@@ -795,7 +795,7 @@ contract YieldStreamer is
 
         // Define first day yield and initial sum yield
         uint256 sumYield = 0;
-        uint256 dayYield = (_getMinimumInRange(possibleBalanceByDays, 0, periodLength) * rateValue) / RATE_FACTOR;
+        uint256 dayYield = (_defineMinBalance(possibleBalanceByDays, 0, periodLength) * rateValue) / RATE_FACTOR;
         if (dayYield > nextClaimDebit) {
             sumYield = dayYield - nextClaimDebit;
         }
@@ -810,7 +810,7 @@ contract YieldStreamer is
                     nextRateDay = yieldRates[++rateIndex].effectiveDay;
                 }
             }
-            uint256 minBalance = _getMinimumInRange(possibleBalanceByDays, i, i + periodLength);
+            uint256 minBalance = _defineMinBalance(possibleBalanceByDays, i, i + periodLength);
             dayYield = (minBalance * rateValue) / RATE_FACTOR;
             sumYield += dayYield;
             possibleBalanceByDays[i + periodLength] += sumYield;
@@ -825,7 +825,7 @@ contract YieldStreamer is
      * @param begIndex The index of the array from which the search begins, including that index
      * @param endIndex The index of the array at which the search ends, excluding that index
      */
-    function _getMinimumInRange(
+    function _defineMinBalance(
         uint256[] memory array,
         uint256 begIndex,
         uint256 endIndex
@@ -838,8 +838,8 @@ contract YieldStreamer is
             }
         }
 
-        if (min > MAX_BALANCE_CAP) {
-            min = MAX_BALANCE_CAP;
+        if (min > DAILY_BALANCE_CAP) {
+            min = DAILY_BALANCE_CAP;
         }
 
         return min;
