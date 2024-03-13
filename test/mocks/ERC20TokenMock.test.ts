@@ -5,7 +5,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-wit
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { proveTx } from "../../test-utils/eth";
 
-async function setUpFixture(func: any) {
+async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   if (network.name === "hardhat") {
     return loadFixture(func);
   } else {
@@ -24,11 +24,10 @@ describe("Contract 'ERC20TokenMock'", async () => {
   const REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_NOT_INITIALIZING = "Initializable: contract is not initializing";
 
   let tokenFactory: ContractFactory;
-  let deployer: SignerWithAddress;
   let user: SignerWithAddress;
 
   before(async () => {
-    [deployer, user] = await ethers.getSigners();
+    [, user] = await ethers.getSigners();
     tokenFactory = await ethers.getContractFactory("ERC20TokenMock");
   });
 

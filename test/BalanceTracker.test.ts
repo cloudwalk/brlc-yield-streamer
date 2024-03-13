@@ -46,7 +46,7 @@ interface DailyBalancesRequest {
   dayTo: number;
 }
 
-async function setUpFixture(func: any) {
+async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   if (network.name === "hardhat") {
     return loadFixture(func);
   } else {
@@ -168,7 +168,7 @@ function applyBalanceChange(context: TestContext, balanceChange: BalanceChange):
     if (lastRecord.day == newBalanceRecord.day) {
       newBalanceRecord = undefined;
     } else {
-      newBalanceRecord.index = lastRecord + 1;
+      newBalanceRecord.index = lastRecord.index + 1;
       balanceRecords.push(newBalanceRecord);
     }
   }
@@ -314,7 +314,7 @@ describe("Contract 'BalanceTracker'", async () => {
       if (!newBalanceRecord1 && !newBalanceRecord2) {
         await expect(tx).not.to.emit(balanceTracker, "BalanceRecordCreated");
       } else {
-        if (!!newBalanceRecord1) {
+        if (newBalanceRecord1) {
           await expect(tx)
             .to.emit(balanceTracker, "BalanceRecordCreated")
             .withArgs(
@@ -323,7 +323,7 @@ describe("Contract 'BalanceTracker'", async () => {
               newBalanceRecord1.value
             );
         }
-        if (!!newBalanceRecord2) {
+        if (newBalanceRecord2) {
           await expect(tx)
             .to.emit(balanceTracker, "BalanceRecordCreated")
             .withArgs(
@@ -368,7 +368,7 @@ describe("Contract 'BalanceTracker'", async () => {
   describe("Function 'afterTokenTransfer()'", async () => {
     async function checkTokenTransfers(context: TestContext, transfers: TokenTransfer[]) {
       await executeTokenTransfers(context, transfers);
-      for (let address: string of context.balanceRecordsByAddressMap.keys()) {
+      for (const address of context.balanceRecordsByAddressMap.keys()) {
         const expectedBalanceRecords: BalanceRecord[] = context.balanceRecordsByAddressMap.get(address) ?? [];
         await checkBalanceRecordsForAccount(context.balanceTracker, address, expectedBalanceRecords);
       }
