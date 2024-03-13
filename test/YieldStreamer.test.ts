@@ -20,7 +20,7 @@ const YIELD_RATE_INDEX_ZERO = 0;
 const FEE_RATE: BigNumber = BigNumber.from(225000000000);
 const RATE_FACTOR: BigNumber = BigNumber.from(1000000000000);
 const MIN_CLAIM_AMOUNT: BigNumber = BigNumber.from(1000000);
-const DAILY_BALANCE_CAP: BigNumber = BigNumber.from(200_000_000_000);
+const MAX_DAILY_BALANCE_LIMIT: BigNumber = BigNumber.from(200_000_000_000);
 const ROUNDING_COEF: BigNumber = BigNumber.from(10000);
 const BALANCE_TRACKER_ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
 const ZERO_GROUP_ID = ethers.utils.formatBytes32String("");
@@ -147,7 +147,7 @@ function defineExpectedDailyBalances(balanceRecords: BalanceRecord[], dayFrom: n
   return dailyBalances;
 }
 
-function defineMinBalance(bigNumber1: BigNumber, bigNumber2: BigNumber): BigNumber {
+function defineDailyBalance(bigNumber1: BigNumber, bigNumber2: BigNumber): BigNumber {
   let res: BigNumber;
   if (bigNumber1.lt(bigNumber2)) {
     res = bigNumber1;
@@ -155,8 +155,8 @@ function defineMinBalance(bigNumber1: BigNumber, bigNumber2: BigNumber): BigNumb
     res = bigNumber2;
   }
 
-  if (res.gt(DAILY_BALANCE_CAP)) {
-    res = DAILY_BALANCE_CAP;
+  if (res.gt(MAX_DAILY_BALANCE_LIMIT)) {
+    res = MAX_DAILY_BALANCE_LIMIT;
   }
 
   return res;
@@ -207,7 +207,7 @@ function defineExpectedYieldByDays(yieldByDaysRequest: YieldByDaysRequest): BigN
   let sumYield: BigNumber = BIG_NUMBER_ZERO;
   for (let i = 0; i < len; ++i) {
     const yieldRate: BigNumber = defineYieldRate(yieldRateRecords, dayFrom + i);
-    const minBalance: BigNumber = balances.slice(i, lookBackPeriodLength + i).reduce(defineMinBalance);
+    const minBalance: BigNumber = balances.slice(i, lookBackPeriodLength + i).reduce(defineDailyBalance);
     const yieldValue: BigNumber = minBalance.mul(yieldRate).div(RATE_FACTOR);
     if (i == 0) {
       if (yieldValue.gt(claimDebit)) {
@@ -1333,7 +1333,7 @@ describe("Contract 'YieldStreamer'", async () => {
         const actualClaimResult = await context.yieldStreamer.claimAllPreview(user.address);
         compareClaimPreviews(actualClaimResult, expectedClaimResult);
       });
-      it("Token min daily balance becomes larger than 250k", async () => {
+      it("Token min daily balance becomes larger than max daily balance limit", async () => {
         claimRequest.claimDay = YIELD_STREAMER_INIT_DAY + 3;
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         let actualClaimResults: Array<ClaimResult> = new Array(3);
