@@ -10,16 +10,17 @@ const ZERO_ADDRESS = ethers.constants.AddressZero;
 const BIG_NUMBER_ZERO = ethers.constants.Zero;
 const BIG_NUMBER_MAX_UINT256 = ethers.constants.MaxUint256;
 const YIELD_STREAMER_INIT_TOKEN_BALANCE: BigNumber = BigNumber.from(1000_000_000_000);
-const USER_CURRENT_TOKEN_BALANCE: BigNumber = BigNumber.from(1000_000_000_000);
+const USER_CURRENT_TOKEN_BALANCE: BigNumber = BigNumber.from(100_000_000_000);
 const LOOK_BACK_PERIOD_LENGTH: number = 2;
 const LOOK_BACK_PERIOD_INDEX_ZERO = 0;
 const INITIAL_YIELD_RATE = 10000000000; // 1%
 const BALANCE_TRACKER_INIT_DAY = 100;
 const YIELD_STREAMER_INIT_DAY = BALANCE_TRACKER_INIT_DAY + LOOK_BACK_PERIOD_LENGTH - 1;
 const YIELD_RATE_INDEX_ZERO = 0;
-const FEE_RATE: BigNumber = BigNumber.from(225000000000);
+const FEE_RATE: BigNumber = BigNumber.from(0);
 const RATE_FACTOR: BigNumber = BigNumber.from(1000000000000);
 const MIN_CLAIM_AMOUNT: BigNumber = BigNumber.from(1000000);
+const MAX_DAILY_BALANCE_LIMIT: BigNumber = BigNumber.from(200_000_000_000);
 const ROUNDING_COEF: BigNumber = BigNumber.from(10000);
 const BALANCE_TRACKER_ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
 const ZERO_GROUP_ID = ethers.utils.formatBytes32String("");
@@ -91,14 +92,14 @@ interface ClaimState {
 
 const balanceRecordsCase1: BalanceRecord[] = [
   { day: BALANCE_TRACKER_INIT_DAY, value: BigNumber.from(0) },
-  { day: BALANCE_TRACKER_INIT_DAY + 1, value: BigNumber.from(8000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 2, value: BigNumber.from(7000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 3, value: BigNumber.from(6000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 4, value: BigNumber.from(5000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 5, value: BigNumber.from(1000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 6, value: BigNumber.from(3000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 7, value: BigNumber.from(2000_000_000_000) },
-  { day: BALANCE_TRACKER_INIT_DAY + 8, value: BigNumber.from(1000_000_000_000) }
+  { day: BALANCE_TRACKER_INIT_DAY + 1, value: BigNumber.from(80_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 2, value: BigNumber.from(70_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 3, value: BigNumber.from(60_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 4, value: BigNumber.from(50_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 5, value: BigNumber.from(10_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 6, value: BigNumber.from(30_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 7, value: BigNumber.from(20_000_000_000) },
+  { day: BALANCE_TRACKER_INIT_DAY + 8, value: BigNumber.from(10_000_000_000) }
 ];
 
 const yieldRateRecordCase1: YieldRateRecord = {
@@ -146,12 +147,19 @@ function defineExpectedDailyBalances(balanceRecords: BalanceRecord[], dayFrom: n
   return dailyBalances;
 }
 
-function min(bigNumber1: BigNumber, bigNumber2: BigNumber): BigNumber {
+function defineDailyBalance(bigNumber1: BigNumber, bigNumber2: BigNumber): BigNumber {
+  let res: BigNumber;
   if (bigNumber1.lt(bigNumber2)) {
-    return bigNumber1;
+    res = bigNumber1;
   } else {
-    return bigNumber2;
+    res = bigNumber2;
   }
+
+  if (res.gt(MAX_DAILY_BALANCE_LIMIT)) {
+    res = MAX_DAILY_BALANCE_LIMIT;
+  }
+
+  return res;
 }
 
 function roundDown(value: BigNumber): BigNumber {
@@ -199,7 +207,7 @@ function defineExpectedYieldByDays(yieldByDaysRequest: YieldByDaysRequest): BigN
   let sumYield: BigNumber = BIG_NUMBER_ZERO;
   for (let i = 0; i < len; ++i) {
     const yieldRate: BigNumber = defineYieldRate(yieldRateRecords, dayFrom + i);
-    const minBalance: BigNumber = balances.slice(i, lookBackPeriodLength + i).reduce(min);
+    const minBalance: BigNumber = balances.slice(i, lookBackPeriodLength + i).reduce(defineDailyBalance);
     const yieldValue: BigNumber = minBalance.mul(yieldRate).div(RATE_FACTOR);
     if (i == 0) {
       if (yieldValue.gt(claimDebit)) {
@@ -360,7 +368,7 @@ function defineExpectedClaimAllResult(claimRequest: ClaimRequest): ClaimResult {
   return claimResult;
 }
 
-function compareClaimPreviews(actualClaimPreviewResult: any, expectedClaimPreviewResult: ClaimResult) {
+function compareClaimPreviews(actualClaimPreviewResult: ClaimResult, expectedClaimPreviewResult: ClaimResult) {
   expect(actualClaimPreviewResult.nextClaimDay.toString()).to.equal(
     expectedClaimPreviewResult.nextClaimDay.toString(),
     "The 'nextClaimDay' field is wrong"
@@ -468,7 +476,7 @@ async function checkYieldRates(
   }
 }
 
-async function setUpFixture(func: any) {
+async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   if (network.name === "hardhat") {
     return loadFixture(func);
   } else {
@@ -581,6 +589,14 @@ describe("Contract 'YieldStreamer'", async () => {
     };
   }
 
+  describe("Test settings", async () => {
+    it("All daily balances in test balance records are less than the yield-generating limit", async () => {
+      for (const balanceRecord of balanceRecordsCase1) {
+        expect(balanceRecord.value).to.be.lessThan(MAX_DAILY_BALANCE_LIMIT);
+      }
+    });
+  });
+
   describe("Function 'initialize()'", async () => {
     it("Configures the contract as expected", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
@@ -592,6 +608,7 @@ describe("Contract 'YieldStreamer'", async () => {
       expect(await yieldStreamer.FEE_RATE()).to.equal(FEE_RATE);
       expect(await yieldStreamer.MIN_CLAIM_AMOUNT()).to.equal(MIN_CLAIM_AMOUNT);
       expect(await yieldStreamer.ROUNDING_COEF()).to.equal(ROUNDING_COEF);
+      expect(await yieldStreamer.MAX_DAILY_BALANCE_LIMIT()).to.equal(MAX_DAILY_BALANCE_LIMIT);
       await checkLookBackPeriods(yieldStreamer, []);
       await checkYieldRates(yieldStreamer, [], ZERO_GROUP_ID);
     });
@@ -693,7 +710,7 @@ describe("Contract 'YieldStreamer'", async () => {
   });
 
   describe("Function 'assignAccountGroup()'", async () => {
-    let users: any;
+    let users: string[];
     before(async () => {
       users = [user.address, user2.address, user3.address];
     });
@@ -1017,10 +1034,10 @@ describe("Contract 'YieldStreamer'", async () => {
       const recordIndex = Math.floor(oldExpectedYieldRateRecords.length / 2);
       newExpectedYieldRateRecord[recordIndex] = {
         effectiveDay: oldExpectedYieldRateRecords[recordIndex].effectiveDay + 1,
-        value: BigNumber.from(oldExpectedYieldRateRecords[recordIndex].value + 1)
+        value: BigNumber.from(oldExpectedYieldRateRecords[recordIndex].value.add(1))
       };
 
-      for (let expectedYieldRateRecord of oldExpectedYieldRateRecords) {
+      for (const expectedYieldRateRecord of oldExpectedYieldRateRecords) {
         await proveTx(
           context.yieldStreamer.configureYieldRate(
             ZERO_GROUP_ID,
@@ -1057,7 +1074,7 @@ describe("Contract 'YieldStreamer'", async () => {
       const [oldExpectedYieldRateRecord] = defineExpectedYieldRateRecords();
       const newExpectedYieldRateRecord: YieldRateRecord = {
         effectiveDay: oldExpectedYieldRateRecord.effectiveDay + 1,
-        value: BigNumber.from(oldExpectedYieldRateRecord.value + 1)
+        value: BigNumber.from(oldExpectedYieldRateRecord.value.add(1))
       };
 
       await proveTx(
@@ -1137,7 +1154,7 @@ describe("Contract 'YieldStreamer'", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       const expectedYieldRateRecords: YieldRateRecord[] = defineExpectedYieldRateRecords();
 
-      for (const expectedYieldRateRecord: YieldRateRecord of expectedYieldRateRecords) {
+      for (const expectedYieldRateRecord of expectedYieldRateRecords) {
         await proveTx(
           context.yieldStreamer.configureYieldRate(
             ZERO_GROUP_ID,
@@ -1317,13 +1334,50 @@ describe("Contract 'YieldStreamer'", async () => {
         yieldRateRecords: [yieldRateRecordCase1],
         balanceRecords: balanceRecordsCase1
       };
+
+      async function executeAndCheckClaimAll(
+        context: TestContext,
+        balanceRecords: BalanceRecord[]
+      ): Promise<ClaimResult> {
+        await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, balanceRecords));
+        const actualClaimResult = await context.yieldStreamer.claimAllPreview(user.address);
+        claimRequest.balanceRecords = balanceRecords;
+        const expectedClaimResult = defineExpectedClaimResult(claimRequest);
+        compareClaimPreviews(actualClaimResult, expectedClaimResult);
+        return actualClaimResult;
+      }
+
       it("Token balances are according to case 1", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
-        await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, claimRequest.balanceRecords));
         await proveTx(context.balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
-        const expectedClaimResult: ClaimResult = defineExpectedClaimResult(claimRequest);
-        const actualClaimResult = await context.yieldStreamer.claimAllPreview(user.address);
-        compareClaimPreviews(actualClaimResult, expectedClaimResult);
+        await executeAndCheckClaimAll(context, claimRequest.balanceRecords);
+      });
+
+      it("Token min daily balance becomes larger than yield-generating daily balance limit", async () => {
+        claimRequest.claimDay = YIELD_STREAMER_INIT_DAY + 3;
+        const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+        const balanceRecords: BalanceRecord[] = [
+          { day: BALANCE_TRACKER_INIT_DAY, value: BigNumber.from(500_000_000_000) },
+          { day: BALANCE_TRACKER_INIT_DAY + 1, value: BigNumber.from(150_000_000_000) },
+          { day: BALANCE_TRACKER_INIT_DAY + 2, value: BigNumber.from(300_000_000_000) }
+        ];
+        expect(balanceRecords[0].value).to.be.greaterThan(MAX_DAILY_BALANCE_LIMIT);
+        expect(balanceRecords[1].value).to.be.lessThan(MAX_DAILY_BALANCE_LIMIT);
+        expect(balanceRecords[2].value).to.be.greaterThan(MAX_DAILY_BALANCE_LIMIT);
+
+        await proveTx(context.balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
+        const actualClaimResult1 = await executeAndCheckClaimAll(context, balanceRecords);
+
+        balanceRecords[1].value = balanceRecords[1].value.add(BigNumber.from(50_000_000_000));
+        expect(balanceRecords[1].value).to.be.equal(MAX_DAILY_BALANCE_LIMIT);
+        const actualClaimResult2 = await executeAndCheckClaimAll(context, balanceRecords);
+
+        balanceRecords[1].value = balanceRecords[1].value.add(BigNumber.from(50_000_000_000));
+        expect(balanceRecords[1].value).to.be.greaterThan(MAX_DAILY_BALANCE_LIMIT);
+        const actualClaimResult3 = await executeAndCheckClaimAll(context, balanceRecords);
+
+        expect(actualClaimResult1.yield).to.be.lessThan(actualClaimResult2.yield);
+        compareClaimPreviews(actualClaimResult2, actualClaimResult3);
       });
     });
   });
@@ -1885,7 +1939,7 @@ describe("Contract 'YieldStreamer'", async () => {
             BALANCE_TRACKER_INIT_DAY - 1,
             BALANCE_TRACKER_INIT_DAY
           )
-        ).to.reverted
+        ).to.reverted;
       });
 
       it("The 'to' day is prior the 'from' day", async () => {
@@ -1896,7 +1950,7 @@ describe("Contract 'YieldStreamer'", async () => {
             YIELD_STREAMER_INIT_DAY,
             YIELD_STREAMER_INIT_DAY - 1
           )
-        ).to.reverted
+        ).to.reverted;
       });
 
       it("There are no balance records", async () => {
@@ -1907,7 +1961,7 @@ describe("Contract 'YieldStreamer'", async () => {
             YIELD_STREAMER_INIT_DAY,
             YIELD_STREAMER_INIT_DAY
           )
-        ).to.reverted
+        ).to.reverted;
       });
     });
   });

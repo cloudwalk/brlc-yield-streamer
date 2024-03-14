@@ -29,7 +29,7 @@ contract YieldStreamer is
     uint240 public constant RATE_FACTOR = 1000000000000;
 
     /// @notice The fee rate that is used to calculate the fee amount
-    uint240 public constant FEE_RATE = 225000000000;
+    uint240 public constant FEE_RATE = 0;
 
     /// @notice The coefficient used to round the yield, fee and other related values
     /// @dev e.g. value `12345678` will be rounded upward to `12350000` and down to `12340000`
@@ -37,6 +37,9 @@ contract YieldStreamer is
 
     /// @notice The minimum amount that is allowed to be claimed
     uint256 public constant MIN_CLAIM_AMOUNT = 1000000;
+
+    /// @notice The maximum daily balance cap allowed for calculation claim
+    uint256 public constant MAX_DAILY_BALANCE_LIMIT = 200000000000;
 
     /// @notice The initial state of the next claim for an account
     struct ClaimState {
@@ -792,7 +795,7 @@ contract YieldStreamer is
 
         // Define first day yield and initial sum yield
         uint256 sumYield = 0;
-        uint256 dayYield = (_getMinimumInRange(possibleBalanceByDays, 0, periodLength) * rateValue) / RATE_FACTOR;
+        uint256 dayYield = (_defineDailyBalance(possibleBalanceByDays, 0, periodLength) * rateValue) / RATE_FACTOR;
         if (dayYield > nextClaimDebit) {
             sumYield = dayYield - nextClaimDebit;
         }
@@ -807,7 +810,7 @@ contract YieldStreamer is
                     nextRateDay = yieldRates[++rateIndex].effectiveDay;
                 }
             }
-            uint256 minBalance = _getMinimumInRange(possibleBalanceByDays, i, i + periodLength);
+            uint256 minBalance = _defineDailyBalance(possibleBalanceByDays, i, i + periodLength);
             dayYield = (minBalance * rateValue) / RATE_FACTOR;
             sumYield += dayYield;
             possibleBalanceByDays[i + periodLength] += sumYield;
@@ -816,13 +819,16 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Searches a minimum value in an array for a specified range of indexes
+     * @notice Defines a value that will be used to calculate interest.
+     *
+     * Function searches a minimum value in an array for a specified range of indexes
+     * that should not be greater than the limit.
      *
      * @param array The array to search in
      * @param begIndex The index of the array from which the search begins, including that index
      * @param endIndex The index of the array at which the search ends, excluding that index
      */
-    function _getMinimumInRange(
+    function _defineDailyBalance(
         uint256[] memory array,
         uint256 begIndex,
         uint256 endIndex
@@ -834,6 +840,11 @@ contract YieldStreamer is
                 min = value;
             }
         }
+
+        if (min > MAX_DAILY_BALANCE_LIMIT) {
+            min = MAX_DAILY_BALANCE_LIMIT;
+        }
+
         return min;
     }
 
