@@ -29,7 +29,7 @@ contract YieldStreamer is
     uint240 public constant RATE_FACTOR = 1000000000000;
 
     /// @notice The fee rate that is used to calculate the fee amount
-    uint240 public constant FEE_RATE = 225000000000;
+    uint240 public constant FEE_RATE = 0;
 
     /// @notice The coefficient used to round the yield, fee and other related values
     /// @dev e.g. value `12345678` will be rounded upward to `12350000` and down to `12340000`
