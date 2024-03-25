@@ -34,16 +34,16 @@ const config: HardhatUserConfig = {
       accounts: process.env.CW_TESTNET_PK
         ? [process.env.CW_TESTNET_PK]
         : {
-          mnemonic: process.env.CW_TESTNET_MNEMONIC || ""
-        }
+            mnemonic: process.env.CW_TESTNET_MNEMONIC || ""
+          }
     },
     cw_mainnet: {
       url: process.env.CW_MAINNET_RPC,
       accounts: process.env.CW_MAINNET_PK
         ? [process.env.CW_MAINNET_PK]
         : {
-          mnemonic: process.env.CW_MAINNET_MNEMONIC || ""
-        }
+            mnemonic: process.env.CW_MAINNET_MNEMONIC || ""
+          }
     }
   },
   gasReporter: {
