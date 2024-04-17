@@ -717,13 +717,13 @@ describe("Contract 'YieldStreamer'", async () => {
     it("Executes as expected and emits the corresponding events", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
-      expect(await context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
+      await expect(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
         .to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
-        .withArgs(user.address, GROUP_ONE_ID)
-        .to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
-        .withArgs(user2.address, GROUP_ONE_ID)
-        .to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
-        .withArgs(user3.address, GROUP_ONE_ID);
+        .withArgs(GROUP_ONE_ID, user.address)
+        .and.to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
+        .withArgs(GROUP_ONE_ID, user2.address)
+        .and.to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
+        .withArgs(GROUP_ONE_ID, user3.address);
     });
 
     it("Is reverted if caller is not the blocklister", async () => {
