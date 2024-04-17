@@ -737,9 +737,9 @@ describe("Contract 'YieldStreamer'", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
       await proveTx(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, [user3.address]));
-      expect(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
+      await expect(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
         .to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_GROUP_ALREADY_ASSIGNED)
-        .withArgs(user.address);
+        .withArgs(user3.address);
     });
   });
 
