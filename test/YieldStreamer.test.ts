@@ -1406,7 +1406,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals a half of the possible primary yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(expectedClaimAllResult.primaryYield.div(2));
@@ -1416,7 +1415,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals the possible primary yield plus a third of the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(
@@ -1428,7 +1426,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount is greater than possible primary yield plus the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
         const expectedShortfall = roundUpward(BigNumber.from(1));
 
@@ -1500,7 +1497,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals a half of the possible primary yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(expectedClaimAllResult.primaryYield.div(2));
@@ -1510,7 +1506,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals the possible primary yield plus a half of the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(
@@ -1549,7 +1544,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount is greater than possible primary yield plus the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
         const expectedShortfall = roundUpward(BigNumber.from(1));
 
