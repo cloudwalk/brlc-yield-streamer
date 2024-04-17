@@ -462,7 +462,7 @@ async function checkYieldRates(
 
     const actualRecord: YieldRateRecord = {
       effectiveDay: actualYieldRateRecords[i][0],
-      value: BigNumber.from(actualYieldRateRecords[i][1]),
+      value: BigNumber.from(actualYieldRateRecords[i][1])
     };
 
     expect(actualRecord.effectiveDay).to.equal(
@@ -717,13 +717,13 @@ describe("Contract 'YieldStreamer'", async () => {
     it("Executes as expected and emits the corresponding events", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
-      expect(await context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
+      await expect(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
         .to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
-        .withArgs(user.address, GROUP_ONE_ID)
-        .to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
-        .withArgs(user2.address, GROUP_ONE_ID)
-        .to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
-        .withArgs(user3.address, GROUP_ONE_ID);
+        .withArgs(GROUP_ONE_ID, user.address)
+        .and.to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
+        .withArgs(GROUP_ONE_ID, user2.address)
+        .and.to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
+        .withArgs(GROUP_ONE_ID, user3.address);
     });
 
     it("Is reverted if caller is not the blocklister", async () => {
@@ -737,9 +737,9 @@ describe("Contract 'YieldStreamer'", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
       await proveTx(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, [user3.address]));
-      expect(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
+      await expect(context.yieldStreamer.connect(blocklister).assignAccountGroup(GROUP_ONE_ID, users))
         .to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_GROUP_ALREADY_ASSIGNED)
-        .withArgs(user.address);
+        .withArgs(user3.address);
     });
   });
 
@@ -1176,7 +1176,7 @@ describe("Contract 'YieldStreamer'", async () => {
       ).revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_YIELD_RATE_INVALID_EFFECTIVE_DAY);
 
       recordIndex = 1;
-      //check revert if effective day is less than previous day
+      // Check revert if effective day is less than previous day
       await expect(
         context.yieldStreamer.updateYieldRate(
           ZERO_GROUP_ID,
@@ -1406,7 +1406,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals a half of the possible primary yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(expectedClaimAllResult.primaryYield.div(2));
@@ -1416,7 +1415,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals the possible primary yield plus a third of the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(
@@ -1428,7 +1426,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount is greater than possible primary yield plus the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
         const expectedShortfall = roundUpward(BigNumber.from(1));
 
@@ -1500,7 +1497,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals a half of the possible primary yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(expectedClaimAllResult.primaryYield.div(2));
@@ -1510,7 +1506,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount equals the possible primary yield plus a half of the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
 
         claimRequest.amount = roundDown(
@@ -1549,7 +1544,6 @@ describe("Contract 'YieldStreamer'", async () => {
       it("The amount is greater than possible primary yield plus the possible stream yield", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
-        claimRequest.amount = BIG_NUMBER_MAX_UINT256;
         const expectedClaimAllResult: ClaimResult = defineExpectedClaimResult(claimRequest);
         const expectedShortfall = roundUpward(BigNumber.from(1));
 
@@ -1669,7 +1663,7 @@ describe("Contract 'YieldStreamer'", async () => {
       );
     });
 
-    it("Case 2: four consecutive partial claims, two stop at some day, two stop at yesterday, then revert", async () => {
+    it("Case 2: four partial claims, two stop at some day, two stop at yesterday, then revert", async () => {
       const context: TestContext = await setUpFixture(deployAndConfigureContracts);
       await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, balanceRecords));
 
