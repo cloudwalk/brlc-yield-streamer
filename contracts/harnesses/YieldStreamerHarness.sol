@@ -41,7 +41,7 @@ contract YieldStreamerHarness is YieldStreamer, HarnessAdministrable {
      * @param day The day to set in the claim state of the account
      * @param debit The debit to set in the claim state of the account
      */
-    function setClaimState(address account, uint16 day, uint240 debit) external onlyHarnessAdmin {
+    function setClaimState(address account, uint16 day, uint64 debit) external onlyHarnessAdmin {
         ClaimState storage claim = _claims[account];
         claim.day = day;
         claim.debit = debit;

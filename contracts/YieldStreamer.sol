@@ -43,8 +43,10 @@ contract YieldStreamer is
 
     /// @notice The initial state of the next claim for an account
     struct ClaimState {
-        uint16 day;    // The index of the day from which the yield will be calculated next time
-        uint240 debit; // The amount of yield that is already considered claimed for this day
+        uint16 day;   // The index of the first day from which the yield will be calculated next time
+        uint64 debit; // The amount of yield already claimed for the first day
+        uint64 stash; // The amount of yield that was accrued in the past up to the start of the first day
+        // uint112 __reserved; // Reserved for future use until the end of the storage slot
     }
 
     /// @notice The parameters of a look-back period
@@ -241,6 +243,11 @@ contract YieldStreamer is
     error SafeCastOverflowUint16();
 
     /**
+     * @notice Thrown when the value does not fit in the type uint64
+     */
+    error SafeCastOverflowUint64();
+
+    /**
      * @notice Thrown when the value does not fit in the type uint240
      */
     error SafeCastOverflowUint240();
@@ -348,20 +355,40 @@ contract YieldStreamer is
      * - Can only be called by an account with the blocklister role
      * - For each account the new group must not be the same as the current one
      *
-     * Emits an {AccountGroupAssigned} event
+     * Emits an {AccountGroupAssigned} event for each account
      *
      * @param groupId The hash identifier of the account group
      * @param accounts The array of accounts to be assigned to the group
      */
     function assignAccountGroup(bytes32 groupId, address[] memory accounts) external onlyBlocklister {
         for (uint256 i = 0; i < accounts.length; i++) {
-            if (_groups[accounts[i]] == groupId) {
-                revert GroupAlreadyAssigned(accounts[i]);
-            }
+            address account = accounts[i];
+            _checkGroupAssignment(account, groupId);
+            _assignGroup(account, groupId);
+        }
+    }
 
-            _groups[accounts[i]] = groupId;
-
-            emit AccountGroupAssigned(groupId, accounts[i]);
+    /**
+     * @notice Assigns accounts to a group with yield accrual for each account before group switching
+     *
+     * Requirements:
+     *
+     * - Can only be called by an account with the blocklister role
+     * - For each account the new group must not be the same as the current one
+     *
+     * Emits an {AccountGroupAssigned} event for each account
+     *
+     * Emits an {YieldAccrued} event for each account
+     *
+     * @param groupId The hash identifier of the account group
+     * @param accounts The array of accounts to accrue yield and to be assigned to the group
+     */
+    function assignAccountGroupWithAccrual(bytes32 groupId, address[] memory accounts) external onlyBlocklister {
+        for (uint256 i = 0; i < accounts.length; i++) {
+            address account = accounts[i];
+            _checkGroupAssignment(account, groupId);
+            _accrue(account);
+            _assignGroup(account, groupId);
         }
     }
 
@@ -550,6 +577,18 @@ contract YieldStreamer is
             revert ClaimAmountNonRounded();
         }
         _claim(_msgSender(), amount);
+    }
+
+    /**
+     * @inheritdoc IYieldStreamer
+     *
+     * @dev The contract must not be paused
+     */
+    function accrueBatch(address[] calldata accounts) external whenNotPaused {
+        uint256 count = accounts.length;
+        for (uint256 i = 0; i < count; ++i) {
+            _accrue(accounts[i]);
+        }
     }
 
     // -------------------- BalanceTracker Functions -----------------
@@ -753,6 +792,27 @@ contract YieldStreamer is
     // -------------------- Internal Functions -----------------------
 
     /**
+     * @notice Checks the ability to assign a group to an account
+     * @param account The address of the account to check
+     * @param groupId The ID of the group to check
+     */
+    function _checkGroupAssignment(address account, bytes32 groupId) internal view {
+        if (_groups[account] == groupId) {
+            revert GroupAlreadyAssigned(account);
+        }
+    }
+
+    /**
+     * @notice Assigns a group to an account
+     * @param account The address of the account
+     * @param groupId The ID of the group
+     */
+    function _assignGroup(address account, bytes32 groupId) internal {
+        emit AccountGroupAssigned(groupId, account);
+        _groups[account] = groupId;
+    }
+
+    /**
      * @notice Calculates the daily yield and possible balance of an account for a specified period of days
      *
      * @param account The address of an account to calculate the yield and possible balance for
@@ -859,6 +919,14 @@ contract YieldStreamer is
         ClaimState memory state = _claims[account];
         ClaimResult memory result;
         result.prevClaimDebit = state.debit;
+        result.prevStash = state.stash;
+        result.primaryYield = state.stash;
+
+        if (state.stash > amount) {
+            result.nextStash = state.stash - amount;
+        } else {
+            result.nextStash = 0;
+        }
 
         if (state.day != --day) {
             /**
@@ -952,7 +1020,7 @@ contract YieldStreamer is
             }
         } else {
             /**
-             * The account has already made a claim today
+             * A claim or accrual has been already made for the account today
              * Therefore, recalculate the yield only for today
              */
 
@@ -971,18 +1039,21 @@ contract YieldStreamer is
                 result.streamYield -= state.debit;
             }
 
+            uint256 rawYield = result.streamYield + result.primaryYield;
             if (amount != type(uint256).max) {
-                if (amount > result.streamYield) {
-                    result.shortfall = amount - result.streamYield;
+                if (amount > rawYield) {
+                    result.shortfall = amount - rawYield;
                     result.nextClaimDebit += result.streamYield;
                     // result.yield is zero at this point
                 } else {
-                    result.nextClaimDebit += amount;
+                    if (amount > result.primaryYield) {
+                        result.nextClaimDebit += amount - result.primaryYield;
+                    } // else the amount is taken from the stash, no changes in the debit are required
                     result.yield = amount;
                 }
             } else {
                 result.nextClaimDebit += result.streamYield;
-                result.yield = _roundDown(result.streamYield);
+                result.yield = _roundDown(rawYield);
             }
         }
 
@@ -1005,12 +1076,40 @@ contract YieldStreamer is
         }
 
         _claims[account].day = _toUint16(preview.nextClaimDay);
-        _claims[account].debit = _toUint240(preview.nextClaimDebit);
+        _claims[account].debit = _toUint64(preview.nextClaimDebit);
+        _claims[account].stash = _toUint64(preview.nextStash);
 
         IERC20Upgradeable(token()).transfer(_feeReceiver, preview.fee);
         IERC20Upgradeable(token()).transfer(account, preview.yield - preview.fee);
 
         emit Claim(account, preview.yield, preview.fee);
+    }
+
+    /**
+     * @notice Accrues all available yield for an account and stores it as a stash for the next claim
+     *
+     * The yield is accrued from the {ClaimState.day} day until the beginning of yesterday
+     *
+     * @param account The address of an account to claim the yield for
+     */
+    function _accrue(address account) internal {
+        ClaimResult memory preview = _claimPreview(account, type(uint256).max);
+        ClaimState storage claimState = _claims[account];
+        uint256 nextStash = preview.primaryYield; // Use only the primary yield as the stash for the next claim
+
+        emit YieldAccrued(
+            account,
+            nextStash,
+            claimState.stash, // prevStash
+            preview.nextClaimDay,
+            preview.firstYieldDay, // firstYieldDay
+            0, // nextClaimDebit
+            preview.prevClaimDebit
+        );
+
+        claimState.day = _toUint16(preview.nextClaimDay);
+        claimState.debit = 0; // No debit after accrual because only the primary yield is stored as the stash
+        claimState.stash = _toUint64(nextStash);
     }
 
     /**
@@ -1023,6 +1122,18 @@ contract YieldStreamer is
         }
 
         return uint240(value);
+    }
+
+    /**
+     * @dev Returns the downcasted uint64 from uint256, reverting on
+     * overflow (when the input is greater than largest uint64)
+     */
+    function _toUint64(uint256 value) internal pure returns (uint64) {
+        if (value > type(uint64).max) {
+            revert SafeCastOverflowUint64();
+        }
+
+        return uint64(value);
     }
 
     /**
