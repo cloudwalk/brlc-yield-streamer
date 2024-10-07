@@ -18,7 +18,7 @@ contract BalanceTracker is OwnableUpgradeable, IBalanceTracker, IERC20Hook {
     uint256 public constant NEGATIVE_TIME_SHIFT = 3 hours;
 
     /// @notice The address of the hooked token contract
-    address public constant TOKEN = address(0x5FbDB2315678afecb367f032d93F642f64180aa3);
+    address public constant TOKEN = address(0x1b470f79D29839dBCCa9c61c06941E27B3aFbF6d);
 
     /**
      * @notice The day-value pair
