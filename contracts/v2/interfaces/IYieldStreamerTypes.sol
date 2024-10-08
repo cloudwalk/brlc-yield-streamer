@@ -4,10 +4,10 @@ pragma solidity 0.8.16;
 
 interface IYieldStreamerTypes {
     struct YieldState {
-        uint256 timestampAtLastUpdate;
-        uint256 balanceAtLastUpdate;
-        uint256 accruedYield;
-        uint256 streamYield;
+        uint64 timestampAtLastUpdate;
+        uint64 balanceAtLastUpdate;
+        uint64 accruedYield;
+        uint64 streamYield;
     }
 
     struct YieldRate {

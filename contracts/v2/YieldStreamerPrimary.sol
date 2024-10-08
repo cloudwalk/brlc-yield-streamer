@@ -5,12 +5,17 @@ pragma solidity 0.8.16;
 import "hardhat/console.sol";
 
 import { IERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import { SafeCastUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 
 import { IYieldStreamerPrimary } from "./interfaces/IYieldStreamerPrimary.sol";
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
 import { IERC20Hook } from "../interfaces/IERC20Hook.sol";
 
 contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IERC20Hook {
+    // -------------------- Libraries -------------------- //
+
+    using SafeCastUpgradeable for uint256;
+
     // -------------------- Structs -------------------- //
 
     struct Range {
@@ -116,14 +121,14 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
-        state.balanceAtLastUpdate += amount;
+        state.balanceAtLastUpdate += amount.toUint64();
     }
 
     function _decreaseTokenBalance(address account, uint256 amount) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
-        state.balanceAtLastUpdate -= amount;
+        state.balanceAtLastUpdate -= amount.toUint64();
     }
 
     function _accrueYield(
@@ -173,9 +178,9 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
 
         emit YieldStreamer_YieldAccrued(account, accruedYield, streamYield, state.accruedYield, state.streamYield);
 
-        state.timestampAtLastUpdate = _blockTimestamp();
-        state.accruedYield = accruedYield;
-        state.streamYield = streamYield;
+        state.timestampAtLastUpdate = _blockTimestamp().toUint64();
+        state.accruedYield = accruedYield.toUint64();
+        state.streamYield = streamYield.toUint64();
 
         if (_debug) {
             console.log("");
@@ -203,11 +208,11 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
 
         if (amount > state.accruedYield) {
             emit YieldStreamer_YieldTransferred(account, state.accruedYield, amount - state.accruedYield);
-            state.streamYield -= (amount - state.accruedYield);
+            state.streamYield -= (amount - state.accruedYield).toUint64();
             state.accruedYield = 0;
         } else {
             emit YieldStreamer_YieldTransferred(account, amount, 0);
-            state.accruedYield -= amount;
+            state.accruedYield -= amount.toUint64();
         }
 
         IERC20Upgradeable(_yieldStreamerStorage().underlyingToken).transfer(account, amount);
