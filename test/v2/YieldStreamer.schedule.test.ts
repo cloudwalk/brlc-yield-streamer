@@ -38,7 +38,7 @@ interface YieldRate {
  * @returns The yield state of the account.
  */
 async function getYieldState(yieldStreamer: Contract, account: string): Promise<YieldState> {
-  const state = await yieldStreamer._yieldStates(account);
+  const state = await yieldStreamer.getYieldState(account);
   return {
     timestampAtLastUpdate: state.timestampAtLastUpdate.toNumber(),
     balanceAtLastUpdate: state.balanceAtLastUpdate,

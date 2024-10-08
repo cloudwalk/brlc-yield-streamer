@@ -7,19 +7,22 @@ import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
 
 contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStreamerConfiguration {
     function assignGroup(bytes32 groupId, address[] memory accounts) external {
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+
         for (uint256 i = 0; i < accounts.length; i++) {
-            if (_groups[accounts[i]] == groupId) {
+            if ($.groups[accounts[i]] == groupId) {
                 revert YieldStreamer_GroupAlreadyAssigned(accounts[i]);
             }
 
-            _groups[accounts[i]] = groupId;
+            $.groups[accounts[i]] = groupId;
 
             emit YieldStreamer_GroupAssigned(groupId, accounts[i]);
         }
     }
 
     function addYieldRate(bytes32 groupId, uint256 effectiveDay, uint256 rateValue) external {
-        YieldRate[] storage yieldRates = _yieldRates[groupId];
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldRate[] storage yieldRates = $.yieldRates[groupId];
 
         if (yieldRates.length > 0 && yieldRates[yieldRates.length - 1].effectiveDay >= effectiveDay) {
             revert YieldStreamer_YieldRateInvalidEffectiveDay();
@@ -28,13 +31,14 @@ contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStreamerConfi
             revert YieldStreamer_YieldRateValueAlreadyConfigured();
         }
 
-        yieldRates.push(YieldRate({ effectiveDay: effectiveDay, value: rateValue }));
+        $.yieldRates[groupId].push(YieldRate({ effectiveDay: effectiveDay, value: rateValue }));
 
         emit YieldStreamer_YieldRateAdded(groupId, effectiveDay, rateValue);
     }
 
     function updateYieldRate(bytes32 groupId, uint256 effectiveDay, uint256 rateValue, uint256 recordIndex) external {
-        YieldRate[] storage yieldRates = _yieldRates[groupId];
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldRate[] storage yieldRates = $.yieldRates[groupId];
 
         if (recordIndex >= yieldRates.length) {
             revert YieldStreamer_YieldRateWrongIndex();

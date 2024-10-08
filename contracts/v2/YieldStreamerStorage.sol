@@ -10,12 +10,20 @@ contract YieldStreamerStorage is IYieldStreamerTypes {
 
     uint256 public constant NEGATIVE_TIME_SHIFT = 0;
 
-    address public underlyingToken;
+    bytes32 private constant _YIELD_STREAMER_PRIMARY_STORAGE_LOCATION =
+        0x3ffa2d1fa1d7e119f4100ba678d1140b9dc5cebd13fdaaded481a6cf43d1a800;
 
-    mapping(address => bytes32) internal _groups;
+    /// @custom:storage-location cloudwalk.yieldstreamer.primary.storage
+    struct YieldStreamerStorageLayout {
+        address underlyingToken;
+        mapping(address => bytes32) groups;
+        mapping(address => YieldState) yieldStates;
+        mapping(bytes32 => YieldRate[]) yieldRates;
+    }
 
-    mapping(address => YieldState) public _yieldStates;
-
-    mapping(bytes32 => YieldRate[]) internal _yieldRates;
-
+    function _yieldStreamerStorage() internal pure returns (YieldStreamerStorageLayout storage $) {
+        assembly {
+            $.slot := _YIELD_STREAMER_PRIMARY_STORAGE_LOCATION
+        }
+    }
 }

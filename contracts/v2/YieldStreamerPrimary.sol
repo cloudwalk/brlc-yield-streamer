@@ -57,19 +57,22 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
     // -------------------- Functions -------------------- //
 
     function claimAllFor(address account) external {
-        YieldState storage state = _yieldStates[account];
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState storage state = $.yieldStates[account];
         _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
         _transferYield(account, state.accruedYield, state);
     }
 
     function claimAmountFor(address account, uint256 amount) external {
-        YieldState storage state = _yieldStates[account];
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState storage state = $.yieldStates[account];
         _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
         _transferYield(account, amount, state);
     }
 
     function getYieldState(address account) external view returns (YieldState memory state) {
-        state = _yieldStates[account];
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        state = $.yieldStates[account];
     }
 
     function getYieldBalance(address account) external view returns (YieldBalance memory balance) {
@@ -77,12 +80,13 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
     }
 
     function getClaimPreview(address account) public view returns (ClaimPreview memory preview) {
-        YieldState memory state = _yieldStates[account];
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState memory state = $.yieldStates[account];
         uint256 fromTimestamp = state.timestampAtLastUpdate;
         uint256 toTimestamp = _blockTimestamp();
 
         (YieldRate[] memory inRangeYieldRates, uint256 inRangeStartIndex) = _inRangeYieldRates(
-            _yieldRates[_groups[account]],
+            $.yieldRates[$.groups[account]],
             fromTimestamp,
             toTimestamp
         );
@@ -109,13 +113,15 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
     // -------------------- Internal -------------------- //
 
     function _increaseTokenBalance(address account, uint256 amount) internal {
-        YieldState storage state = _yieldStates[account];
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState storage state = $.yieldStates[account];
         _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
         state.balanceAtLastUpdate += amount;
     }
 
     function _decreaseTokenBalance(address account, uint256 amount) internal {
-        YieldState storage state = _yieldStates[account];
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState storage state = $.yieldStates[account];
         _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
         state.balanceAtLastUpdate -= amount;
     }
@@ -126,6 +132,8 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
         uint256 fromTimestamp,
         uint256 toTimestamp
     ) internal {
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+
         bool _debug = true;
 
         if (_debug) {
@@ -148,7 +156,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
         }
 
         (YieldRate[] memory inRangeYieldRates, uint256 inRangeStartIndex) = _inRangeYieldRates(
-            _yieldRates[_groups[account]],
+            $.yieldRates[$.groups[account]],
             fromTimestamp,
             toTimestamp
         );
@@ -206,7 +214,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             state.accruedYield -= amount;
         }
 
-        IERC20Upgradeable(underlyingToken).transfer(account, amount);
+        IERC20Upgradeable(_yieldStreamerStorage().underlyingToken).transfer(account, amount);
     }
 
     function _compoundYield(
