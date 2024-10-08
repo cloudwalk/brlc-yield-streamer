@@ -5,13 +5,19 @@ pragma solidity 0.8.16;
 import { IYieldStreamerConfiguration } from "./interfaces/IYieldStreamerConfiguration.sol";
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
 
-contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStreamerConfiguration {
-    function assignGroup(bytes32 groupId, address[] memory accounts) external {
+abstract contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStreamerConfiguration {
+    function assignGroup(bytes32 groupId, address[] memory accounts, bool accrueYield) external {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        uint256 toTimestamp = _blockTimestamp();
 
         for (uint256 i = 0; i < accounts.length; i++) {
             if ($.groups[accounts[i]] == groupId) {
                 revert YieldStreamer_GroupAlreadyAssigned(accounts[i]);
+            }
+
+            if (accrueYield) {
+                YieldState storage state = $.yieldStates[accounts[i]];
+                _accrueYield(accounts[i], state, state.timestampAtLastUpdate, toTimestamp);
             }
 
             $.groups[accounts[i]] = groupId;
@@ -80,4 +86,13 @@ contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStreamerConfi
         yieldRate.effectiveDay = effectiveDay;
         yieldRate.value = rateValue;
     }
+
+    function _accrueYield(
+        address account,
+        YieldState storage state,
+        uint256 fromTimestamp,
+        uint256 toTimestamp
+    ) internal virtual;
+
+    function _blockTimestamp() internal view virtual returns (uint256);
 }

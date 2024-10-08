@@ -23,7 +23,7 @@ interface IYieldStreamerConfiguration {
 
     // -------------------- Functions -------------------- //
 
-    function assignGroup(bytes32 groupId, address[] memory accounts) external;
+    function assignGroup(bytes32 groupId, address[] memory accounts, bool accrueYield) external;
 
     function addYieldRate(bytes32 groupId, uint256 effectiveDay, uint256 rateValue) external;
 

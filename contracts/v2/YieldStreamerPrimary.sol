@@ -131,7 +131,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
         YieldState storage state,
         uint256 fromTimestamp,
         uint256 toTimestamp
-    ) internal {
+    ) internal virtual {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldRate[] storage yieldRates = $.yieldRates[$.groups[account]];
 
