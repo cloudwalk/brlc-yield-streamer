@@ -6,12 +6,14 @@ import { IYieldStreamerConfiguration } from "./interfaces/IYieldStreamerConfigur
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
 
 abstract contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStreamerConfiguration {
-    function assignGroup(uint256 groupId, address[] memory accounts, bool accrueYield) external {
+    function assignGroup(uint32 groupId, address[] memory accounts, bool accrueYield) external {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         uint256 toTimestamp = _blockTimestamp();
 
         for (uint256 i = 0; i < accounts.length; i++) {
-            if ($.groups[accounts[i]] == groupId) {
+            Group storage group = $.groups[accounts[i]];
+
+            if (group.id == groupId) {
                 revert YieldStreamer_GroupAlreadyAssigned(accounts[i]);
             }
 
@@ -20,13 +22,13 @@ abstract contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStre
                 _accrueYield(accounts[i], state, state.timestampAtLastUpdate, toTimestamp);
             }
 
-            $.groups[accounts[i]] = groupId;
+            group.id = groupId;
 
             emit YieldStreamer_GroupAssigned(groupId, accounts[i]);
         }
     }
 
-    function addYieldRate(uint256 groupId, uint256 effectiveDay, uint256 rateValue) external {
+    function addYieldRate(uint32 groupId, uint256 effectiveDay, uint256 rateValue) external {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldRate[] storage yieldRates = $.yieldRates[groupId];
 
@@ -50,7 +52,7 @@ abstract contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStre
         emit YieldStreamer_YieldRateAdded(groupId, effectiveDay, rateValue);
     }
 
-    function updateYieldRate(uint256 groupId, uint256 effectiveDay, uint256 rateValue, uint256 recordIndex) external {
+    function updateYieldRate(uint32 groupId, uint256 effectiveDay, uint256 rateValue, uint256 recordIndex) external {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldRate[] storage yieldRates = $.yieldRates[groupId];
 

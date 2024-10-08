@@ -23,9 +23,9 @@ interface IYieldStreamerConfiguration {
 
     // -------------------- Functions -------------------- //
 
-    function assignGroup(uint256 groupId, address[] memory accounts, bool accrueYield) external;
+    function assignGroup(uint32 groupId, address[] memory accounts, bool accrueYield) external;
 
-    function addYieldRate(uint256 groupId, uint256 effectiveDay, uint256 rateValue) external;
+    function addYieldRate(uint32 groupId, uint256 effectiveDay, uint256 rateValue) external;
 
-    function updateYieldRate(uint256 groupId, uint256 effectiveDay, uint256 rateValue, uint256 recordIndex) external;
+    function updateYieldRate(uint32 groupId, uint256 effectiveDay, uint256 rateValue, uint256 recordIndex) external;
 }

@@ -90,7 +90,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
 
     function getClaimPreview(address account) public view returns (ClaimPreview memory preview) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldRate[] storage yieldRates = $.yieldRates[$.groups[account]];
+        YieldRate[] storage yieldRates = $.yieldRates[$.groups[account].id];
         YieldState memory state = $.yieldStates[account];
         uint256 fromTimestamp = state.timestampAtLastUpdate;
         uint256 toTimestamp = _blockTimestamp();
@@ -138,7 +138,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
         uint256 toTimestamp
     ) internal virtual {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldRate[] storage yieldRates = $.yieldRates[$.groups[account]];
+        YieldRate[] storage yieldRates = $.yieldRates[$.groups[account].id];
 
         bool _debug = true;
 

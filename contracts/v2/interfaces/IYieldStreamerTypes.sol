@@ -14,4 +14,9 @@ interface IYieldStreamerTypes {
         uint256 effectiveDay;
         uint256 value;
     }
+
+    struct Group {
+        uint32 id;
+        // uint224 __reserved; // Reserved for future use until the end of the storage slot.
+    }
 }
