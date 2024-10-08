@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import { ethers, network, upgrades } from "hardhat";
-import { BigNumber, Contract } from "ethers";
+import { Contract } from "ethers";
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 // Constants for rate calculations and time units
-const RATE_FACTOR = BigNumber.from(10).pow(9); // Factor used in yield rate calculations (10^9)
+const RATE_FACTOR = BigInt(1000000000); // Factor used in yield rate calculations (10^9)
 const DAY = 24 * 60 * 60; // Number of seconds in a day
 const HOUR = 60 * 60; // Number of seconds in an hour
 
@@ -40,7 +40,7 @@ interface YieldRate {
 async function getYieldState(yieldStreamer: Contract, account: string): Promise<YieldState> {
   const state = await yieldStreamer.getYieldState(account);
   return {
-    timestampAtLastUpdate: state.timestampAtLastUpdate.toNumber(),
+    timestampAtLastUpdate: state.timestampAtLastUpdate,
     balanceAtLastUpdate: state.balanceAtLastUpdate,
     accruedYield: state.accruedYield,
     streamYield: state.streamYield
@@ -110,7 +110,7 @@ async function testActionSchedule(
  * @param yieldRates The list of yield rates to add.
  */
 async function addYieldRates(yieldStreamer: Contract, yieldRates: YieldRate[]): Promise<void> {
-  const zeroBytes32 = ethers.constants.HashZero; // Placeholder for the yield rate ID
+  const zeroBytes32 = ethers.ZeroHash; // Placeholder for the yield rate ID
   for (const yieldRate of yieldRates) {
     await yieldStreamer.addYieldRate(zeroBytes32, yieldRate.effectiveDay, yieldRate.rateValue);
   }
@@ -157,7 +157,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
     const mockToken = "0x0000000000000000000000000000000000000001";
     const YieldStreamerV2 = await ethers.getContractFactory("YieldStreamerV2");
     const yieldStreamer: Contract = await upgrades.deployProxy(YieldStreamerV2, [mockToken]);
-    await yieldStreamer.deployed();
+    await yieldStreamer.waitForDeployment();
     return yieldStreamer;
   }
 
@@ -167,18 +167,18 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
 
       // Simulated action schedule of deposits
       const actionSchedule: ActionItem[] = [
-        { day: 1, hour: 6, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 1, hour: 12, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 1, hour: 18, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 2, hour: 6, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 2, hour: 12, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 2, hour: 18, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 5, hour: 6, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 5, hour: 12, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 5, hour: 18, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 6, hour: 6, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 6, hour: 12, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 6, hour: 18, amount: BigNumber.from(1000), type: "deposit" }
+        { day: 1, hour: 6, amount: BigInt(1000), type: "deposit" },
+        { day: 1, hour: 12, amount: BigInt(1000), type: "deposit" },
+        { day: 1, hour: 18, amount: BigInt(1000), type: "deposit" },
+        { day: 2, hour: 6, amount: BigInt(1000), type: "deposit" },
+        { day: 2, hour: 12, amount: BigInt(1000), type: "deposit" },
+        { day: 2, hour: 18, amount: BigInt(1000), type: "deposit" },
+        { day: 5, hour: 6, amount: BigInt(1000), type: "deposit" },
+        { day: 5, hour: 12, amount: BigInt(1000), type: "deposit" },
+        { day: 5, hour: 18, amount: BigInt(1000), type: "deposit" },
+        { day: 6, hour: 6, amount: BigInt(1000), type: "deposit" },
+        { day: 6, hour: 12, amount: BigInt(1000), type: "deposit" },
+        { day: 6, hour: 18, amount: BigInt(1000), type: "deposit" }
       ];
 
       // Expected yield states after each action
@@ -186,92 +186,92 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
         {
           // Action 1: Deposit 1000 at Day 1, 6 AM
           timestampAtLastUpdate: 0, // Will be updated during the test
-          balanceAtLastUpdate: BigNumber.from(1000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(0)
+          balanceAtLastUpdate: BigInt(1000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(0)
         },
         {
           // Action 2: Deposit 1000 at Day 1, 12 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(2000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(100) // Assuming yield accrual logic
+          balanceAtLastUpdate: BigInt(2000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(100) // Assuming yield accrual logic
         },
         {
           // Action 3, Deposit 1000 at Day 1, 6 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(3000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(300)
+          balanceAtLastUpdate: BigInt(3000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(300)
         },
         {
           // Action 4, Deposit 1000 at Day 2, 6 AM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(4000),
-          accruedYield: BigNumber.from(600),
-          streamYield: BigNumber.from(360)
+          balanceAtLastUpdate: BigInt(4000),
+          accruedYield: BigInt(600),
+          streamYield: BigInt(360)
         },
         {
           // Action 5, Deposit 1000 at Day 2, 12 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(5000),
-          accruedYield: BigNumber.from(600),
-          streamYield: BigNumber.from(820)
+          balanceAtLastUpdate: BigInt(5000),
+          accruedYield: BigInt(600),
+          streamYield: BigInt(820)
         },
         {
           // Action 6, Deposit 1000 at Day 2, 6 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(6000),
-          accruedYield: BigNumber.from(600),
-          streamYield: BigNumber.from(1380)
+          balanceAtLastUpdate: BigInt(6000),
+          accruedYield: BigInt(600),
+          streamYield: BigInt(1380)
         },
         {
           // Action 7, Deposit 1000 at Day 5, 6 AM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(7000),
-          accruedYield: BigNumber.from(10934),
-          streamYield: BigNumber.from(1693)
+          balanceAtLastUpdate: BigInt(7000),
+          accruedYield: BigInt(10934),
+          streamYield: BigInt(1693)
         },
         {
           // Action 8, Deposit 1000 at Day 5, 12 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(8000),
-          accruedYield: BigNumber.from(10934),
-          streamYield: BigNumber.from(3486)
+          balanceAtLastUpdate: BigInt(8000),
+          accruedYield: BigInt(10934),
+          streamYield: BigInt(3486)
         },
         {
           // Action 9, Deposit 1000 at Day 5, 6 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(9000),
-          accruedYield: BigNumber.from(10934),
-          streamYield: BigNumber.from(5379)
+          balanceAtLastUpdate: BigInt(9000),
+          accruedYield: BigInt(10934),
+          streamYield: BigInt(5379)
         },
         {
           // Action 10, Deposit 1000 at Day 6, 6 AM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(10000),
-          accruedYield: BigNumber.from(18306),
-          streamYield: BigNumber.from(2730)
+          balanceAtLastUpdate: BigInt(10000),
+          accruedYield: BigInt(18306),
+          streamYield: BigInt(2730)
         },
         {
           // Action 11, Deposit 1000 at Day 6, 12 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(11000),
-          accruedYield: BigNumber.from(18306),
-          streamYield: BigNumber.from(5560)
+          balanceAtLastUpdate: BigInt(11000),
+          accruedYield: BigInt(18306),
+          streamYield: BigInt(5560)
         },
         {
           // Action 12, Deposit 1000 at Day 6, 6 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(12000),
-          accruedYield: BigNumber.from(18306),
-          streamYield: BigNumber.from(8490)
+          balanceAtLastUpdate: BigInt(12000),
+          accruedYield: BigInt(18306),
+          streamYield: BigInt(8490)
         }
       ];
 
       // Yield rates to be added to the contract
       const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: RATE_FACTOR.mul(40).div(100) } // 40% yield rate
+        { effectiveDay: 0, rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) } // 40% yield rate
       ];
 
       // Add yield rates to the contract
@@ -286,18 +286,18 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
 
       // Simulated deposit schedule
       const actionSchedule: ActionItem[] = [
-        { day: 1, hour: 6, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 1, hour: 12, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 1, hour: 18, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 2, hour: 6, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 2, hour: 12, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 2, hour: 18, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 5, hour: 6, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 5, hour: 12, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 5, hour: 18, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 6, hour: 6, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 6, hour: 12, amount: BigNumber.from(1000), type: "deposit" },
-        { day: 6, hour: 18, amount: BigNumber.from(1000), type: "deposit" }
+        { day: 1, hour: 6, amount: BigInt(1000), type: "deposit" },
+        { day: 1, hour: 12, amount: BigInt(1000), type: "deposit" },
+        { day: 1, hour: 18, amount: BigInt(1000), type: "deposit" },
+        { day: 2, hour: 6, amount: BigInt(1000), type: "deposit" },
+        { day: 2, hour: 12, amount: BigInt(1000), type: "deposit" },
+        { day: 2, hour: 18, amount: BigInt(1000), type: "deposit" },
+        { day: 5, hour: 6, amount: BigInt(1000), type: "deposit" },
+        { day: 5, hour: 12, amount: BigInt(1000), type: "deposit" },
+        { day: 5, hour: 18, amount: BigInt(1000), type: "deposit" },
+        { day: 6, hour: 6, amount: BigInt(1000), type: "deposit" },
+        { day: 6, hour: 12, amount: BigInt(1000), type: "deposit" },
+        { day: 6, hour: 18, amount: BigInt(1000), type: "deposit" }
       ];
 
       // Expected YieldStates from the simulation
@@ -305,95 +305,95 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
         {
           // Action 1, Deposit 1000 at Day 1, 6 AM
           timestampAtLastUpdate: 0, // Will be updated during the test
-          balanceAtLastUpdate: BigNumber.from(1000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(0)
+          balanceAtLastUpdate: BigInt(1000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(0)
         },
         {
           // Action 2, Deposit 1000 at Day 1, 12 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(2000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(100)
+          balanceAtLastUpdate: BigInt(2000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(100)
         },
         {
           // Action 3, Deposit 1000 at Day 1, 6 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(3000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(300)
+          balanceAtLastUpdate: BigInt(3000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(300)
         },
         {
           // Action 4, Deposit 1000 at Day 2, 6 AM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(4000),
-          accruedYield: BigNumber.from(600),
-          streamYield: BigNumber.from(360)
+          balanceAtLastUpdate: BigInt(4000),
+          accruedYield: BigInt(600),
+          streamYield: BigInt(360)
         },
         {
           // Action 5, Deposit 1000 at Day 2, 12 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(5000),
-          accruedYield: BigNumber.from(600),
-          streamYield: BigNumber.from(820)
+          balanceAtLastUpdate: BigInt(5000),
+          accruedYield: BigInt(600),
+          streamYield: BigInt(820)
         },
         {
           // Action 6, Deposit 1000 at Day 2, 6 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(6000),
-          accruedYield: BigNumber.from(600),
-          streamYield: BigNumber.from(1380)
+          balanceAtLastUpdate: BigInt(6000),
+          accruedYield: BigInt(600),
+          streamYield: BigInt(1380)
         },
         {
           // Action 7, Deposit 1000 at Day 5, 6 AM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(7000),
-          accruedYield: BigNumber.from(21993),
-          streamYield: BigNumber.from(2799)
+          balanceAtLastUpdate: BigInt(7000),
+          accruedYield: BigInt(21993),
+          streamYield: BigInt(2799)
         },
         {
           // Action 8, Deposit 1000 at Day 5, 12 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(8000),
-          accruedYield: BigNumber.from(21993),
-          streamYield: BigNumber.from(5698)
+          balanceAtLastUpdate: BigInt(8000),
+          accruedYield: BigInt(21993),
+          streamYield: BigInt(5698)
         },
         {
           // Action 9, Deposit 1000 at Day 5, 6 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(9000),
-          accruedYield: BigNumber.from(21993),
-          streamYield: BigNumber.from(8697)
+          balanceAtLastUpdate: BigInt(9000),
+          accruedYield: BigInt(21993),
+          streamYield: BigInt(8697)
         },
         {
           // Action 10, Deposit 1000 at Day 6, 6 AM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(10000),
-          accruedYield: BigNumber.from(33789),
-          streamYield: BigNumber.from(4278)
+          balanceAtLastUpdate: BigInt(10000),
+          accruedYield: BigInt(33789),
+          streamYield: BigInt(4278)
         },
         {
           // Action 11, Deposit 1000 at Day 6, 12 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(11000),
-          accruedYield: BigNumber.from(33789),
-          streamYield: BigNumber.from(8656)
+          balanceAtLastUpdate: BigInt(11000),
+          accruedYield: BigInt(33789),
+          streamYield: BigInt(8656)
         },
         {
           // Action 12, Deposit 1000 at Day 6, 6 PM
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(12000),
-          accruedYield: BigNumber.from(33789),
-          streamYield: BigNumber.from(13134)
+          balanceAtLastUpdate: BigInt(12000),
+          accruedYield: BigInt(33789),
+          streamYield: BigInt(13134)
         }
       ];
 
       // Yield rates to be added to the contract
       const currentBlockTime = Number(await time.latest());
       const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: RATE_FACTOR.mul(40).div(100) }, // 40% yield rate
-        { effectiveDay: calculateEffectiveDay(currentBlockTime, 3), rateValue: RATE_FACTOR.mul(80).div(100) }, // 80% yield rate
-        { effectiveDay: calculateEffectiveDay(currentBlockTime, 5), rateValue: RATE_FACTOR.mul(40).div(100) } // 40% yield rate
+        { effectiveDay: 0, rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) }, // 40% yield rate
+        { effectiveDay: calculateEffectiveDay(currentBlockTime, 3), rateValue: RATE_FACTOR * BigInt(80) / BigInt(100) }, // 80% yield rate
+        { effectiveDay: calculateEffectiveDay(currentBlockTime, 5), rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) } // 40% yield rate
       ];
 
       // Add yield rates to the contract
@@ -410,18 +410,18 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
 
       // Simulated action schedule of deposits and withdrawals
       const actionSchedule: ActionItem[] = [
-        { day: 1, hour: 6, amount: BigNumber.from(11000), type: "deposit" },
-        { day: 1, hour: 12, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 1, hour: 18, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 2, hour: 6, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 2, hour: 12, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 2, hour: 18, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 5, hour: 6, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 5, hour: 12, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 5, hour: 18, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 6, hour: 6, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 6, hour: 12, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 6, hour: 18, amount: BigNumber.from(1000), type: "withdraw" }
+        { day: 1, hour: 6, amount: BigInt(11000), type: "deposit" },
+        { day: 1, hour: 12, amount: BigInt(1000), type: "withdraw" },
+        { day: 1, hour: 18, amount: BigInt(1000), type: "withdraw" },
+        { day: 2, hour: 6, amount: BigInt(1000), type: "withdraw" },
+        { day: 2, hour: 12, amount: BigInt(1000), type: "withdraw" },
+        { day: 2, hour: 18, amount: BigInt(1000), type: "withdraw" },
+        { day: 5, hour: 6, amount: BigInt(1000), type: "withdraw" },
+        { day: 5, hour: 12, amount: BigInt(1000), type: "withdraw" },
+        { day: 5, hour: 18, amount: BigInt(1000), type: "withdraw" },
+        { day: 6, hour: 6, amount: BigInt(1000), type: "withdraw" },
+        { day: 6, hour: 12, amount: BigInt(1000), type: "withdraw" },
+        { day: 6, hour: 18, amount: BigInt(1000), type: "withdraw" }
       ];
 
       // Expected yield states after each action
@@ -429,92 +429,92 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
         {
           // Action 1, Day 1, 6 AM, Deposit 11000
           timestampAtLastUpdate: 0, // Will be updated during the test
-          balanceAtLastUpdate: BigNumber.from(11000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(0)
+          balanceAtLastUpdate: BigInt(11000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(0)
         },
         {
           // Action 2, Day 1, 12 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(10000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(1100)
+          balanceAtLastUpdate: BigInt(10000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(1100)
         },
         {
           // Action 3, Day 1, 6 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(9000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(2100)
+          balanceAtLastUpdate: BigInt(9000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(2100)
         },
         {
           // Action 4, Day 2, 6 AM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(8000),
-          accruedYield: BigNumber.from(3000),
-          streamYield: BigNumber.from(1200)
+          balanceAtLastUpdate: BigInt(8000),
+          accruedYield: BigInt(3000),
+          streamYield: BigInt(1200)
         },
         {
           // Action 5, Day 2, 12 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(7000),
-          accruedYield: BigNumber.from(3000),
-          streamYield: BigNumber.from(2300)
+          balanceAtLastUpdate: BigInt(7000),
+          accruedYield: BigInt(3000),
+          streamYield: BigInt(2300)
         },
         {
           // Action 6, Day 2, 6 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(6000),
-          accruedYield: BigNumber.from(3000),
-          streamYield: BigNumber.from(3300)
+          balanceAtLastUpdate: BigInt(6000),
+          accruedYield: BigInt(3000),
+          streamYield: BigInt(3300)
         },
         {
           // Action 7, Day 5, 6 AM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(5000),
-          accruedYield: BigNumber.from(19872),
-          streamYield: BigNumber.from(2587)
+          balanceAtLastUpdate: BigInt(5000),
+          accruedYield: BigInt(19872),
+          streamYield: BigInt(2587)
         },
         {
           // Action 8, Day 5, 12 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(4000),
-          accruedYield: BigNumber.from(19872),
-          streamYield: BigNumber.from(5074)
+          balanceAtLastUpdate: BigInt(4000),
+          accruedYield: BigInt(19872),
+          streamYield: BigInt(5074)
         },
         {
           // Action 9, Day 5, 6 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(3000),
-          accruedYield: BigNumber.from(19872),
-          streamYield: BigNumber.from(7461)
+          balanceAtLastUpdate: BigInt(3000),
+          accruedYield: BigInt(19872),
+          streamYield: BigInt(7461)
         },
         {
           // Action 10, Day 6, 6 AM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(2000),
-          accruedYield: BigNumber.from(29620),
-          streamYield: BigNumber.from(3262)
+          balanceAtLastUpdate: BigInt(2000),
+          accruedYield: BigInt(29620),
+          streamYield: BigInt(3262)
         },
         {
           // Action 11, Day 6, 12 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(1000),
-          accruedYield: BigNumber.from(29620),
-          streamYield: BigNumber.from(6424)
+          balanceAtLastUpdate: BigInt(1000),
+          accruedYield: BigInt(29620),
+          streamYield: BigInt(6424)
         },
         {
           // Action 12, Day 6, 6 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(0),
-          accruedYield: BigNumber.from(29620),
-          streamYield: BigNumber.from(9486)
+          balanceAtLastUpdate: BigInt(0),
+          accruedYield: BigInt(29620),
+          streamYield: BigInt(9486)
         }
       ];
 
       // Yield rates to be added to the contract
       const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: RATE_FACTOR.mul(40).div(100) } // 40% yield rate
+        { effectiveDay: 0, rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) } // 40% yield rate
       ];
 
       // Add yield rates to the contract
@@ -529,18 +529,18 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
 
       // Simulated action schedule
       const actionSchedule: ActionItem[] = [
-        { day: 1, hour: 6, amount: BigNumber.from(11000), type: "deposit" },
-        { day: 1, hour: 12, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 1, hour: 18, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 2, hour: 6, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 2, hour: 12, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 2, hour: 18, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 5, hour: 6, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 5, hour: 12, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 5, hour: 18, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 6, hour: 6, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 6, hour: 12, amount: BigNumber.from(1000), type: "withdraw" },
-        { day: 6, hour: 18, amount: BigNumber.from(1000), type: "withdraw" }
+        { day: 1, hour: 6, amount: BigInt(11000), type: "deposit" },
+        { day: 1, hour: 12, amount: BigInt(1000), type: "withdraw" },
+        { day: 1, hour: 18, amount: BigInt(1000), type: "withdraw" },
+        { day: 2, hour: 6, amount: BigInt(1000), type: "withdraw" },
+        { day: 2, hour: 12, amount: BigInt(1000), type: "withdraw" },
+        { day: 2, hour: 18, amount: BigInt(1000), type: "withdraw" },
+        { day: 5, hour: 6, amount: BigInt(1000), type: "withdraw" },
+        { day: 5, hour: 12, amount: BigInt(1000), type: "withdraw" },
+        { day: 5, hour: 18, amount: BigInt(1000), type: "withdraw" },
+        { day: 6, hour: 6, amount: BigInt(1000), type: "withdraw" },
+        { day: 6, hour: 12, amount: BigInt(1000), type: "withdraw" },
+        { day: 6, hour: 18, amount: BigInt(1000), type: "withdraw" }
       ];
 
       // Expected YieldStates from the simulation
@@ -548,95 +548,95 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
         {
           // Action 1, Day 1, 6 AM, Deposit 11000
           timestampAtLastUpdate: 0, // Will be updated during the test
-          balanceAtLastUpdate: BigNumber.from(11000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(0)
+          balanceAtLastUpdate: BigInt(11000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(0)
         },
         {
           // Action 2, Day 1, 12 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(10000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(1100)
+          balanceAtLastUpdate: BigInt(10000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(1100)
         },
         {
           // Action 3, Day 1, 6 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(9000),
-          accruedYield: BigNumber.from(0),
-          streamYield: BigNumber.from(2100)
+          balanceAtLastUpdate: BigInt(9000),
+          accruedYield: BigInt(0),
+          streamYield: BigInt(2100)
         },
         {
           // Action 4, Day 2, 6 AM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(8000),
-          accruedYield: BigNumber.from(3000),
-          streamYield: BigNumber.from(1200)
+          balanceAtLastUpdate: BigInt(8000),
+          accruedYield: BigInt(3000),
+          streamYield: BigInt(1200)
         },
         {
           // Action 5, Day 2, 12 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(7000),
-          accruedYield: BigNumber.from(3000),
-          streamYield: BigNumber.from(2300)
+          balanceAtLastUpdate: BigInt(7000),
+          accruedYield: BigInt(3000),
+          streamYield: BigInt(2300)
         },
         {
           // Action 6, Day 2, 6 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(6000),
-          accruedYield: BigNumber.from(3000),
-          streamYield: BigNumber.from(3300)
+          balanceAtLastUpdate: BigInt(6000),
+          accruedYield: BigInt(3000),
+          streamYield: BigInt(3300)
         },
         {
           // Action 7, Day 5, 6 AM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(5000),
-          accruedYield: BigNumber.from(36768),
-          streamYield: BigNumber.from(4276)
+          balanceAtLastUpdate: BigInt(5000),
+          accruedYield: BigInt(36768),
+          streamYield: BigInt(4276)
         },
         {
           // Action 8, Day 5, 12 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(4000),
-          accruedYield: BigNumber.from(36768),
-          streamYield: BigNumber.from(8452)
+          balanceAtLastUpdate: BigInt(4000),
+          accruedYield: BigInt(36768),
+          streamYield: BigInt(8452)
         },
         {
           // Action 9, Day 5, 6 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(3000),
-          accruedYield: BigNumber.from(36768),
-          streamYield: BigNumber.from(12528)
+          balanceAtLastUpdate: BigInt(3000),
+          accruedYield: BigInt(36768),
+          streamYield: BigInt(12528)
         },
         {
           // Action 10, Day 6, 6 AM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(2000),
-          accruedYield: BigNumber.from(53272),
-          streamYield: BigNumber.from(5627)
+          balanceAtLastUpdate: BigInt(2000),
+          accruedYield: BigInt(53272),
+          streamYield: BigInt(5627)
         },
         {
           // Action 11, Day 6, 12 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(1000),
-          accruedYield: BigNumber.from(53272),
-          streamYield: BigNumber.from(11154)
+          balanceAtLastUpdate: BigInt(1000),
+          accruedYield: BigInt(53272),
+          streamYield: BigInt(11154)
         },
         {
           // Action 12, Day 6, 6 PM, Withdraw 1000
           timestampAtLastUpdate: 0,
-          balanceAtLastUpdate: BigNumber.from(0),
-          accruedYield: BigNumber.from(53272),
-          streamYield: BigNumber.from(16581)
+          balanceAtLastUpdate: BigInt(0),
+          accruedYield: BigInt(53272),
+          streamYield: BigInt(16581)
         }
       ];
 
       // Yield rates to be added to the contract
       const currentBlockTime = Number(await time.latest());
       const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: RATE_FACTOR.mul(40).div(100) }, // 40% yield rate
-        { effectiveDay: calculateEffectiveDay(currentBlockTime, 3), rateValue: RATE_FACTOR.mul(80).div(100) }, // 80% yield rate
-        { effectiveDay: calculateEffectiveDay(currentBlockTime, 5), rateValue: RATE_FACTOR.mul(40).div(100) } // 40% yield rate
+        { effectiveDay: 0, rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) }, // 40% yield rate
+        { effectiveDay: calculateEffectiveDay(currentBlockTime, 3), rateValue: RATE_FACTOR * BigInt(80) / BigInt(100) }, // 80% yield rate
+        { effectiveDay: calculateEffectiveDay(currentBlockTime, 5), rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) } // 40% yield rate
       ];
 
       // Add yield rates to the contract
