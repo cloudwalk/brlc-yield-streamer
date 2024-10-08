@@ -15,17 +15,17 @@ interface IYieldStreamerConfiguration {
 
     // -------------------- Events -------------------- //
 
-    event YieldStreamer_GroupAssigned(bytes32 indexed groupId, address indexed account);
+    event YieldStreamer_GroupAssigned(uint256 indexed groupId, address indexed account);
 
-    event YieldStreamer_YieldRateAdded(bytes32 indexed groupId, uint256 effectiveDay, uint256 rateValue);
+    event YieldStreamer_YieldRateAdded(uint256 indexed groupId, uint256 effectiveDay, uint256 rateValue);
 
-    event YieldStreamer_YieldRateUpdated(bytes32 indexed groupId, uint256 effectiveDay, uint256 rateValue, uint256 index);
+    event YieldStreamer_YieldRateUpdated(uint256 indexed groupId, uint256 effectiveDay, uint256 rateValue, uint256 index);
 
     // -------------------- Functions -------------------- //
 
-    function assignGroup(bytes32 groupId, address[] memory accounts, bool accrueYield) external;
+    function assignGroup(uint256 groupId, address[] memory accounts, bool accrueYield) external;
 
-    function addYieldRate(bytes32 groupId, uint256 effectiveDay, uint256 rateValue) external;
+    function addYieldRate(uint256 groupId, uint256 effectiveDay, uint256 rateValue) external;
 
-    function updateYieldRate(bytes32 groupId, uint256 effectiveDay, uint256 rateValue, uint256 recordIndex) external;
+    function updateYieldRate(uint256 groupId, uint256 effectiveDay, uint256 rateValue, uint256 recordIndex) external;
 }

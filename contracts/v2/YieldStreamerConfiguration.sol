@@ -6,7 +6,7 @@ import { IYieldStreamerConfiguration } from "./interfaces/IYieldStreamerConfigur
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
 
 abstract contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStreamerConfiguration {
-    function assignGroup(bytes32 groupId, address[] memory accounts, bool accrueYield) external {
+    function assignGroup(uint256 groupId, address[] memory accounts, bool accrueYield) external {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         uint256 toTimestamp = _blockTimestamp();
 
@@ -26,7 +26,7 @@ abstract contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStre
         }
     }
 
-    function addYieldRate(bytes32 groupId, uint256 effectiveDay, uint256 rateValue) external {
+    function addYieldRate(uint256 groupId, uint256 effectiveDay, uint256 rateValue) external {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldRate[] storage yieldRates = $.yieldRates[groupId];
 
@@ -50,7 +50,7 @@ abstract contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStre
         emit YieldStreamer_YieldRateAdded(groupId, effectiveDay, rateValue);
     }
 
-    function updateYieldRate(bytes32 groupId, uint256 effectiveDay, uint256 rateValue, uint256 recordIndex) external {
+    function updateYieldRate(uint256 groupId, uint256 effectiveDay, uint256 rateValue, uint256 recordIndex) external {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldRate[] storage yieldRates = $.yieldRates[groupId];
 

@@ -16,9 +16,9 @@ contract YieldStreamerStorage is IYieldStreamerTypes {
     /// @custom:storage-location cloudwalk.yieldstreamer.primary.storage
     struct YieldStreamerStorageLayout {
         address underlyingToken;
-        mapping(address => bytes32) groups;
+        mapping(address => uint256) groups;
         mapping(address => YieldState) yieldStates;
-        mapping(bytes32 => YieldRate[]) yieldRates;
+        mapping(uint256 => YieldRate[]) yieldRates;
     }
 
     function _yieldStreamerStorage() internal pure returns (YieldStreamerStorageLayout storage $) {
