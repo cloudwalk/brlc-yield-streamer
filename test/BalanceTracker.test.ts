@@ -4,7 +4,7 @@ import { BigNumber, Contract, ContractFactory, Wallet } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Block, TransactionReceipt, TransactionResponse } from "@ethersproject/abstract-provider";
-import { getLatestBlockTimestamp, increaseBlockTimestamp, proveTx, setBlockTimestampTo } from "../test-utils/eth";
+import { getLatestBlockTimestamp, increaseBlockTimestamp, proveTx } from "../test-utils/eth";
 
 const HOUR_IN_SECONDS = 3600;
 const DAY_IN_SECONDS = 24 * HOUR_IN_SECONDS;
@@ -284,7 +284,7 @@ describe("Contract 'BalanceTracker'", async () => {
     [deployer, attacker, user1, user2] = await ethers.getSigners();
     tokenMock = await deployTokenMockFromSpecialAccount(deployer);
     await increaseBlockchainTimeToSpecificRelativeDay(1);
-    balanceTrackerFactory = await ethers.getContractFactory("BalanceTracker");
+    balanceTrackerFactory = await ethers.getContractFactory("BalanceTrackerHarness");
   });
 
   async function deployAndConfigureContracts(): Promise<{
@@ -293,6 +293,7 @@ describe("Contract 'BalanceTracker'", async () => {
   }> {
     const balanceTracker: Contract = await upgrades.deployProxy(balanceTrackerFactory.connect(deployer));
     await balanceTracker.deployed();
+    await proveTx(balanceTracker.configureHarnessAdmin(deployer.address, true));
     const txReceipt: TransactionReceipt = await balanceTracker.deployTransaction.wait();
     const balanceTrackerInitDay = await getTxDayIndex(txReceipt);
     await proveTx(tokenMock.setBalance(user1.address, INIT_TOKEN_BALANCE));
@@ -524,17 +525,10 @@ describe("Contract 'BalanceTracker'", async () => {
         });
 
         it("The transfer day index is greater than 65536", async () => {
-          // Check the ability to reset the block timestamp for non-Hardhat networks as
-          // the blockchain state cannot be restored using the "loadFixture()" function
-          // and so all other tests might fail because of that.
-          if (network.name !== "hardhat") {
-            await setBlockTimestampTo(0);
-          }
           const context: TestContext = await initTestContext();
 
-          const currentTimestampInSeconds: number = await getLatestBlockTimestamp();
-          const currentDay = toDayIndex(currentTimestampInSeconds);
-          await increaseBlockchainTimeToSpecificRelativeDay(65537 - currentDay);
+          await proveTx(context.balanceTracker.setUsingRealBlockTimestamps(false));
+          await proveTx(context.balanceTracker.setBlockTimestamp(65537, NEGATIVE_TIME_SHIFT));
 
           await expect(
             tokenMock.simulateHookedTransfer(
@@ -545,15 +539,7 @@ describe("Contract 'BalanceTracker'", async () => {
             )
           ).to.be.revertedWithCustomError(context.balanceTracker, REVERT_ERROR_SAFE_CAST_OVERFLOW_UINT16);
 
-          // Reset the block timestamp for non-Hardhat networks as
-          // the blockchain state cannot be restored using the "loadFixture()" function
-          // and so all other tests might fail because of that.
-          if (network.name !== "hardhat") {
-            await setBlockTimestampTo(0);
-          }
-
-          // Reset the blockchain state to ensure further tests run correctly.
-          await initTestContext();
+          await proveTx(context.balanceTracker.setUsingRealBlockTimestamps(true));
         });
       });
     });

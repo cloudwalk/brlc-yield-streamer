@@ -11,14 +11,11 @@ export async function getLatestBlockTimestamp(): Promise<number> {
   return getBlockTimestamp("latest");
 }
 
-export async function setBlockTimestampTo(targetTimestamp: number) {
+export async function increaseBlockTimestampTo(targetTimestamp: number) {
   if (network.name === "hardhat") {
-    await time.setNextBlockTimestamp(targetTimestamp);
+    await time.increaseTo(targetTimestamp);
   } else if (network.name === "stratus") {
-    await network.provider.request({
-      method: "evm_setNextBlockTimestamp",
-      params: [targetTimestamp]
-    });
+    await ethers.provider.send("evm_setNextBlockTimestamp", [targetTimestamp]);
     await ethers.provider.send("evm_mine", []);
   } else {
     throw new Error(`Setting block timestamp for the current blockchain is not supported: ${network.name}`);
@@ -30,7 +27,7 @@ export async function increaseBlockTimestamp(increaseInSeconds: number) {
     throw new Error(`The block timestamp increase must be greater than zero, but it equals: ${increaseInSeconds}`);
   }
   const currentTimestamp = await getLatestBlockTimestamp();
-  await setBlockTimestampTo(currentTimestamp + increaseInSeconds);
+  await increaseBlockTimestampTo(currentTimestamp + increaseInSeconds);
 }
 
 export async function proveTx(txResponsePromise: Promise<TransactionResponse>): Promise<TransactionReceipt> {

@@ -15,6 +15,7 @@ contract BalanceTrackerHarness is BalanceTracker, HarnessAdministrable {
     struct BalanceTrackerHarnessState {
         uint256 currentBlockTimestamp;
         bool usingRealBlockTimestamps;
+        bool initialized;
     }
 
     /// @notice The memory slot used to store the contract state
@@ -64,6 +65,7 @@ contract BalanceTrackerHarness is BalanceTracker, HarnessAdministrable {
     function setBlockTimestamp(uint256 day, uint256 time) external onlyHarnessAdmin {
         BalanceTrackerHarnessState storage state = _getBalanceTrackerHarnessState();
         state.currentBlockTimestamp = day * (24 * 60 * 60) + time;
+        state.initialized = true;
     }
 
     /**
@@ -74,6 +76,7 @@ contract BalanceTrackerHarness is BalanceTracker, HarnessAdministrable {
     function setUsingRealBlockTimestamps(bool newValue) external onlyOwner {
         BalanceTrackerHarnessState storage state = _getBalanceTrackerHarnessState();
         state.usingRealBlockTimestamps = newValue;
+        state.initialized = true;
     }
 
     /**
@@ -104,7 +107,7 @@ contract BalanceTrackerHarness is BalanceTracker, HarnessAdministrable {
     /// @notice Returns the block timestamp according to the contract settings: the real time or a previously set time
     function _blockTimestamp() internal view virtual override returns (uint256) {
         BalanceTrackerHarnessState storage state = _getBalanceTrackerHarnessState();
-        if (state.usingRealBlockTimestamps) {
+        if (state.usingRealBlockTimestamps || !state.initialized) {
             return super._blockTimestamp();
         } else {
             uint256 blockTimestamp = state.currentBlockTimestamp;
