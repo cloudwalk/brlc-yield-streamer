@@ -24,9 +24,17 @@ contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStreamerConfi
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldRate[] storage yieldRates = $.yieldRates[groupId];
 
+        // Ensure first item in the array always starts with effectiveDay 0
+        if (yieldRates.length == 0 && effectiveDay != 0) {
+            revert YieldStreamer_YieldRateInvalidEffectiveDay();
+        }
+
+        // Ensure that rates are always in ascending order
         if (yieldRates.length > 0 && yieldRates[yieldRates.length - 1].effectiveDay >= effectiveDay) {
             revert YieldStreamer_YieldRateInvalidEffectiveDay();
         }
+
+        // Ensure that rates are not duplicate
         if (yieldRates.length > 0 && yieldRates[yieldRates.length - 1].value == rateValue) {
             revert YieldStreamer_YieldRateValueAlreadyConfigured();
         }
