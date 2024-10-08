@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 
-import { IERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import { SafeCastUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import { IYieldStreamerPrimary } from "./interfaces/IYieldStreamerPrimary.sol";
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
@@ -14,7 +14,7 @@ import { IERC20Hook } from "../interfaces/IERC20Hook.sol";
 contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IERC20Hook {
     // -------------------- Libraries -------------------- //
 
-    using SafeCastUpgradeable for uint256;
+    using SafeCast for uint256;
 
     // -------------------- Structs -------------------- //
 
@@ -215,7 +215,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             state.accruedYield -= amount.toUint64();
         }
 
-        IERC20Upgradeable(_yieldStreamerStorage().underlyingToken).transfer(account, amount);
+        IERC20(_yieldStreamerStorage().underlyingToken).transfer(account, amount);
     }
 
     function _compoundYield(
