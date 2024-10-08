@@ -13,14 +13,18 @@ import { IERC20Hook } from "../interfaces/IERC20Hook.sol";
 contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IERC20Hook {
     // -------------------- Structs -------------------- //
 
+    struct Range {
+        uint256 startIndex;
+        uint256 endIndex;
+    }
+
     struct CalculateYieldParams {
         uint256 fromTimestamp;
         uint256 toTimestamp;
         uint256 initialBalance;
         uint256 initialAccruedYield;
         uint256 initialStreamYield;
-        uint256 startIndex;
-        YieldRate[] yieldRates;
+        Range yieldRateRange;
     }
 
     // -------------------- IERC20Hook -------------------- //
@@ -81,15 +85,12 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
 
     function getClaimPreview(address account) public view returns (ClaimPreview memory preview) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldRate[] storage yieldRates = $.yieldRates[$.groups[account]];
         YieldState memory state = $.yieldStates[account];
         uint256 fromTimestamp = state.timestampAtLastUpdate;
         uint256 toTimestamp = _blockTimestamp();
 
-        (YieldRate[] memory inRangeYieldRates, uint256 inRangeStartIndex) = _inRangeYieldRates(
-            $.yieldRates[$.groups[account]],
-            fromTimestamp,
-            toTimestamp
-        );
+        Range memory yieldRateRange = _inRangeYieldRates(yieldRates, fromTimestamp, toTimestamp);
 
         CalculateYieldParams memory calculateParams = CalculateYieldParams(
             fromTimestamp,
@@ -97,16 +98,15 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             state.balanceAtLastUpdate,
             state.accruedYield,
             state.streamYield,
-            inRangeStartIndex,
-            inRangeYieldRates
+            yieldRateRange
         );
 
-        YieldResult[] memory calculateResults = _calculateYield(calculateParams);
+        YieldResult[] memory calculateResults = _calculateYield(calculateParams, yieldRates);
         (uint256 accruedYield, uint256 streamYield) = _aggregateYield(calculateResults);
         accruedYield += state.accruedYield;
 
         preview.balance = YieldBalance(accruedYield, streamYield);
-        preview.yieldRates = _truncateArray(inRangeYieldRates, inRangeStartIndex);
+        preview.yieldRates = _truncateArray(yieldRateRange, yieldRates);
         preview.yieldResults = calculateResults;
     }
 
@@ -133,6 +133,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
         uint256 toTimestamp
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldRate[] storage yieldRates = $.yieldRates[$.groups[account]];
 
         bool _debug = true;
 
@@ -155,11 +156,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             console.log("_accrueYield | - streamYield: %s", state.streamYield);
         }
 
-        (YieldRate[] memory inRangeYieldRates, uint256 inRangeStartIndex) = _inRangeYieldRates(
-            $.yieldRates[$.groups[account]],
-            fromTimestamp,
-            toTimestamp
-        );
+        Range memory yieldRateRange = _inRangeYieldRates(yieldRates, fromTimestamp, toTimestamp);
 
         CalculateYieldParams memory calculateParams = CalculateYieldParams(
             fromTimestamp,
@@ -167,11 +164,10 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             state.balanceAtLastUpdate,
             state.accruedYield,
             state.streamYield,
-            inRangeStartIndex,
-            inRangeYieldRates
+            yieldRateRange
         );
 
-        YieldResult[] memory calculateResults = _calculateYield(calculateParams);
+        YieldResult[] memory calculateResults = _calculateYield(calculateParams, yieldRates);
         (uint256 accruedYield, uint256 streamYield) = _aggregateYield(calculateResults);
         accruedYield += state.accruedYield;
 
@@ -373,9 +369,10 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
     }
 
     function _calculateYield(
-        CalculateYieldParams memory params // Format: prevent collapse
-    ) internal pure returns (YieldResult[] memory result) {
-        uint256 ratePeriods = params.yieldRates.length - params.startIndex;
+        CalculateYieldParams memory params,
+        YieldRate[] storage yieldRates // Format: prevent collapse
+    ) internal view returns (YieldResult[] memory result) {
+        uint256 ratePeriods = params.yieldRateRange.endIndex - params.yieldRateRange.startIndex + 1;
         uint256 localFromTimestamp = params.fromTimestamp;
         uint256 localToTimestamp = params.toTimestamp;
 
@@ -407,12 +404,12 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
                 _remainingSeconds(localToTimestamp)
             );
             console.log("_calculateYield | - yieldRates:");
-            for (uint256 i = params.startIndex; i < params.yieldRates.length; i++) {
+            for (uint256 i = params.yieldRateRange.startIndex; i <= params.yieldRateRange.endIndex; i++) {
                 console.log(
                     "_calculateYield | -- [%s] day: %s, value: %s",
                     i,
-                    params.yieldRates[i].effectiveDay,
-                    params.yieldRates[i].value
+                    yieldRates[i].effectiveDay,
+                    yieldRates[i].value
                 );
             }
         }
@@ -441,7 +438,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
                 console.log("_calculateYield | Scenario 1: One yield rate in range");
                 console.log("");
                 console.log("_calculateYield | Calculating yield:");
-                console.log("_calculateYield | - yieldRate: %s", params.yieldRates[params.startIndex].value);
+                console.log("_calculateYield | - yieldRate: %s", yieldRates[params.yieldRateRange.startIndex].value);
                 console.log(
                     "_calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
                     localFromTimestamp,
@@ -460,7 +457,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             result[0] = _compoundYield(
                 localFromTimestamp,
                 localToTimestamp,
-                params.yieldRates[params.startIndex].value,
+                yieldRates[params.yieldRateRange.startIndex].value,
                 params.initialBalance + params.initialAccruedYield,
                 params.initialStreamYield
             );
@@ -487,12 +484,12 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
 
             result = new YieldResult[](2);
             localFromTimestamp = params.fromTimestamp;
-            localToTimestamp = params.yieldRates[params.startIndex + 1].effectiveDay * 1 days;
+            localToTimestamp = yieldRates[params.yieldRateRange.startIndex + 1].effectiveDay * 1 days;
 
             if (_debug) {
                 console.log("");
                 console.log(" _calculateYield | Calculating yield for first period:");
-                console.log(" _calculateYield | - yieldRate: %s", params.yieldRates[params.startIndex].value);
+                console.log(" _calculateYield | - yieldRate: %s", yieldRates[params.yieldRateRange.startIndex].value);
                 console.log(
                     " _calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
                     localFromTimestamp,
@@ -510,7 +507,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             result[0] = _compoundYield(
                 localFromTimestamp,
                 localToTimestamp,
-                params.yieldRates[params.startIndex].value,
+                yieldRates[params.yieldRateRange.startIndex].value,
                 params.initialBalance + params.initialAccruedYield,
                 params.initialStreamYield
             );
@@ -529,7 +526,10 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             if (_debug) {
                 console.log("");
                 console.log(" _calculateYield | Calculating yield for second period:");
-                console.log(" _calculateYield | - yieldRate: %s", params.yieldRates[params.startIndex + 1].value);
+                console.log(
+                    " _calculateYield | - yieldRate: %s",
+                    yieldRates[params.yieldRateRange.startIndex + 1].value
+                );
                 console.log(
                     " _calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
                     localFromTimestamp,
@@ -547,7 +547,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             result[1] = _compoundYield(
                 localFromTimestamp,
                 localToTimestamp,
-                params.yieldRates[params.startIndex + 1].value,
+                yieldRates[params.yieldRateRange.startIndex + 1].value,
                 params.initialBalance +
                     params.initialAccruedYield +
                     result[0].firstDayYield +
@@ -581,14 +581,14 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             uint256 currentBalance = params.initialBalance + params.initialAccruedYield;
             result = new YieldResult[](ratePeriods);
             localFromTimestamp = params.fromTimestamp;
-            localToTimestamp = params.yieldRates[params.startIndex + 1].effectiveDay * 1 days;
+            localToTimestamp = yieldRates[params.yieldRateRange.startIndex + 1].effectiveDay * 1 days;
 
             // Calculate yield for the first period
 
             if (_debug) {
                 console.log("");
                 console.log(" _calculateYield | Calculating yield for first period:");
-                console.log(" _calculateYield | - yieldRate: %s", params.yieldRates[params.startIndex].value);
+                console.log(" _calculateYield | - yieldRate: %s", yieldRates[params.yieldRateRange.startIndex].value);
                 console.log(
                     " _calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
                     localFromTimestamp,
@@ -606,7 +606,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             result[0] = _compoundYield(
                 localFromTimestamp,
                 localToTimestamp,
-                params.yieldRates[params.startIndex].value,
+                yieldRates[params.yieldRateRange.startIndex].value,
                 currentBalance,
                 params.initialStreamYield
             );
@@ -626,14 +626,14 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             console.log("");
             console.log(" _calculateYield | Calculating yield for full %s periods:", ratePeriods - 2);
 
-            for (uint256 i = params.startIndex + 1; i < params.startIndex + ratePeriods - 1; i++) {
-                localFromTimestamp = params.yieldRates[i].effectiveDay * 1 days;
-                localToTimestamp = params.yieldRates[i + 1].effectiveDay * 1 days;
+            for (uint256 i = params.yieldRateRange.startIndex + 1; i < params.yieldRateRange.endIndex; i++) {
+                localFromTimestamp = yieldRates[i].effectiveDay * 1 days;
+                localToTimestamp = yieldRates[i + 1].effectiveDay * 1 days;
 
                 if (_debug) {
                     console.log("");
                     console.log(" _calculateYield | Period #%s:", i);
-                    console.log(" _calculateYield | - yieldRate: %s", params.yieldRates[i].value);
+                    console.log(" _calculateYield | - yieldRate: %s", yieldRates[i].value);
                     console.log(
                         "_calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
                         localFromTimestamp,
@@ -648,10 +648,10 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
                     );
                 }
 
-                result[i - params.startIndex] = _compoundYield(
+                result[i - params.yieldRateRange.startIndex] = _compoundYield(
                     localFromTimestamp,
                     localToTimestamp,
-                    params.yieldRates[i].value,
+                    yieldRates[i].value,
                     currentBalance,
                     0
                 );
@@ -659,20 +659,29 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
                 if (_debug) {
                     console.log("");
                     console.log("_calculateYield | Full period result: %s", i);
-                    console.log("_calculateYield | - firstDayYield: %s", result[i - params.startIndex].firstDayYield);
-                    console.log("_calculateYield | - fullDaysYield: %s", result[i - params.startIndex].fullDaysYield);
-                    console.log("_calculateYield | - lastDayYield: %s", result[i - params.startIndex].lastDayYield);
+                    console.log(
+                        "_calculateYield | - firstDayYield: %s",
+                        result[i - params.yieldRateRange.startIndex].firstDayYield
+                    );
+                    console.log(
+                        "_calculateYield | - fullDaysYield: %s",
+                        result[i - params.yieldRateRange.startIndex].fullDaysYield
+                    );
+                    console.log(
+                        "_calculateYield | - lastDayYield: %s",
+                        result[i - params.yieldRateRange.startIndex].lastDayYield
+                    );
                 }
 
                 currentBalance +=
-                    result[i - params.startIndex].firstDayYield +
-                    result[i - params.startIndex].fullDaysYield +
-                    result[i - params.startIndex].lastDayYield;
+                    result[i - params.yieldRateRange.startIndex].firstDayYield +
+                    result[i - params.yieldRateRange.startIndex].fullDaysYield +
+                    result[i - params.yieldRateRange.startIndex].lastDayYield;
             }
 
             // Calculate yield for the last period
 
-            localFromTimestamp = params.yieldRates[params.startIndex + ratePeriods - 1].effectiveDay * 1 days;
+            localFromTimestamp = yieldRates[params.yieldRateRange.startIndex + ratePeriods - 1].effectiveDay * 1 days;
             localToTimestamp = params.toTimestamp;
 
             if (_debug) {
@@ -680,7 +689,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
                 console.log(" _calculateYield | - Calculating yield for last period:");
                 console.log(
                     " _calculateYield | -- yieldRate: %s",
-                    params.yieldRates[params.startIndex + ratePeriods - 1].value
+                    yieldRates[params.yieldRateRange.startIndex + ratePeriods - 1].value
                 );
                 console.log(
                     " _calculateYield | -- fromTimestamp: %s (day: %s + seconds: %s)",
@@ -699,7 +708,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             result[ratePeriods - 1] = _compoundYield(
                 localFromTimestamp,
                 localToTimestamp,
-                params.yieldRates[params.startIndex + ratePeriods - 1].value,
+                yieldRates[params.yieldRateRange.startIndex + ratePeriods - 1].value,
                 currentBalance,
                 0
             );
@@ -725,7 +734,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
         YieldRate[] storage yieldRates,
         uint256 fromTimestamp,
         uint256 toTimestamp
-    ) internal view returns (YieldRate[] memory inRangeYieldRates, uint256 inRangeStartIndex) {
+    ) internal view returns (Range memory range) {
         bool _debug = true;
 
         if (_debug) {
@@ -735,12 +744,12 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
 
             console.log("");
             console.log("_inRangeYieldRates | Input yield rates:");
-            for (uint256 i = 0; i < yieldRates.length; i++) {
+            for (uint256 k = 0; k < yieldRates.length; k++) {
                 console.log(
-                    "_inRangeYieldRates | - [%s] day: %s, rate: %s",
-                    i,
-                    yieldRates[i].effectiveDay,
-                    yieldRates[i].value
+                    "_inRangeYieldRates | - [%s] effectiveDay: %s, value: %s",
+                    k,
+                    yieldRates[k].effectiveDay,
+                    yieldRates[k].value
                 );
             }
 
@@ -748,61 +757,56 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
             console.log("_inRangeYieldRates | Starting loop:");
         }
 
-        inRangeYieldRates = new YieldRate[](yieldRates.length);
-        inRangeStartIndex = yieldRates.length;
-        uint256 y = yieldRates.length;
+        uint256 i = yieldRates.length;
 
         do {
-            y--;
+            i--;
 
             if (_debug) {
-                console.log("_inRangeYieldRates | - iteration: %s", y);
+                console.log("_inRangeYieldRates | - iteration: %s", i);
             }
 
-            if (yieldRates[y].effectiveDay * 1 days >= toTimestamp) {
+            if (yieldRates[i].effectiveDay * 1 days >= toTimestamp) {
                 if (_debug) {
                     console.log(
                         "-- _inRangeYieldRates | loop continue: effectiveDay >= toTimestamp: %s >= %s",
-                        yieldRates[y].effectiveDay,
+                        yieldRates[i].effectiveDay,
                         toTimestamp
                     );
                 }
                 continue;
             }
 
-            inRangeStartIndex--;
-            inRangeYieldRates[inRangeStartIndex] = yieldRates[y];
+            if (range.endIndex == 0) {
+                range.endIndex = i;
+            }
 
             if (_debug) {
                 console.log(
-                    "--  _inRangeYieldRates | loop insert: effectiveDay=%s, value=%s",
-                    inRangeYieldRates[inRangeStartIndex].effectiveDay,
-                    inRangeYieldRates[inRangeStartIndex].value
+                    "--  _inRangeYieldRates | loop include: effectiveDay=%s, value=%s",
+                    yieldRates[i].effectiveDay,
+                    yieldRates[i].value
                 );
             }
 
-            if (yieldRates[y].effectiveDay * 1 days < fromTimestamp) {
+            if (yieldRates[i].effectiveDay * 1 days < fromTimestamp) {
+                range.startIndex = i;
                 if (_debug) {
                     console.log(
                         "--  _inRangeYieldRates | loop break: effectiveDay < fromTimestamp: %s < %s",
-                        yieldRates[y].effectiveDay,
+                        yieldRates[i].effectiveDay,
                         fromTimestamp
                     );
                 }
                 break;
             }
-        } while (y > 0);
+        } while (i > 0);
 
         if (_debug) {
             console.log("");
-            console.log("_accrueYield | In range yield rates:");
-            for (uint256 i = inRangeStartIndex; i < inRangeYieldRates.length; i++) {
-                console.log(
-                    "-- [%s] day: %s, rate: %s",
-                    i,
-                    inRangeYieldRates[i].effectiveDay,
-                    inRangeYieldRates[i].value
-                );
+            console.log("_inRangeYieldRates | Result yield rates:");
+            for (uint256 k = range.startIndex; k <= range.endIndex; k++) {
+                console.log("-- [%s] effectiveDay: %s, value: %s", k, yieldRates[k].effectiveDay, yieldRates[k].value);
             }
 
             console.log("");
@@ -859,13 +863,14 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
     }
 
     function _truncateArray(
-        YieldRate[] memory array,
-        uint256 startIndex
-    ) internal pure returns (YieldRate[] memory truncatedArray) {
-        truncatedArray = new YieldRate[](array.length - startIndex);
-        for (uint256 i = startIndex; i < array.length; i++) {
-            truncatedArray[i - startIndex] = array[i];
+        Range memory range,
+        YieldRate[] storage yieldRates
+    ) internal view returns (YieldRate[] memory truncatedArray) {
+        truncatedArray = new YieldRate[](range.endIndex - range.startIndex + 1);
+        for (uint256 i = range.startIndex; i <= range.endIndex; i++) {
+            truncatedArray[i - range.startIndex] = yieldRates[i];
         }
+        return truncatedArray;
     }
 
     // -------------------- Timestamp -------------------- //

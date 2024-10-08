@@ -31,7 +31,7 @@ contract YieldStreamerConfiguration is YieldStreamerStorage, IYieldStreamerConfi
             revert YieldStreamer_YieldRateValueAlreadyConfigured();
         }
 
-        $.yieldRates[groupId].push(YieldRate({ effectiveDay: effectiveDay, value: rateValue }));
+        yieldRates.push(YieldRate({ effectiveDay: effectiveDay, value: rateValue }));
 
         emit YieldStreamer_YieldRateAdded(groupId, effectiveDay, rateValue);
     }
