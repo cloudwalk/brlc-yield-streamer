@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers, network } from "hardhat";
+import { ethers, network, upgrades } from "hardhat";
 import { BigNumber, Contract } from "ethers";
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -154,9 +154,11 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
    * @returns The deployed YieldStreamerV2 contract instance.
    */
   async function deployContracts(): Promise<Contract> {
+    const mockToken = "0x0000000000000000000000000000000000000001";
     const YieldStreamerV2 = await ethers.getContractFactory("YieldStreamerV2");
-    // Deploy the contract with a placeholder address (replace with actual if necessary)
-    return await YieldStreamerV2.deploy(ethers.constants.AddressZero);
+    const yieldStreamer: Contract = await upgrades.deployProxy(YieldStreamerV2, [mockToken]);
+    await yieldStreamer.deployed();
+    return yieldStreamer;
   }
 
   describe("Function 'deposit()' and 'withdraw()'", function () {
