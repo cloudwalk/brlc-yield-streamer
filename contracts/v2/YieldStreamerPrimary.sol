@@ -48,6 +48,18 @@ contract YieldStreamerPrimary is
         uint256 initialStreamYield;
         Range yieldRateRange;
     }
+
+    struct AccruePreview {
+        uint256 fromTimestamp;
+        uint256 toTimestamp;
+        uint256 accruedYieldBefore;
+        uint256 streamYieldBefore;
+        uint256 accruedYieldAfter;
+        uint256 streamYieldAfter;
+        YieldRate[] rates;
+        YieldResult[] results;
+    }
+
     // -------------------- Modifiers -------------------- //
 
     modifier onlyToken() {
@@ -97,14 +109,16 @@ contract YieldStreamerPrimary is
     function _claimAllFor(address account) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
-        _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
+        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        _accrueYield2(account, state, rates);
         _transferYield(account, state.accruedYield + state.streamYield, state);
     }
 
     function _claimAmountFor(address account, uint256 amount) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
-        _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
+        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        _accrueYield2(account, state, rates);
         _transferYield(account, amount, state);
     }
 
@@ -113,43 +127,47 @@ contract YieldStreamerPrimary is
         state = $.yieldStates[account];
     }
 
-    function _getClaimPreview(address account) internal view returns (ClaimPreview memory preview) {
-        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldRate[] storage yieldRates = $.yieldRates[$.groups[account].id];
-        YieldState memory state = $.yieldStates[account];
-        uint256 fromTimestamp = state.timestampAtLastUpdate;
-        uint256 toTimestamp = _blockTimestamp();
+    function _getAccruePreview(
+        YieldState storage state,
+        YieldRate[] storage rates
+    ) internal view returns (AccruePreview memory preview) {
+        preview.accruedYieldBefore = state.accruedYield;
+        preview.streamYieldBefore = state.streamYield;
+        preview.fromTimestamp = state.timestampAtLastUpdate;
+        preview.toTimestamp = _blockTimestamp();
 
-        Range memory yieldRateRange = _inRangeYieldRates(yieldRates, fromTimestamp, toTimestamp);
+        Range memory yieldRateRange = _inRangeYieldRates(rates, preview.fromTimestamp, preview.toTimestamp);
 
         CalculateYieldParams memory calculateParams = CalculateYieldParams(
-            fromTimestamp,
-            toTimestamp,
+            preview.fromTimestamp,
+            preview.toTimestamp,
             state.balanceAtLastUpdate,
-            state.accruedYield,
-            state.streamYield,
+            preview.accruedYieldBefore,
+            preview.streamYieldBefore,
             yieldRateRange
         );
 
-        YieldResult[] memory calculateResults = _calculateYield(calculateParams, yieldRates);
-        (uint256 accruedYield, uint256 streamYield) = _aggregateYield(calculateResults);
-        accruedYield += state.accruedYield;
+        YieldResult[] memory calculateResults = _calculateYield(calculateParams, rates);
+        (preview.accruedYieldAfter, preview.streamYieldAfter) = _aggregateYield(calculateResults);
+        preview.accruedYieldAfter += preview.accruedYieldBefore;
 
-        preview.yieldRates = _truncateArray(yieldRateRange, yieldRates);
-        preview.yieldResults = calculateResults;
+        preview.rates = _truncateArray(yieldRateRange, rates);
+        preview.results = calculateResults;
     }
 
     function _increaseTokenBalance(address account, uint256 amount) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
-        _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
+        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        _accrueYield2(account, state, rates);
         state.balanceAtLastUpdate += amount.toUint64();
     }
 
     function _decreaseTokenBalance(address account, uint256 amount) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
-        _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
+        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        _accrueYield2(account, state, rates);
         state.balanceAtLastUpdate -= amount.toUint64();
     }
 
@@ -215,6 +233,22 @@ contract YieldStreamerPrimary is
         //     console.log("");
         //     console.log("_accrueYield | END");
         // }
+    }
+
+    function _accrueYield2(address account, YieldState storage state, YieldRate[] storage rates) internal {
+        AccruePreview memory preview = _getAccruePreview(state, rates);
+
+        emit YieldStreamer_YieldAccrued(
+            account,
+            preview.accruedYieldAfter,
+            preview.streamYieldAfter,
+            preview.accruedYieldBefore,
+            preview.streamYieldBefore
+        );
+
+        state.timestampAtLastUpdate = preview.toTimestamp.toUint64();
+        state.accruedYield = preview.accruedYieldAfter.toUint64();
+        state.streamYield = preview.streamYieldAfter.toUint64();
     }
 
     function _transferYield(
