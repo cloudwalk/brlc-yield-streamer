@@ -1,10 +1,10 @@
 import { ethers, network, upgrades } from "hardhat";
 import { expect } from "chai";
-import { BigNumber, Contract, ContractFactory } from "ethers";
+import { BigNumber, Contract, ContractFactory, Wallet } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Block, TransactionReceipt, TransactionResponse } from "@ethersproject/abstract-provider";
-import { proveTx } from "../test-utils/eth";
+import { getLatestBlockTimestamp, increaseBlockTimestamp, proveTx } from "../test-utils/eth";
 
 const HOUR_IN_SECONDS = 3600;
 const DAY_IN_SECONDS = 24 * HOUR_IN_SECONDS;
@@ -79,9 +79,9 @@ async function increaseBlockchainTimeToSpecificRelativeDay(relativeDay: number) 
   if (relativeDay < 1) {
     return;
   }
-  const currentTimestampInSeconds: number = await time.latest();
+  const currentTimestampInSeconds: number = await getLatestBlockTimestamp();
   const { secondsOfDay } = toDayAndTime(currentTimestampInSeconds);
-  await time.increase(DAY_IN_SECONDS - secondsOfDay + (relativeDay - 1) * DAY_IN_SECONDS + 1);
+  await increaseBlockTimestamp(DAY_IN_SECONDS - secondsOfDay + (relativeDay - 1) * DAY_IN_SECONDS + 1);
 }
 
 function toBalanceChanges(tokenTransfer: TokenTransfer): BalanceChange[] {
@@ -215,11 +215,53 @@ function defineExpectedDailyBalances(context: TestContext, dailyBalancesRequest:
   return dailyBalances;
 }
 
-async function deployTokenMock(tokenMock: Contract): Promise<Contract> {
+/*
+ * Deploys a mock ERC20 token using a special account to ensure the token contract address
+ * matches a predefined constant `TOKEN` in the `BalanceTracker` contract.
+ *
+ * This function uses a specific private key to deploy the contract. The transaction count of the
+ * special account must be zero to ensure that the first deployed contract matches the `TOKEN`
+ * address constant in `BalanceTracker`.
+ *
+ * If the account has already sent a transaction, the deployment will fail, and the developer
+ * must either reset the network or use a different private key. If a new private key is used, the
+ * developer must update the `TOKEN` constant in `BalanceTracker` to match the new contract address.
+ *
+ * Additionally, the function ensures that the special account has sufficient ETH to cover the
+ * deployment gas costs. If gas is required, it calculates the estimated gas amount and sends
+ * enough ETH from the deployer's account to the special account to cover the deployment.
+ */
+async function deployTokenMockFromSpecialAccount(deployer: SignerWithAddress): Promise<Contract> {
   const tokenMockFactory: ContractFactory = await ethers.getContractFactory("ERC20MockForBalanceTracker");
-  tokenMock = await tokenMockFactory.deploy();
+  const specialPrivateKey = "0x00000000c39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+  const wallet = new Wallet(specialPrivateKey, ethers.provider);
+
+  const txCount = await wallet.getTransactionCount();
+  if (txCount !== 0) {
+    throw new Error(
+      "The special account has already sent transactions on this network. " +
+      "Please reset (and restart if needed) the network or provide a different private key for the special account. " +
+      "If you choose the latter, ensure the 'TOKEN' constant in 'BalanceTracker' is updated with the address " +
+      "of the first contract deployed by the special account."
+    );
+  }
+  const gasPrice: BigNumber = await ethers.provider.getGasPrice();
+
+  if (gasPrice.gt(0)) {
+    const deployTx = tokenMockFactory.connect(wallet).getDeployTransaction();
+    const gasEstimation = await ethers.provider.estimateGas(deployTx);
+    const ethAmount = gasEstimation.mul(gasPrice).mul(2);
+
+    await proveTx(deployer.sendTransaction({
+      to: wallet.address,
+      value: ethAmount.toString()
+    }));
+  }
+
+  const tokenMock = await tokenMockFactory.connect(wallet).deploy();
   await tokenMock.deployed();
-  return tokenMock;
+
+  return tokenMock.connect(deployer);
 }
 
 describe("Contract 'BalanceTracker'", async () => {
@@ -239,22 +281,10 @@ describe("Contract 'BalanceTracker'", async () => {
   let user2: SignerWithAddress;
 
   before(async () => {
-    if (network.name !== "hardhat") {
-      throw new Error(
-        "This tests cannot be run on the network other than Hardhat due to: " +
-        "1. The initial nonce of the contract deployer must be zero at the beginning of each test. " +
-        "2. The ability to change block timestamps for checking the contract under test is required."
-      );
-    }
-    // Resetting the hardhat network to start from scratch and deploy the special token contract mock first
-    await network.provider.request({
-      method: "hardhat_reset",
-      params: []
-    });
     [deployer, attacker, user1, user2] = await ethers.getSigners();
-    tokenMock = await deployTokenMock(tokenMock);
+    tokenMock = await deployTokenMockFromSpecialAccount(deployer);
     await increaseBlockchainTimeToSpecificRelativeDay(1);
-    balanceTrackerFactory = await ethers.getContractFactory("BalanceTracker");
+    balanceTrackerFactory = await ethers.getContractFactory("BalanceTrackerHarness");
   });
 
   async function deployAndConfigureContracts(): Promise<{
@@ -263,6 +293,7 @@ describe("Contract 'BalanceTracker'", async () => {
   }> {
     const balanceTracker: Contract = await upgrades.deployProxy(balanceTrackerFactory.connect(deployer));
     await balanceTracker.deployed();
+    await proveTx(balanceTracker.configureHarnessAdmin(deployer.address, true));
     const txReceipt: TransactionReceipt = await balanceTracker.deployTransaction.wait();
     const balanceTrackerInitDay = await getTxDayIndex(txReceipt);
     await proveTx(tokenMock.setBalance(user1.address, INIT_TOKEN_BALANCE));
@@ -289,7 +320,7 @@ describe("Contract 'BalanceTracker'", async () => {
 
   async function executeTokenTransfers(context: TestContext, transfers: TokenTransfer[]) {
     const { balanceTracker } = context;
-    let previousTransferDay: number = toDayIndex(await time.latest());
+    let previousTransferDay: number = toDayIndex(await getLatestBlockTimestamp());
     for (let i = 0; i < transfers.length; ++i) {
       const transfer: TokenTransfer = transfers[i];
       if (transfer.executionDay < previousTransferDay) {
@@ -496,9 +527,8 @@ describe("Contract 'BalanceTracker'", async () => {
         it("The transfer day index is greater than 65536", async () => {
           const context: TestContext = await initTestContext();
 
-          const currentTimestampInSeconds: number = await time.latest();
-          const currentDay = toDayIndex(currentTimestampInSeconds);
-          await increaseBlockchainTimeToSpecificRelativeDay(65537 - currentDay);
+          await proveTx(context.balanceTracker.setUsingRealBlockTimestamps(false));
+          await proveTx(context.balanceTracker.setBlockTimestamp(65537, NEGATIVE_TIME_SHIFT));
 
           await expect(
             tokenMock.simulateHookedTransfer(
@@ -508,6 +538,8 @@ describe("Contract 'BalanceTracker'", async () => {
               1
             )
           ).to.be.revertedWithCustomError(context.balanceTracker, REVERT_ERROR_SAFE_CAST_OVERFLOW_UINT16);
+
+          await proveTx(context.balanceTracker.setUsingRealBlockTimestamps(true));
         });
       });
     });
