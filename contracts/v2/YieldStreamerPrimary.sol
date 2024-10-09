@@ -7,11 +7,19 @@ import "hardhat/console.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
+import { AccessControlExtUpgradeable } from "./base/AccessControlExtUpgradeable.sol";
 import { IYieldStreamerPrimary } from "./interfaces/IYieldStreamerPrimary.sol";
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
 import { IERC20Hook } from "../interfaces/IERC20Hook.sol";
 
-contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IERC20Hook {
+contract YieldStreamerPrimary is
+    YieldStreamerStorage, // Tools: this comment prevents Prettier from formatting into a single line.
+    AccessControlExtUpgradeable,
+    IYieldStreamerPrimary,
+    IERC20Hook
+{
+    error YieldStreamer_UnauthorizedHookCaller();
+
     // -------------------- Libraries -------------------- //
 
     using SafeCast for uint256;
@@ -32,7 +40,13 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
         Range yieldRateRange;
     }
 
-    // -------------------- IERC20Hook -------------------- //
+    modifier onlyToken() {
+        if (_msgSender() != _yieldStreamerStorage().underlyingToken) {
+            revert YieldStreamer_UnauthorizedHookCaller();
+        }
+        _;
+    }
+
 
     /// @inheritdoc IERC20Hook
     function beforeTokenTransfer(address from, address to, uint256 amount) external {
@@ -40,7 +54,7 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
     }
 
     /// @inheritdoc IERC20Hook
-    function afterTokenTransfer(address from, address to, uint256 amount) external {
+    function afterTokenTransfer(address from, address to, uint256 amount) external onlyToken {
         if (_validateAccount(from)) {
             _initializeYieldState(from);
             _decreaseTokenBalance(from, amount);
@@ -65,14 +79,14 @@ contract YieldStreamerPrimary is YieldStreamerStorage, IYieldStreamerPrimary, IE
 
     // -------------------- Functions -------------------- //
 
-    function claimAllFor(address account) external {
+    function claimAllFor(address account) external onlyRole(ADMIN_ROLE) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
         _transferYield(account, state.accruedYield, state);
     }
 
-    function claimAmountFor(address account, uint256 amount) external {
+    function claimAmountFor(address account, uint256 amount) external onlyRole(ADMIN_ROLE) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());

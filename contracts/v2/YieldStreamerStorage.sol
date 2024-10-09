@@ -6,6 +6,10 @@ import { IYieldStreamerTypes } from "./interfaces/IYieldStreamerTypes.sol";
 
 
 contract YieldStreamerStorage is IYieldStreamerTypes {
+    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
     uint240 public constant RATE_FACTOR = 10 ** 9;
 
     uint256 public constant NEGATIVE_TIME_SHIFT = 0;
