@@ -73,10 +73,6 @@ contract YieldStreamerV2 is
 
     // ------------------ IYieldStreamerPrimary ------------------//
 
-    function claimAllFor(address account) external onlyRole(ADMIN_ROLE) {
-        _claimAllFor(account);
-    }
-
     function claimAmountFor(address account, uint256 amount) external onlyRole(ADMIN_ROLE) {
         _claimAmountFor(account, amount);
     }

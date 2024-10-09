@@ -84,18 +84,11 @@ contract YieldStreamerPrimary is
         // TODO: intialize yield state from the old yield streamer contract
     }
 
-    function _claimAllFor(address account) internal {
-        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldState storage state = $.yieldStates[account];
-        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        _accrueYield2(account, state, rates);
-        _transferYield(account, state.accruedYield + state.streamYield, state);
-    }
-
     function _claimAmountFor(address account, uint256 amount) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+
         _accrueYield2(account, state, rates);
         _transferYield(account, amount, state);
     }

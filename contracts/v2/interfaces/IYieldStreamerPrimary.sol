@@ -35,8 +35,6 @@ interface IYieldStreamerPrimary_Events {
 interface IYieldStreamerPrimary_Functions {
     // -------------------- Functions -------------------- //
 
-    function claimAllFor(address account) external;
-
     function claimAmountFor(address account, uint256 amount) external;
 
     function getYieldState(address account) external view returns (IYieldStreamerTypes.YieldState memory);
