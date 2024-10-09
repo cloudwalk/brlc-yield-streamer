@@ -56,6 +56,7 @@ async function getYieldState(yieldStreamer: Contract, account: string): Promise<
  */
 async function testActionSchedule(
   user: SignerWithAddress,
+  erc20Token: Contract,
   yieldStreamer: Contract,
   actionItems: ActionItem[],
   expectedYieldStates: YieldState[]
@@ -83,10 +84,10 @@ async function testActionSchedule(
     // Perform the deposit or withdraw action based on the action type
     if (actionItem.type === "deposit") {
       // Perform a deposit action
-      await yieldStreamer.connect(user).deposit(user.address, actionItem.amount);
+      await erc20Token.connect(user).mint(user.address, actionItem.amount);
     } else if (actionItem.type === "withdraw") {
       // Perform a withdrawal action
-      await yieldStreamer.connect(user).withdraw(user.address, actionItem.amount);
+      await erc20Token.connect(user).burn(user.address, actionItem.amount);
     }
 
     // Fetch the actual yield state from the contract after the action
@@ -153,17 +154,25 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
    * Deploys the YieldStreamerV2 contract for testing.
    * @returns The deployed YieldStreamerV2 contract instance.
    */
-  async function deployContracts(): Promise<Contract> {
-    const mockToken = "0x0000000000000000000000000000000000000001";
+  async function deployContracts(): Promise<{ erc20Token: Contract; yieldStreamer: Contract }> {
+    const ERC20TokenMock = await ethers.getContractFactory("ERC20TokenMock");
     const YieldStreamerV2 = await ethers.getContractFactory("YieldStreamerV2");
-    const yieldStreamer: Contract = await upgrades.deployProxy(YieldStreamerV2, [mockToken]);
+
+    const erc20Token = await ERC20TokenMock.deploy("Mock Token", "MTK");
+    await erc20Token.waitForDeployment();
+
+    const yieldStreamer: Contract = await upgrades.deployProxy(YieldStreamerV2, [erc20Token.target]);
     await yieldStreamer.waitForDeployment();
-    return yieldStreamer;
+
+    await erc20Token.setHook(yieldStreamer.target);
+
+    return { erc20Token, yieldStreamer };
   }
 
   describe("Function 'deposit()' and 'withdraw()'", function () {
     it("Should correctly update state for Deposit Schedule 1", async function () {
-      const yieldStreamer: Contract = await setUpFixture(deployContracts);
+      const { erc20Token, yieldStreamer }: { erc20Token: Contract; yieldStreamer: Contract } =
+        await setUpFixture(deployContracts);
 
       // Simulated action schedule of deposits
       const actionSchedule: ActionItem[] = [
@@ -271,18 +280,19 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
 
       // Yield rates to be added to the contract
       const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) } // 40% yield rate
+        { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) } // 40% yield rate
       ];
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
 
       // Run the action schedule and test the yield states
-      await testActionSchedule(user, yieldStreamer, actionSchedule, expectedYieldStates);
+      await testActionSchedule(user, erc20Token, yieldStreamer, actionSchedule, expectedYieldStates);
     });
 
     it("Should correctly update state for Deposit Schedule 2", async () => {
-      const yieldStreamer: Contract = await setUpFixture(deployContracts);
+      const { erc20Token, yieldStreamer }: { erc20Token: Contract; yieldStreamer: Contract } =
+        await setUpFixture(deployContracts);
 
       // Simulated deposit schedule
       const actionSchedule: ActionItem[] = [
@@ -391,22 +401,29 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       // Yield rates to be added to the contract
       const currentBlockTime = Number(await time.latest());
       const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) }, // 40% yield rate
-        { effectiveDay: calculateEffectiveDay(currentBlockTime, 3), rateValue: RATE_FACTOR * BigInt(80) / BigInt(100) }, // 80% yield rate
-        { effectiveDay: calculateEffectiveDay(currentBlockTime, 5), rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) } // 40% yield rate
+        { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) }, // 40% yield rate
+        {
+          effectiveDay: calculateEffectiveDay(currentBlockTime, 3),
+          rateValue: (RATE_FACTOR * BigInt(80)) / BigInt(100)
+        }, // 80% yield rate
+        {
+          effectiveDay: calculateEffectiveDay(currentBlockTime, 5),
+          rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100)
+        } // 40% yield rate
       ];
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
 
       // Run the action schedule and test the yield states
-      await testActionSchedule(user, yieldStreamer, actionSchedule, expectedYieldStates);
+      await testActionSchedule(user, erc20Token, yieldStreamer, actionSchedule, expectedYieldStates);
     });
   });
 
   describe("Function 'withdraw()'", async () => {
     it("Should correctly update state for Withdraw Schedule 1", async () => {
-      const yieldStreamer: Contract = await setUpFixture(deployContracts);
+      const { erc20Token, yieldStreamer }: { erc20Token: Contract; yieldStreamer: Contract } =
+        await setUpFixture(deployContracts);
 
       // Simulated action schedule of deposits and withdrawals
       const actionSchedule: ActionItem[] = [
@@ -514,18 +531,19 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
 
       // Yield rates to be added to the contract
       const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) } // 40% yield rate
+        { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) } // 40% yield rate
       ];
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
 
       // Run the action schedule and test the yield states
-      await testActionSchedule(user, yieldStreamer, actionSchedule, expectedYieldStates);
+      await testActionSchedule(user, erc20Token, yieldStreamer, actionSchedule, expectedYieldStates);
     });
 
     it("Should correctly update state for Withdraw Schedule 2", async () => {
-      const yieldStreamer: Contract = await setUpFixture(deployContracts);
+      const { erc20Token, yieldStreamer }: { erc20Token: Contract; yieldStreamer: Contract } =
+        await setUpFixture(deployContracts);
 
       // Simulated action schedule
       const actionSchedule: ActionItem[] = [
@@ -634,16 +652,22 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       // Yield rates to be added to the contract
       const currentBlockTime = Number(await time.latest());
       const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) }, // 40% yield rate
-        { effectiveDay: calculateEffectiveDay(currentBlockTime, 3), rateValue: RATE_FACTOR * BigInt(80) / BigInt(100) }, // 80% yield rate
-        { effectiveDay: calculateEffectiveDay(currentBlockTime, 5), rateValue: RATE_FACTOR * BigInt(40) / BigInt(100) } // 40% yield rate
+        { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) }, // 40% yield rate
+        {
+          effectiveDay: calculateEffectiveDay(currentBlockTime, 3),
+          rateValue: (RATE_FACTOR * BigInt(80)) / BigInt(100)
+        }, // 80% yield rate
+        {
+          effectiveDay: calculateEffectiveDay(currentBlockTime, 5),
+          rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100)
+        } // 40% yield rate
       ];
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
 
       // Run the action schedule and test the yield states
-      await testActionSchedule(user, yieldStreamer, actionSchedule, expectedYieldStates);
+      await testActionSchedule(user, erc20Token, yieldStreamer, actionSchedule, expectedYieldStates);
     });
   });
 });

@@ -37,7 +37,7 @@ describe("Contract 'RescuableUpgradeable'", async () => {
     // Contract factories with the explicitly specified deployer account
     rescuableMockFactory = await ethers.getContractFactory("RescuableUpgradeableMock");
     rescuableMockFactory = rescuableMockFactory.connect(deployer);
-    tokenMockFactory = await ethers.getContractFactory("ERC20FreezableTokenMock");
+    tokenMockFactory = await ethers.getContractFactory("ERC20TokenMock");
     tokenMockFactory = tokenMockFactory.connect(deployer);
   });
 

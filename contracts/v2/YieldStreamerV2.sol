@@ -128,16 +128,6 @@ contract YieldStreamerV2 is
         return YieldStreamerPrimary._blockTimestamp();
     }
 
-    // -------------------- Service -------------------- //
-
-    function deposit(address account, uint256 amount) external {
-        _increaseTokenBalance(account, amount);
-    }
-
-    function withdraw(address account, uint256 amount) external {
-        _decreaseTokenBalance(account, amount);
-    }
-
     // ------------------ Upgrade Authorization ------------------ //
 
 
