@@ -85,8 +85,12 @@ contract YieldStreamerV2 is
         return _getYieldState(account);
     }
 
-    function getYieldBalance(address account) external view returns (YieldBalance memory) {
-        return _getYieldBalance(account);
+    function getClaimPreview(address account) external view returns (ClaimPreview memory) {
+        return _getClaimPreview(account);
+    }
+
+    function getAccruePreview(address account) external view returns (AccruePreview memory) {
+        return _getAccruePreview(account);
     }
 
     // ------------------ IYieldStreamerConfiguration ------------------//

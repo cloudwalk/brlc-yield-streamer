@@ -24,17 +24,6 @@ contract YieldStreamerPrimary is
 
     // -------------------- Structs -------------------- //
 
-    struct YieldResult {
-        uint256 firstDayYield;
-        uint256 fullDaysYield;
-        uint256 lastDayYield;
-    }
-
-    struct ClaimPreview {
-        YieldRate[] yieldRates;
-        YieldResult[] yieldResults;
-    }
-
     struct Range {
         uint256 startIndex;
         uint256 endIndex;
@@ -47,17 +36,6 @@ contract YieldStreamerPrimary is
         uint256 initialAccruedYield;
         uint256 initialStreamYield;
         Range yieldRateRange;
-    }
-
-    struct AccruePreview {
-        uint256 fromTimestamp;
-        uint256 toTimestamp;
-        uint256 accruedYieldBefore;
-        uint256 streamYieldBefore;
-        uint256 accruedYieldAfter;
-        uint256 streamYieldAfter;
-        YieldRate[] rates;
-        YieldResult[] results;
     }
 
     // -------------------- Modifiers -------------------- //
@@ -125,6 +103,28 @@ contract YieldStreamerPrimary is
     function _getYieldState(address account) internal view returns (YieldState memory state) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         state = $.yieldStates[account];
+    }
+
+    function _map(AccruePreview memory accrue) internal pure returns (ClaimPreview memory claim) {
+        uint256 totalYield = accrue.accruedYieldAfter + accrue.streamYieldAfter;
+        claim.yield = _roundDown(totalYield);
+        claim.fee = 0;
+        claim.balance = accrue.balance;
+        claim.rate = accrue.rates[accrue.rates.length - 1].value;
+    }
+
+    function _getClaimPreview(address account) internal view returns (ClaimPreview memory preview) {
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState storage state = $.yieldStates[account];
+        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        preview = _map(_getAccruePreview(state, rates));
+    }
+
+    function _getAccruePreview(address account) internal view returns (AccruePreview memory preview) {
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState storage state = $.yieldStates[account];
+        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        preview = _getAccruePreview(state, rates);
     }
 
     function _getAccruePreview(
@@ -934,6 +934,20 @@ contract YieldStreamerPrimary is
             truncatedArray[i - range.startIndex] = yieldRates[i];
         }
         return truncatedArray;
+    }
+
+    function _roundDown(uint256 amount) internal pure returns (uint256) {
+        return (amount / ROUND_FACTOR) * ROUND_FACTOR;
+    }
+
+    function _roundUp(uint256 amount) internal pure returns (uint256) {
+        uint256 roundedAmount = _roundDown(amount);
+
+        if (roundedAmount < amount) {
+            roundedAmount += ROUND_FACTOR;
+        }
+
+        return roundedAmount;
     }
 
     // -------------------- Timestamp -------------------- //

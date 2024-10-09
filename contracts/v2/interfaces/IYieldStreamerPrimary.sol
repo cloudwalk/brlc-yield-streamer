@@ -41,6 +41,9 @@ interface IYieldStreamerPrimary_Functions {
 
     function getYieldState(address account) external view returns (IYieldStreamerTypes.YieldState memory);
 
+    function getClaimPreview(address account) external view returns (IYieldStreamerTypes.ClaimPreview memory);
+
+    function getAccruePreview(address account) external view returns (IYieldStreamerTypes.AccruePreview memory);
 }
 
 interface IYieldStreamerPrimary is
