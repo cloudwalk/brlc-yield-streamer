@@ -13,6 +13,8 @@ interface IYieldStreamerPrimary_Errors {
 
     error YieldStreamer_UnauthorizedHookCaller();
 
+    error YieldStreamer_ClaimAmountNonRounded();
+
     error YieldStreamer_ClaimAmountBelowMinimum();
 }
 

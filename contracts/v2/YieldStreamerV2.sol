@@ -116,6 +116,10 @@ contract YieldStreamerV2 is
         _updateYieldRate(groupId, effectiveDay, rateValue, recordIndex);
     }
 
+    function setFeeReceiver(address newFeeReceiver) external onlyRole(OWNER_ROLE) {
+        _setFeeReceiver(newFeeReceiver);
+    }
+
     // ------------------ Overrides ------------------ //
 
     function _accrueYield(

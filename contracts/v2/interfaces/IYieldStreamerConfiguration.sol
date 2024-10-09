@@ -12,6 +12,8 @@ interface IYieldStreamerConfiguration_Errors {
     error YieldStreamer_YieldRateValueAlreadyConfigured();
 
     error YieldStreamer_GroupAlreadyAssigned(address account);
+
+    error YieldStreamer_FeeReceiverAlreadyConfigured();
 }
 
 interface IYieldStreamerConfiguration_Events {
@@ -27,6 +29,8 @@ interface IYieldStreamerConfiguration_Events {
         uint256 rateValue,
         uint256 index
     );
+
+    event YieldStreamer_FeeReceiverChanged(address indexed newFeeReceiver, address indexed oldFeeReceiver);
 }
 
 interface IYieldStreamerConfiguration_Functions {
@@ -37,6 +41,8 @@ interface IYieldStreamerConfiguration_Functions {
     function addYieldRate(uint32 groupId, uint256 effectiveDay, uint256 rateValue) external;
 
     function updateYieldRate(uint32 groupId, uint256 effectiveDay, uint256 rateValue, uint256 recordIndex) external;
+
+    function setFeeReceiver(address newFeeReceiver) external;
 }
 
 interface IYieldStreamerConfiguration is

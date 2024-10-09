@@ -7,6 +7,8 @@ import { IYieldStreamerTypes } from "./interfaces/IYieldStreamerTypes.sol";
 
 contract YieldStreamerStorage is IYieldStreamerTypes {
 
+    uint256 public constant ROUND_FACTOR = 10000;
+    uint240 public constant FEE_RATE = 0;
     uint240 public constant RATE_FACTOR = 10 ** 9;
 
     uint256 public constant NEGATIVE_TIME_SHIFT = 0;
@@ -17,6 +19,7 @@ contract YieldStreamerStorage is IYieldStreamerTypes {
     /// @custom:storage-location cloudwalk.yieldstreamer.primary.storage
     struct YieldStreamerStorageLayout {
         address underlyingToken;
+        address feeReceiver;
         mapping(address => Group) groups;
         mapping(address => YieldState) yieldStates;
         mapping(uint32 => YieldRate[]) yieldRates;

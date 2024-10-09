@@ -88,12 +88,16 @@ contract YieldStreamerPrimary is
         if (amount < MIN_CLAIM_AMOUNT) {
             revert YieldStreamer_ClaimAmountBelowMinimum();
         }
+        if (amount != _roundDown(amount)) {
+            revert YieldStreamer_ClaimAmountNonRounded();
+        }
+
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
 
         _accrueYield2(account, state, rates);
-        _transferYield(account, amount, state);
+        _transferYield(account, amount, state, $.feeReceiver, $.underlyingToken);
     }
 
     function _getYieldState(address account) internal view returns (YieldState memory state) {
@@ -250,7 +254,9 @@ contract YieldStreamerPrimary is
     function _transferYield(
         address account, // Format: prevent collapse
         uint256 amount,
-        YieldState storage state
+        YieldState storage state,
+        address feeReceiver,
+        address token
     ) internal {
         uint256 totalYield = state.accruedYield + state.streamYield;
 
@@ -267,7 +273,13 @@ contract YieldStreamerPrimary is
             state.accruedYield -= amount.toUint64();
         }
 
-        IERC20(_yieldStreamerStorage().underlyingToken).transfer(account, amount);
+        if (FEE_RATE != 0 && feeReceiver != address(0)) {
+            uint256 fee = _roundUp(_calculateFee(amount));
+            amount -= fee;
+            IERC20(token).transfer(feeReceiver, fee);
+        }
+
+        IERC20(token).transfer(account, amount);
     }
 
     function _compoundYield(
@@ -930,6 +942,10 @@ contract YieldStreamerPrimary is
             truncatedArray[i - range.startIndex] = yieldRates[i];
         }
         return truncatedArray;
+    }
+
+    function _calculateFee(uint256 amount) internal pure returns (uint256) {
+        return (amount * FEE_RATE) / RATE_FACTOR;
     }
 
     function _roundDown(uint256 amount) internal pure returns (uint256) {

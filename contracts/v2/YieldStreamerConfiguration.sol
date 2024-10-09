@@ -110,6 +110,17 @@ abstract contract YieldStreamerConfiguration is
         yieldRate.value = rateValue;
     }
 
+    function _setFeeReceiver(address newFeeReceiver) internal {
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+
+        if ($.feeReceiver == newFeeReceiver) {
+            revert YieldStreamer_FeeReceiverAlreadyConfigured();
+        }
+
+        emit YieldStreamer_FeeReceiverChanged(newFeeReceiver, $.feeReceiver);
+
+        $.feeReceiver = newFeeReceiver;
+    }
     function _accrueYield(
         address account,
         YieldState storage state,
