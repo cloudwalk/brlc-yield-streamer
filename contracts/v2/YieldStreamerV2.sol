@@ -8,25 +8,34 @@ import { AccessControlExtUpgradeable } from "./base/AccessControlExtUpgradeable.
 import { PausableExtUpgradeable } from "./base/PausableExtUpgradeable.sol";
 import { RescuableUpgradeable } from "./base/RescuableUpgradeable.sol";
 
+import { IYieldStreamerPrimary } from "./interfaces/IYieldStreamerPrimary.sol";
+import { IYieldStreamerPrimary_Functions } from "./interfaces/IYieldStreamerPrimary.sol";
+import { IYieldStreamerConfiguration } from "./interfaces/IYieldStreamerConfiguration.sol";
+import { IYieldStreamerConfiguration_Functions } from "./interfaces/IYieldStreamerConfiguration.sol";
+
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
 import { YieldStreamerPrimary } from "./YieldStreamerPrimary.sol";
 import { YieldStreamerConfiguration } from "./YieldStreamerConfiguration.sol";
 
 contract YieldStreamerV2 is
-    YieldStreamerStorage,
     AccessControlExtUpgradeable,
-    YieldStreamerConfiguration,
     PausableExtUpgradeable,
-    YieldStreamerPrimary,
     RescuableUpgradeable,
-    UUPSUpgradeable
+    UUPSUpgradeable,
+    YieldStreamerPrimary,
+    YieldStreamerConfiguration,
+    IYieldStreamerPrimary,
+    IYieldStreamerConfiguration
 {
+    // ------------------ Errors ------------------ //
 
     error YieldStreamer_TokenAddressZero();
+
 
     function initialize(address token) external initializer {
         __YieldStreamer_init(token);
     }
+
 
     function __YieldStreamer_init(address token) internal onlyInitializing {
         __Context_init_unchained();
@@ -41,6 +50,7 @@ contract YieldStreamerV2 is
         __YieldStreamer_init_init_unchained(token);
     }
 
+
     function __YieldStreamer_init_init_unchained(address token) internal onlyInitializing {
         if (token == address(0)) {
             revert YieldStreamer_TokenAddressZero();
@@ -52,6 +62,53 @@ contract YieldStreamerV2 is
         _setRoleAdmin(ADMIN_ROLE, OWNER_ROLE);
         _grantRole(OWNER_ROLE, _msgSender());
     }
+
+    // ------------------ IYieldStreamerPrimary ------------------//
+
+    function claimAllFor(address account) external onlyRole(ADMIN_ROLE) {
+        _claimAllFor(account);
+    }
+
+    function claimAmountFor(address account, uint256 amount) external onlyRole(ADMIN_ROLE) {
+        _claimAmountFor(account, amount);
+    }
+
+    function getYieldState(address account) external view returns (YieldState memory) {
+        return _getYieldState(account);
+    }
+
+    function getYieldBalance(address account) external view returns (YieldBalance memory) {
+        return _getYieldBalance(account);
+    }
+
+    // ------------------ IYieldStreamerConfiguration ------------------//
+
+    function assignGroup(
+        uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
+        address[] memory accounts,
+        bool accrueYield
+    ) external onlyRole(OWNER_ROLE) {
+        _assignGroup(groupId, accounts, accrueYield);
+    }
+
+    function addYieldRate(
+        uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
+        uint256 effectiveDay,
+        uint256 rateValue
+    ) external onlyRole(OWNER_ROLE) {
+        _addYieldRate(groupId, effectiveDay, rateValue);
+    }
+
+    function updateYieldRate(
+        uint32 groupId,
+        uint256 effectiveDay,
+        uint256 rateValue,
+        uint256 recordIndex
+    ) external onlyRole(OWNER_ROLE) {
+        _updateYieldRate(groupId, effectiveDay, rateValue, recordIndex);
+    }
+
+    // ------------------ Overrides ------------------ //
 
     function _accrueYield(
         address account,
@@ -70,6 +127,19 @@ contract YieldStreamerV2 is
     {
         return YieldStreamerPrimary._blockTimestamp();
     }
+
+    // -------------------- Service -------------------- //
+
+    function deposit(address account, uint256 amount) external {
+        _increaseTokenBalance(account, amount);
+    }
+
+    function withdraw(address account, uint256 amount) external {
+        _decreaseTokenBalance(account, amount);
+    }
+
+    // ------------------ Upgrade Authorization ------------------ //
+
 
     function _authorizeUpgrade(address newImplementation) internal view override onlyRole(OWNER_ROLE) {
         newImplementation;

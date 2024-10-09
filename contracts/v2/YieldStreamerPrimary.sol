@@ -7,24 +7,34 @@ import "hardhat/console.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import { AccessControlExtUpgradeable } from "./base/AccessControlExtUpgradeable.sol";
-import { IYieldStreamerPrimary } from "./interfaces/IYieldStreamerPrimary.sol";
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
+import { IYieldStreamerPrimary_Errors } from "./interfaces/IYieldStreamerPrimary.sol";
+import { IYieldStreamerPrimary_Events } from "./interfaces/IYieldStreamerPrimary.sol";
 import { IERC20Hook } from "../interfaces/IERC20Hook.sol";
 
 contract YieldStreamerPrimary is
-    YieldStreamerStorage, // Tools: this comment prevents Prettier from formatting into a single line.
-    AccessControlExtUpgradeable,
-    IYieldStreamerPrimary,
+    YieldStreamerStorage,
+    IYieldStreamerPrimary_Errors,
+    IYieldStreamerPrimary_Events,
     IERC20Hook
 {
-    error YieldStreamer_UnauthorizedHookCaller();
-
     // -------------------- Libraries -------------------- //
 
     using SafeCast for uint256;
 
     // -------------------- Structs -------------------- //
+
+    struct YieldResult {
+        uint256 firstDayYield;
+        uint256 fullDaysYield;
+        uint256 lastDayYield;
+    }
+
+    struct ClaimPreview {
+        YieldBalance balance;
+        YieldRate[] yieldRates;
+        YieldResult[] yieldResults;
+    }
 
     struct Range {
         uint256 startIndex;
@@ -39,21 +49,27 @@ contract YieldStreamerPrimary is
         uint256 initialStreamYield;
         Range yieldRateRange;
     }
+    // -------------------- Modifiers -------------------- //
 
     modifier onlyToken() {
-        if (_msgSender() != _yieldStreamerStorage().underlyingToken) {
+        if (msg.sender != _yieldStreamerStorage().underlyingToken) {
             revert YieldStreamer_UnauthorizedHookCaller();
         }
         _;
     }
 
+    // -------------------- IERC20Hook -------------------- //
 
-    /// @inheritdoc IERC20Hook
+    /**
+     * @inheritdoc IERC20Hook
+     */
     function beforeTokenTransfer(address from, address to, uint256 amount) external {
         // Do nothing
     }
 
-    /// @inheritdoc IERC20Hook
+    /**
+     * @inheritdoc IERC20Hook
+     */
     function afterTokenTransfer(address from, address to, uint256 amount) external onlyToken {
         if (_validateAccount(from)) {
             _initializeYieldState(from);
@@ -66,6 +82,8 @@ contract YieldStreamerPrimary is
         }
     }
 
+    // -------------------- Functions -------------------- //
+
     function _validateAccount(address account) internal pure returns (bool) {
         // TODO: add other validations:
         // - account is not a contract
@@ -77,32 +95,30 @@ contract YieldStreamerPrimary is
         // TODO: intialize yield state from the old yield streamer contract
     }
 
-    // -------------------- Functions -------------------- //
-
-    function claimAllFor(address account) external onlyRole(ADMIN_ROLE) {
+    function _claimAllFor(address account) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
-        _transferYield(account, state.accruedYield, state);
+        _transferYield(account, state.accruedYield + state.streamYield, state);
     }
 
-    function claimAmountFor(address account, uint256 amount) external onlyRole(ADMIN_ROLE) {
+    function _claimAmountFor(address account, uint256 amount) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         _accrueYield(account, state, state.timestampAtLastUpdate, _blockTimestamp());
         _transferYield(account, amount, state);
     }
 
-    function getYieldState(address account) external view returns (YieldState memory state) {
+    function _getYieldState(address account) internal view returns (YieldState memory state) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         state = $.yieldStates[account];
     }
 
-    function getYieldBalance(address account) external view returns (YieldBalance memory balance) {
-        balance = getClaimPreview(account).balance;
+    function _getYieldBalance(address account) internal view returns (YieldBalance memory balance) {
+        balance = _getClaimPreview(account).balance;
     }
 
-    function getClaimPreview(address account) public view returns (ClaimPreview memory preview) {
+    function _getClaimPreview(address account) internal view returns (ClaimPreview memory preview) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldRate[] storage yieldRates = $.yieldRates[$.groups[account].id];
         YieldState memory state = $.yieldStates[account];
@@ -128,8 +144,6 @@ contract YieldStreamerPrimary is
         preview.yieldRates = _truncateArray(yieldRateRange, yieldRates);
         preview.yieldResults = calculateResults;
     }
-
-    // -------------------- Internal -------------------- //
 
     function _increaseTokenBalance(address account, uint256 amount) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
@@ -914,15 +928,5 @@ contract YieldStreamerPrimary is
 
     function _blockTimestamp() internal view virtual returns (uint256) {
         return block.timestamp - NEGATIVE_TIME_SHIFT;
-    }
-
-    // -------------------- Service -------------------- //
-
-    function deposit(address account, uint256 amount) external {
-        _increaseTokenBalance(account, amount);
-    }
-
-    function withdraw(address account, uint256 amount) external {
-        _decreaseTokenBalance(account, amount);
     }
 }

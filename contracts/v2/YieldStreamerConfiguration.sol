@@ -2,20 +2,23 @@
 
 pragma solidity ^0.8.0;
 
-import { AccessControlExtUpgradeable } from "./base/AccessControlExtUpgradeable.sol";
-import { IYieldStreamerConfiguration } from "./interfaces/IYieldStreamerConfiguration.sol";
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
+import { AccessControlExtUpgradeable } from "./base/AccessControlExtUpgradeable.sol";
+import { IYieldStreamerConfiguration_Errors } from "./interfaces/IYieldStreamerConfiguration.sol";
+import { IYieldStreamerConfiguration_Events } from "./interfaces/IYieldStreamerConfiguration.sol";
 
 abstract contract YieldStreamerConfiguration is
     YieldStreamerStorage,
-    AccessControlExtUpgradeable,
-    IYieldStreamerConfiguration
+    IYieldStreamerConfiguration_Errors,
+    IYieldStreamerConfiguration_Events
 {
-    function assignGroup(
+    // ------------------ Functions ------------------ //
+
+    function _assignGroup(
         uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         address[] memory accounts,
         bool accrueYield
-    ) external onlyRole(OWNER_ROLE) {
+    ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         uint256 toTimestamp = _blockTimestamp();
 
@@ -37,11 +40,11 @@ abstract contract YieldStreamerConfiguration is
         }
     }
 
-    function addYieldRate(
+    function _addYieldRate(
         uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 effectiveDay,
         uint256 rateValue
-    ) external onlyRole(OWNER_ROLE) {
+    ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldRate[] storage yieldRates = $.yieldRates[groupId];
 
@@ -65,12 +68,12 @@ abstract contract YieldStreamerConfiguration is
         emit YieldStreamer_YieldRateAdded(groupId, effectiveDay, rateValue);
     }
 
-    function updateYieldRate(
-        uint32 groupId,
+    function _updateYieldRate(
+        uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 effectiveDay,
         uint256 rateValue,
         uint256 recordIndex
-    ) external onlyRole(OWNER_ROLE) {
+    ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldRate[] storage yieldRates = $.yieldRates[groupId];
 

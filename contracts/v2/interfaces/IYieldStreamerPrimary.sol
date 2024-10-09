@@ -4,14 +4,17 @@ pragma solidity ^0.8.0;
 
 import { IYieldStreamerTypes } from "./IYieldStreamerTypes.sol";
 
-
-interface IYieldStreamerPrimary is IYieldStreamerTypes {
+interface IYieldStreamerPrimary_Errors {
     // -------------------- Errors -------------------- //
 
     error YieldStreamer_InvalidTimeRange();
 
     error YieldStreamer_InsufficientYieldBalance();
 
+    error YieldStreamer_UnauthorizedHookCaller();
+}
+
+interface IYieldStreamerPrimary_Events {
     // -------------------- Events -------------------- //
 
     event YieldStreamer_YieldAccrued(
@@ -23,39 +26,26 @@ interface IYieldStreamerPrimary is IYieldStreamerTypes {
     );
 
     event YieldStreamer_YieldTransferred(
-        address indexed account, // Format: prevent collapse
+        address indexed account, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 accruedYield,
         uint256 streamYield
     );
+}
 
-    // -------------------- Structs -------------------- //
-
-    struct YieldResult {
-        uint256 firstDayYield;
-        uint256 fullDaysYield;
-        uint256 lastDayYield;
-    }
-
-    struct YieldBalance {
-        uint256 accruedYield;
-        uint256 streamYield;
-    }
-
-    struct ClaimPreview {
-        YieldBalance balance;
-        YieldRate[] yieldRates;
-        YieldResult[] yieldResults;
-    }
-
+interface IYieldStreamerPrimary_Functions {
     // -------------------- Functions -------------------- //
 
     function claimAllFor(address account) external;
 
     function claimAmountFor(address account, uint256 amount) external;
 
-    function getYieldState(address account) external view returns (YieldState memory);
+    function getYieldState(address account) external view returns (IYieldStreamerTypes.YieldState memory);
 
-    function getYieldBalance(address account) external view returns (YieldBalance memory);
-
-    function getClaimPreview(address account) external view returns (ClaimPreview memory);
+    function getYieldBalance(address account) external view returns (IYieldStreamerTypes.YieldBalance memory);
 }
+
+interface IYieldStreamerPrimary is
+    IYieldStreamerPrimary_Errors,
+    IYieldStreamerPrimary_Events,
+    IYieldStreamerPrimary_Functions
+{}
