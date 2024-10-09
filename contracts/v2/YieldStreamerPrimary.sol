@@ -12,7 +12,7 @@ import { IYieldStreamerPrimary_Errors } from "./interfaces/IYieldStreamerPrimary
 import { IYieldStreamerPrimary_Events } from "./interfaces/IYieldStreamerPrimary.sol";
 import { IERC20Hook } from "../interfaces/IERC20Hook.sol";
 
-contract YieldStreamerPrimary is
+abstract contract YieldStreamerPrimary is
     YieldStreamerStorage,
     IYieldStreamerPrimary_Errors,
     IYieldStreamerPrimary_Events,
@@ -78,10 +78,6 @@ contract YieldStreamerPrimary is
         // - account is not a contract
         // - etc.
         return account != address(0);
-    }
-
-    function _initializeYieldState(address account) internal pure {
-        // TODO: intialize yield state from the old yield streamer contract
     }
 
     function _claimAmountFor(address account, uint256 amount) internal {
@@ -983,4 +979,8 @@ contract YieldStreamerPrimary is
     function _blockTimestamp() internal view virtual returns (uint256) {
         return block.timestamp - NEGATIVE_TIME_SHIFT;
     }
+
+    // -------------------- Overrides -------------------- //
+
+    function _initializeYieldState(address account) internal virtual;
 }

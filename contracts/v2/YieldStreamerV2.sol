@@ -12,10 +12,13 @@ import { IYieldStreamerPrimary } from "./interfaces/IYieldStreamerPrimary.sol";
 import { IYieldStreamerPrimary_Functions } from "./interfaces/IYieldStreamerPrimary.sol";
 import { IYieldStreamerConfiguration } from "./interfaces/IYieldStreamerConfiguration.sol";
 import { IYieldStreamerConfiguration_Functions } from "./interfaces/IYieldStreamerConfiguration.sol";
+import { IYieldStreamerInitialization } from "./interfaces/IYieldStreamerInitialization.sol";
+import { IYieldStreamerInitialization_Functions } from "./interfaces/IYieldStreamerInitialization.sol";
 
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
-import { YieldStreamerPrimary } from "./YieldStreamerPrimary.sol";
+import { YieldStreamerInitialization } from "./YieldStreamerInitialization.sol";
 import { YieldStreamerConfiguration } from "./YieldStreamerConfiguration.sol";
+import { YieldStreamerPrimary } from "./YieldStreamerPrimary.sol";
 
 contract YieldStreamerV2 is
     AccessControlExtUpgradeable,
@@ -24,8 +27,10 @@ contract YieldStreamerV2 is
     UUPSUpgradeable,
     YieldStreamerPrimary,
     YieldStreamerConfiguration,
+    YieldStreamerInitialization,
     IYieldStreamerPrimary,
-    IYieldStreamerConfiguration
+    IYieldStreamerConfiguration,
+    IYieldStreamerInitialization
 {
     // ------------------ Constants ------------------ //
 
@@ -69,6 +74,24 @@ contract YieldStreamerV2 is
         _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
         _setRoleAdmin(ADMIN_ROLE, OWNER_ROLE);
         _grantRole(OWNER_ROLE, _msgSender());
+    }
+
+    // ------------------ IYieldStreamerInitialization ------------------//
+
+    function initializeYieldState(address[] memory accounts) external onlyRole(OWNER_ROLE) {
+        for (uint256 i = 0; i < accounts.length; i++) {
+            _initializeYieldState(accounts[i]);
+        }
+    }
+
+    function initializeYieldState(address[] memory accounts, uint256[] memory yields) external onlyRole(OWNER_ROLE) {
+        for (uint256 i = 0; i < accounts.length; i++) {
+            _initializeYieldState(accounts[i], yields[i]);
+        }
+    }
+
+    function setSourceYieldStreamer(address sourceYieldStreamer) external onlyRole(OWNER_ROLE) {
+        _setSourceYieldStreamer(sourceYieldStreamer);
     }
 
     // ------------------ IYieldStreamerPrimary ------------------//
@@ -122,6 +145,11 @@ contract YieldStreamerV2 is
 
     // ------------------ Overrides ------------------ //
 
+    function _initializeYieldState(
+        address account
+    ) internal override(YieldStreamerPrimary, YieldStreamerInitialization) {
+        YieldStreamerInitialization._initializeYieldState(account);
+    }
     function _accrueYield(
         address account,
         YieldState storage state,
