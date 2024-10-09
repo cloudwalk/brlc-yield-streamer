@@ -85,6 +85,9 @@ contract YieldStreamerPrimary is
     }
 
     function _claimAmountFor(address account, uint256 amount) internal {
+        if (amount < MIN_CLAIM_AMOUNT) {
+            revert YieldStreamer_ClaimAmountBelowMinimum();
+        }
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];

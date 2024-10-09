@@ -12,6 +12,8 @@ interface IYieldStreamerPrimary_Errors {
     error YieldStreamer_InsufficientYieldBalance();
 
     error YieldStreamer_UnauthorizedHookCaller();
+
+    error YieldStreamer_ClaimAmountBelowMinimum();
 }
 
 interface IYieldStreamerPrimary_Events {
