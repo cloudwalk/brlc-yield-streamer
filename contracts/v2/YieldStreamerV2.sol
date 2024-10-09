@@ -27,6 +27,14 @@ contract YieldStreamerV2 is
     IYieldStreamerPrimary,
     IYieldStreamerConfiguration
 {
+    // ------------------ Constants ------------------ //
+
+    /// @dev The role of this contract owner.
+    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+
+    /// @dev The role of this contract admin.
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
     // ------------------ Errors ------------------ //
 
     error YieldStreamer_TokenAddressZero();
