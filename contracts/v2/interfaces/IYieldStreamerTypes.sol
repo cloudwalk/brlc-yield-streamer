@@ -10,11 +10,6 @@ interface IYieldStreamerTypes {
         uint64 streamYield;
     }
 
-    struct YieldBalance {
-        uint256 accruedYield;
-        uint256 streamYield;
-    }
-
     struct YieldRate {
         uint256 effectiveDay;
         uint256 value;

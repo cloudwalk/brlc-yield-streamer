@@ -41,7 +41,6 @@ interface IYieldStreamerPrimary_Functions {
 
     function getYieldState(address account) external view returns (IYieldStreamerTypes.YieldState memory);
 
-    function getYieldBalance(address account) external view returns (IYieldStreamerTypes.YieldBalance memory);
 }
 
 interface IYieldStreamerPrimary is

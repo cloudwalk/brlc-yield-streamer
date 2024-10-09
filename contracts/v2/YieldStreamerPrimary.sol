@@ -31,7 +31,6 @@ contract YieldStreamerPrimary is
     }
 
     struct ClaimPreview {
-        YieldBalance balance;
         YieldRate[] yieldRates;
         YieldResult[] yieldResults;
     }
@@ -114,10 +113,6 @@ contract YieldStreamerPrimary is
         state = $.yieldStates[account];
     }
 
-    function _getYieldBalance(address account) internal view returns (YieldBalance memory balance) {
-        balance = _getClaimPreview(account).balance;
-    }
-
     function _getClaimPreview(address account) internal view returns (ClaimPreview memory preview) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldRate[] storage yieldRates = $.yieldRates[$.groups[account].id];
@@ -140,7 +135,6 @@ contract YieldStreamerPrimary is
         (uint256 accruedYield, uint256 streamYield) = _aggregateYield(calculateResults);
         accruedYield += state.accruedYield;
 
-        preview.balance = YieldBalance(accruedYield, streamYield);
         preview.yieldRates = _truncateArray(yieldRateRange, yieldRates);
         preview.yieldResults = calculateResults;
     }
