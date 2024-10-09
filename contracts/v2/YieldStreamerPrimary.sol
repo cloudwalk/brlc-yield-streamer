@@ -154,26 +154,26 @@ contract YieldStreamerPrimary is
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldRate[] storage yieldRates = $.yieldRates[$.groups[account].id];
 
-        bool _debug = true;
+        // bool _debug = false;
 
-        if (_debug) {
-            console.log("");
-            console.log("_accrueYield | START");
-            console.log("_accrueYield | - account: %s", account);
-            console.log("_accrueYield | - fromTime: %s, toTime: %s", fromTimestamp, toTimestamp);
-            console.log(
-                "_accrueYield | - fromDay: %s, toDay: %s",
-                _effectiveDay(fromTimestamp),
-                _effectiveDay(toTimestamp)
-            );
+        // if (_debug) {
+        //     console.log("");
+        //     console.log("_accrueYield | START");
+        //     console.log("_accrueYield | - account: %s", account);
+        //     console.log("_accrueYield | - fromTime: %s, toTime: %s", fromTimestamp, toTimestamp);
+        //     console.log(
+        //         "_accrueYield | - fromDay: %s, toDay: %s",
+        //         _effectiveDay(fromTimestamp),
+        //         _effectiveDay(toTimestamp)
+        //     );
 
-            console.log("");
-            console.log("_accrueYield | State before accrual: %s", account);
-            console.log("_accrueYield | - timestampAtLastUpdate: %s", state.timestampAtLastUpdate);
-            console.log("_accrueYield | - balanceAtLastUpdate: %s", state.balanceAtLastUpdate);
-            console.log("_accrueYield | - accruedYield: %s", state.accruedYield);
-            console.log("_accrueYield | - streamYield: %s", state.streamYield);
-        }
+        //     console.log("");
+        //     console.log("_accrueYield | State before accrual: %s", account);
+        //     console.log("_accrueYield | - timestampAtLastUpdate: %s", state.timestampAtLastUpdate);
+        //     console.log("_accrueYield | - balanceAtLastUpdate: %s", state.balanceAtLastUpdate);
+        //     console.log("_accrueYield | - accruedYield: %s", state.accruedYield);
+        //     console.log("_accrueYield | - streamYield: %s", state.streamYield);
+        // }
 
         Range memory yieldRateRange = _inRangeYieldRates(yieldRates, fromTimestamp, toTimestamp);
 
@@ -196,17 +196,17 @@ contract YieldStreamerPrimary is
         state.accruedYield = accruedYield.toUint64();
         state.streamYield = streamYield.toUint64();
 
-        if (_debug) {
-            console.log("");
-            console.log("_accrueYield | State after accrual: %s", account);
-            console.log("_accrueYield | - timestampAtLastUpdate: %s", state.timestampAtLastUpdate);
-            console.log("_accrueYield | - balanceAtLastUpdate: %s", state.balanceAtLastUpdate);
-            console.log("_accrueYield | - accruedYield: %s", state.accruedYield);
-            console.log("_accrueYield | - streamYield: %s", state.streamYield);
+        // if (_debug) {
+        //     console.log("");
+        //     console.log("_accrueYield | State after accrual: %s", account);
+        //     console.log("_accrueYield | - timestampAtLastUpdate: %s", state.timestampAtLastUpdate);
+        //     console.log("_accrueYield | - balanceAtLastUpdate: %s", state.balanceAtLastUpdate);
+        //     console.log("_accrueYield | - accruedYield: %s", state.accruedYield);
+        //     console.log("_accrueYield | - streamYield: %s", state.streamYield);
 
-            console.log("");
-            console.log("_accrueYield | END");
-        }
+        //     console.log("");
+        //     console.log("_accrueYield | END");
+        // }
     }
 
     function _transferYield(
@@ -239,33 +239,32 @@ contract YieldStreamerPrimary is
         uint256 balance,
         uint256 streamYield
     ) internal pure returns (YieldResult memory result) {
-        bool _debug = true;
+        // bool _debug = false;
 
-        if (_debug) {
-            console.log("");
-            console.log("_compoundYield | START");
-        }
+        // if (_debug) {
+        //     console.log("");
+        //     console.log("_compoundYield | START");
 
-        if (_debug) {
-            console.log("");
-            console.log("_compoundYield | Input params:");
-            console.log("_compoundYield | - fromTimestamp: %s", fromTimestamp);
-            console.log("_compoundYield | - toTimestamp: %s", toTimestamp);
-            console.log("_compoundYield | - yieldRate: %s", yieldRate);
-            console.log("_compoundYield | - balance: %s", balance);
-            console.log("_compoundYield | - streamYield: %s", streamYield);
-        }
+        //     console.log("");
+        //     console.log("_compoundYield | Input params:");
+        //     console.log("_compoundYield | - fromTimestamp: %s", fromTimestamp);
+        //     console.log("_compoundYield | - toTimestamp: %s", toTimestamp);
+        //     console.log("_compoundYield | - yieldRate: %s", yieldRate);
+        //     console.log("_compoundYield | - balance: %s", balance);
+        //     console.log("_compoundYield | - streamYield: %s", streamYield);
+        // }
 
         if (fromTimestamp > toTimestamp) {
             revert YieldStreamer_InvalidTimeRange();
         }
         if (fromTimestamp == toTimestamp || balance == 0) {
-            if (_debug) {
-                console.log("");
-                console.log("_compoundYield | Case 0: Early exit");
-                console.log("");
-                console.log("_compoundYield | END");
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_compoundYield | Case 0: Early exit");
+
+            //     console.log("");
+            //     console.log("_compoundYield | END");
+            // }
             return YieldResult(0, 0, 0);
         }
 
@@ -281,27 +280,28 @@ contract YieldStreamerPrimary is
             partDayYield = _calculatePartDayYield(totalBalance, yieldRate, toTimestamp - fromTimestamp);
             result.lastDayYield = streamYield + partDayYield;
 
-            if (_debug) {
-                console.log("");
-                console.log("_compoundYield | Case 1: Within the same day");
-                console.log("");
-                console.log("_compoundYield | Calculating yield for elapsed time: %s", toTimestamp - fromTimestamp);
-                console.log(
-                    "_compoundYield | - lastDayYield = streamYield + partDayYield: %s + %s = %s",
-                    streamYield,
-                    partDayYield,
-                    result.lastDayYield
-                );
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_compoundYield | Case 1: Within the same day");
+
+            //     console.log("");
+            //     console.log("_compoundYield | Calculating yield for elapsed time: %s", toTimestamp - fromTimestamp);
+            //     console.log(
+            //         "_compoundYield | - lastDayYield = streamYield + partDayYield: %s + %s = %s",
+            //         streamYield,
+            //         partDayYield,
+            //         result.lastDayYield
+            //     );
+            // }
         } else {
             /**
              * We are spanning multiple days.
              */
 
-            if (_debug) {
-                console.log("");
-                console.log("_compoundYield | Case 2: Spanning multiple days");
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_compoundYield | Case 2: Spanning multiple days");
+            // }
 
             /**
              * 1. Calculate yield for the first partial day.
@@ -313,19 +313,19 @@ contract YieldStreamerPrimary is
                 partDayYield = _calculatePartDayYield(totalBalance, yieldRate, firstDaySeconds);
                 result.firstDayYield = streamYield + partDayYield;
 
-                if (_debug) {
-                    console.log("");
-                    console.log(
-                        "_compoundYield | Calculating yield for the first partial day remaining seconds %s",
-                        firstDaySeconds
-                    );
-                    console.log(
-                        "_compoundYield | - firstDayYield = streamYield + partDayYield: %s + %s = %s",
-                        streamYield,
-                        partDayYield,
-                        result.firstDayYield
-                    );
-                }
+                // if (_debug) {
+                //     console.log("");
+                //     console.log(
+                //         "_compoundYield | Calculating yield for the first partial day remaining seconds %s",
+                //         firstDaySeconds
+                //     );
+                //     console.log(
+                //         "_compoundYield | - firstDayYield = streamYield + partDayYield: %s + %s = %s",
+                //         streamYield,
+                //         partDayYield,
+                //         result.firstDayYield
+                //     );
+                // }
 
                 totalBalance += result.firstDayYield;
                 fromTimestamp = nextDayStart;
@@ -338,18 +338,18 @@ contract YieldStreamerPrimary is
             uint256 fullDaysCount = (toTimestamp - fromTimestamp) / 1 days;
 
             if (fullDaysCount > 0) {
-                if (_debug) {
-                    console.log("");
-                    console.log("_compoundYield | Calculating yield for full days count: %s", fullDaysCount);
-                }
+                // if (_debug) {
+                //     console.log("");
+                //     console.log("_compoundYield | Calculating yield for full days count: %s", fullDaysCount);
+                // }
 
                 for (uint256 i = 0; i < fullDaysCount; i++) {
                     uint256 dailyYield = _calculateFullDayYield(totalBalance + result.fullDaysYield, yieldRate);
                     result.fullDaysYield += dailyYield;
 
-                    if (_debug) {
-                        console.log("_compoundYield | - [%s] full day yield: %s", i, dailyYield);
-                    }
+                    // if (_debug) {
+                    //     console.log("_compoundYield | - [%s] full day yield: %s", i, dailyYield);
+                    // }
                 }
 
                 totalBalance += result.fullDaysYield;
@@ -361,30 +361,31 @@ contract YieldStreamerPrimary is
              */
 
             if (fromTimestamp < toTimestamp) {
-                if (_debug) {
-                    console.log("");
-                    console.log("_compoundYield | Calculating yield for the last partial day");
-                }
+                // if (_debug) {
+                //     console.log("");
+                //     console.log("_compoundYield | Calculating yield for the last partial day");
+                // }
 
                 uint256 lastDaySeconds = toTimestamp - fromTimestamp;
                 result.lastDayYield = _calculatePartDayYield(totalBalance, yieldRate, lastDaySeconds);
 
-                if (_debug) {
-                    console.log("_compoundYield | - last day remaining seconds: %s", lastDaySeconds);
-                    console.log("_compoundYield | - last day partial yield: %s", result.lastDayYield);
-                }
+                // if (_debug) {
+                //     console.log("_compoundYield | - last day remaining seconds: %s", lastDaySeconds);
+                //     console.log("_compoundYield | - last day partial yield: %s", result.lastDayYield);
+                // }
             }
         }
 
-        if (_debug) {
-            console.log("");
-            console.log("_compoundYield | Final result:");
-            console.log("_compoundYield | - firstDayYield: %s", result.firstDayYield);
-            console.log("_compoundYield | - fullDaysYield: %s", result.fullDaysYield);
-            console.log("_compoundYield | - lastDayYield: %s", result.lastDayYield);
-            console.log("");
-            console.log("_compoundYield | END");
-        }
+        // if (_debug) {
+        //     console.log("");
+        //     console.log("_compoundYield | Final result:");
+        //     console.log("_compoundYield | - firstDayYield: %s", result.firstDayYield);
+        //     console.log("_compoundYield | - fullDaysYield: %s", result.fullDaysYield);
+        //     console.log("_compoundYield | - lastDayYield: %s", result.lastDayYield);
+
+        //     console.log("");
+        //     console.log("_compoundYield | END");
+        // }
     }
 
     function _calculateYield(
@@ -397,41 +398,39 @@ contract YieldStreamerPrimary is
 
         // TODO: Double-check inclusion of the last second!!
 
-        bool _debug = true;
+        // bool _debug = false;
 
-        if (_debug) {
-            console.log("");
-            console.log("_calculateYield | START");
-        }
+        // if (_debug) {
+        //     console.log("");
+        //     console.log("_calculateYield | START");
 
-        if (_debug) {
-            console.log("");
-            console.log("_calculateYield | Input params:");
-            console.log("_calculateYield | - initialBalance: %s", params.initialBalance);
-            console.log("_calculateYield | - initialAccruedYield: %s", params.initialAccruedYield);
-            console.log("_calculateYield | - initialStreamYield: %s", params.initialStreamYield);
-            console.log(
-                "_calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
-                localFromTimestamp,
-                _effectiveDay(localFromTimestamp),
-                _remainingSeconds(localFromTimestamp)
-            );
-            console.log(
-                "_calculateYield | - toTimestamp: %s (day: %s + seconds: %s)",
-                localToTimestamp,
-                _effectiveDay(localToTimestamp),
-                _remainingSeconds(localToTimestamp)
-            );
-            console.log("_calculateYield | - yieldRates:");
-            for (uint256 i = params.yieldRateRange.startIndex; i <= params.yieldRateRange.endIndex; i++) {
-                console.log(
-                    "_calculateYield | -- [%s] day: %s, value: %s",
-                    i,
-                    yieldRates[i].effectiveDay,
-                    yieldRates[i].value
-                );
-            }
-        }
+        //     console.log("");
+        //     console.log("_calculateYield | Input params:");
+        //     console.log("_calculateYield | - initialBalance: %s", params.initialBalance);
+        //     console.log("_calculateYield | - initialAccruedYield: %s", params.initialAccruedYield);
+        //     console.log("_calculateYield | - initialStreamYield: %s", params.initialStreamYield);
+        //     console.log(
+        //         "_calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
+        //         localFromTimestamp,
+        //         _effectiveDay(localFromTimestamp),
+        //         _remainingSeconds(localFromTimestamp)
+        //     );
+        //     console.log(
+        //         "_calculateYield | - toTimestamp: %s (day: %s + seconds: %s)",
+        //         localToTimestamp,
+        //         _effectiveDay(localToTimestamp),
+        //         _remainingSeconds(localToTimestamp)
+        //     );
+        //     console.log("_calculateYield | - yieldRates:");
+        //     for (uint256 i = params.yieldRateRange.startIndex; i <= params.yieldRateRange.endIndex; i++) {
+        //         console.log(
+        //             "_calculateYield | -- [%s] day: %s, value: %s",
+        //             i,
+        //             yieldRates[i].effectiveDay,
+        //             yieldRates[i].value
+        //         );
+        //     }
+        // }
 
         if (ratePeriods == 0) {
             /**
@@ -439,10 +438,10 @@ contract YieldStreamerPrimary is
              * If there are no yield rate periods in the range, we return an empty array.
              */
 
-            if (_debug) {
-                console.log("");
-                console.log("_calculateYield | Scenario 0: No yield rates in range");
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Scenario 0: No yield rates in range");
+            // }
 
             result = new YieldResult[](0);
         } else if (ratePeriods == 1) {
@@ -452,25 +451,26 @@ contract YieldStreamerPrimary is
              * using this yield rate.
              */
 
-            if (_debug) {
-                console.log("");
-                console.log("_calculateYield | Scenario 1: One yield rate in range");
-                console.log("");
-                console.log("_calculateYield | Calculating yield:");
-                console.log("_calculateYield | - yieldRate: %s", yieldRates[params.yieldRateRange.startIndex].value);
-                console.log(
-                    "_calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
-                    localFromTimestamp,
-                    _effectiveDay(localFromTimestamp),
-                    _remainingSeconds(localFromTimestamp)
-                );
-                console.log(
-                    "_calculateYield | - toTimestamp: %s (day: %s + seconds: %s)",
-                    localToTimestamp,
-                    _effectiveDay(localToTimestamp),
-                    _remainingSeconds(localToTimestamp)
-                );
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Scenario 1: One yield rate in range");
+
+            //     console.log("");
+            //     console.log("_calculateYield | Calculating yield:");
+            //     console.log("_calculateYield | - yieldRate: %s", yieldRates[params.yieldRateRange.startIndex].value);
+            //     console.log(
+            //         "_calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
+            //         localFromTimestamp,
+            //         _effectiveDay(localFromTimestamp),
+            //         _remainingSeconds(localFromTimestamp)
+            //     );
+            //     console.log(
+            //         "_calculateYield | - toTimestamp: %s (day: %s + seconds: %s)",
+            //         localToTimestamp,
+            //         _effectiveDay(localToTimestamp),
+            //         _remainingSeconds(localToTimestamp)
+            //     );
+            // }
 
             result = new YieldResult[](1);
             result[0] = _compoundYield(
@@ -481,13 +481,13 @@ contract YieldStreamerPrimary is
                 params.initialStreamYield
             );
 
-            if (_debug) {
-                console.log("");
-                console.log("_calculateYield | Result:");
-                console.log("_calculateYield | - firstDayYield: %s", result[0].firstDayYield);
-                console.log("_calculateYield | - fullDaysYield: %s", result[0].fullDaysYield);
-                console.log("_calculateYield | - lastDayYield: %s", result[0].lastDayYield);
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Result:");
+            //     console.log("_calculateYield | - firstDayYield: %s", result[0].firstDayYield);
+            //     console.log("_calculateYield | - fullDaysYield: %s", result[0].fullDaysYield);
+            //     console.log("_calculateYield | - lastDayYield: %s", result[0].lastDayYield);
+            // }
         } else if (ratePeriods == 2) {
             /**
              * Scenario 2
@@ -496,32 +496,32 @@ contract YieldStreamerPrimary is
              * 2. Use the second yield rate to calculate the yield from the start of the second yield rate period to `toTimestamp`.
              */
 
-            if (_debug) {
-                console.log("");
-                console.log(" _calculateYield | Scenario 2: Two yield rates in range");
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Scenario 2: Two yield rates in range");
+            // }
 
             result = new YieldResult[](2);
             localFromTimestamp = params.fromTimestamp;
             localToTimestamp = yieldRates[params.yieldRateRange.startIndex + 1].effectiveDay * 1 days;
 
-            if (_debug) {
-                console.log("");
-                console.log(" _calculateYield | Calculating yield for first period:");
-                console.log(" _calculateYield | - yieldRate: %s", yieldRates[params.yieldRateRange.startIndex].value);
-                console.log(
-                    " _calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
-                    localFromTimestamp,
-                    _effectiveDay(localFromTimestamp),
-                    _remainingSeconds(localFromTimestamp)
-                );
-                console.log(
-                    " _calculateYield | - localToTimestamp: %s (day: %s + seconds: %s)",
-                    localToTimestamp,
-                    _effectiveDay(localToTimestamp),
-                    _remainingSeconds(localToTimestamp)
-                );
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Calculating yield for first period:");
+            //     console.log("_calculateYield | - yieldRate: %s", yieldRates[params.yieldRateRange.startIndex].value);
+            //     console.log(
+            //         " _calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
+            //         localFromTimestamp,
+            //         _effectiveDay(localFromTimestamp),
+            //         _remainingSeconds(localFromTimestamp)
+            //     );
+            //     console.log(
+            //         " _calculateYield | - localToTimestamp: %s (day: %s + seconds: %s)",
+            //         localToTimestamp,
+            //         _effectiveDay(localToTimestamp),
+            //         _remainingSeconds(localToTimestamp)
+            //     );
+            // }
 
             result[0] = _compoundYield(
                 localFromTimestamp,
@@ -531,37 +531,37 @@ contract YieldStreamerPrimary is
                 params.initialStreamYield
             );
 
-            if (_debug) {
-                console.log("");
-                console.log("_calculateYield | Result:");
-                console.log("_calculateYield | - firstDayYield: %s", result[0].firstDayYield);
-                console.log("_calculateYield | - fullDaysYield: %s", result[0].fullDaysYield);
-                console.log("_calculateYield | - lastDayYield: %s", result[0].lastDayYield);
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Result:");
+            //     console.log("_calculateYield | - firstDayYield: %s", result[0].firstDayYield);
+            //     console.log("_calculateYield | - fullDaysYield: %s", result[0].fullDaysYield);
+            //     console.log("_calculateYield | - lastDayYield: %s", result[0].lastDayYield);
+            // }
 
             localFromTimestamp = localToTimestamp;
             localToTimestamp = params.toTimestamp;
 
-            if (_debug) {
-                console.log("");
-                console.log(" _calculateYield | Calculating yield for second period:");
-                console.log(
-                    " _calculateYield | - yieldRate: %s",
-                    yieldRates[params.yieldRateRange.startIndex + 1].value
-                );
-                console.log(
-                    " _calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
-                    localFromTimestamp,
-                    _effectiveDay(localFromTimestamp),
-                    _remainingSeconds(localFromTimestamp)
-                );
-                console.log(
-                    " _calculateYield | - toTimestamp: %s (day: %s + seconds: %s)",
-                    localToTimestamp,
-                    _effectiveDay(localToTimestamp),
-                    _remainingSeconds(localToTimestamp)
-                );
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Calculating yield for second period:");
+            //     console.log(
+            //         " _calculateYield | - yieldRate: %s",
+            //         yieldRates[params.yieldRateRange.startIndex + 1].value
+            //     );
+            //     console.log(
+            //         " _calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
+            //         localFromTimestamp,
+            //         _effectiveDay(localFromTimestamp),
+            //         _remainingSeconds(localFromTimestamp)
+            //     );
+            //     console.log(
+            //         " _calculateYield | - toTimestamp: %s (day: %s + seconds: %s)",
+            //         localToTimestamp,
+            //         _effectiveDay(localToTimestamp),
+            //         _remainingSeconds(localToTimestamp)
+            //     );
+            // }
 
             result[1] = _compoundYield(
                 localFromTimestamp,
@@ -575,13 +575,13 @@ contract YieldStreamerPrimary is
                 0
             );
 
-            if (_debug) {
-                console.log("");
-                console.log("_calculateYield | Result:");
-                console.log("_calculateYield | - firstDayYield: %s", result[1].firstDayYield);
-                console.log("_calculateYield | - fullDaysYield: %s", result[1].fullDaysYield);
-                console.log("_calculateYield | - lastDayYield: %s", result[1].lastDayYield);
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Result:");
+            //     console.log("_calculateYield | - firstDayYield: %s", result[1].firstDayYield);
+            //     console.log("_calculateYield | - fullDaysYield: %s", result[1].fullDaysYield);
+            //     console.log("_calculateYield | - lastDayYield: %s", result[1].lastDayYield);
+            // }
         } else {
             /**
              * Scenario 3
@@ -592,10 +592,10 @@ contract YieldStreamerPrimary is
              * 4. Use the last yield rate to calculate the yield from the start of the last yield rate period to `toTimestamp`.
              */
 
-            if (_debug) {
-                console.log("");
-                console.log(" _calculateYield | Scenario 3: More than two yield rates in range");
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Scenario 3: More than two yield rates in range");
+            // }
 
             uint256 currentBalance = params.initialBalance + params.initialAccruedYield;
             result = new YieldResult[](ratePeriods);
@@ -604,23 +604,23 @@ contract YieldStreamerPrimary is
 
             // Calculate yield for the first period
 
-            if (_debug) {
-                console.log("");
-                console.log(" _calculateYield | Calculating yield for first period:");
-                console.log(" _calculateYield | - yieldRate: %s", yieldRates[params.yieldRateRange.startIndex].value);
-                console.log(
-                    " _calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
-                    localFromTimestamp,
-                    _effectiveDay(localFromTimestamp),
-                    _remainingSeconds(localFromTimestamp)
-                );
-                console.log(
-                    " _calculateYield | - localToTimestamp: %s (day: %s + seconds: %s)",
-                    localToTimestamp,
-                    _effectiveDay(localToTimestamp),
-                    _remainingSeconds(localToTimestamp)
-                );
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Calculating yield for first period:");
+            //     console.log("_calculateYield | - yieldRate: %s", yieldRates[params.yieldRateRange.startIndex].value);
+            //     console.log(
+            //         " _calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
+            //         localFromTimestamp,
+            //         _effectiveDay(localFromTimestamp),
+            //         _remainingSeconds(localFromTimestamp)
+            //     );
+            //     console.log(
+            //         " _calculateYield | - localToTimestamp: %s (day: %s + seconds: %s)",
+            //         localToTimestamp,
+            //         _effectiveDay(localToTimestamp),
+            //         _remainingSeconds(localToTimestamp)
+            //     );
+            // }
 
             result[0] = _compoundYield(
                 localFromTimestamp,
@@ -630,42 +630,44 @@ contract YieldStreamerPrimary is
                 params.initialStreamYield
             );
 
-            if (_debug) {
-                console.log("");
-                console.log("_calculateYield | First period result:");
-                console.log("_calculateYield | - firstDayYield: %s", result[0].firstDayYield);
-                console.log("_calculateYield | - fullDaysYield: %s", result[0].fullDaysYield);
-                console.log("_calculateYield | - lastDayYield: %s", result[0].lastDayYield);
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | First period result:");
+            //     console.log("_calculateYield | - firstDayYield: %s", result[0].firstDayYield);
+            //     console.log("_calculateYield | - fullDaysYield: %s", result[0].fullDaysYield);
+            //     console.log("_calculateYield | - lastDayYield: %s", result[0].lastDayYield);
+            // }
 
             currentBalance += result[0].firstDayYield + result[0].fullDaysYield + result[0].lastDayYield;
 
             // Calculate yield for the intermediate periods
 
-            console.log("");
-            console.log(" _calculateYield | Calculating yield for full %s periods:", ratePeriods - 2);
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Calculating yield for full %s periods:", ratePeriods - 2);
+            // }
 
             for (uint256 i = params.yieldRateRange.startIndex + 1; i < params.yieldRateRange.endIndex; i++) {
                 localFromTimestamp = yieldRates[i].effectiveDay * 1 days;
                 localToTimestamp = yieldRates[i + 1].effectiveDay * 1 days;
 
-                if (_debug) {
-                    console.log("");
-                    console.log(" _calculateYield | Period #%s:", i);
-                    console.log(" _calculateYield | - yieldRate: %s", yieldRates[i].value);
-                    console.log(
-                        "_calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
-                        localFromTimestamp,
-                        _effectiveDay(localFromTimestamp),
-                        _remainingSeconds(localFromTimestamp)
-                    );
-                    console.log(
-                        "_calculateYield | - toTimestamp: %s (day: %s + seconds: %s)",
-                        localToTimestamp,
-                        _effectiveDay(localToTimestamp),
-                        _remainingSeconds(localToTimestamp)
-                    );
-                }
+                // if (_debug) {
+                //     console.log("");
+                //     console.log("_calculateYield | Period #%s:", i);
+                //     console.log("_calculateYield | - yieldRate: %s", yieldRates[i].value);
+                //     console.log(
+                //         "_calculateYield | - fromTimestamp: %s (day: %s + seconds: %s)",
+                //         localFromTimestamp,
+                //         _effectiveDay(localFromTimestamp),
+                //         _remainingSeconds(localFromTimestamp)
+                //     );
+                //     console.log(
+                //         "_calculateYield | - toTimestamp: %s (day: %s + seconds: %s)",
+                //         localToTimestamp,
+                //         _effectiveDay(localToTimestamp),
+                //         _remainingSeconds(localToTimestamp)
+                //     );
+                // }
 
                 result[i - params.yieldRateRange.startIndex] = _compoundYield(
                     localFromTimestamp,
@@ -675,22 +677,22 @@ contract YieldStreamerPrimary is
                     0
                 );
 
-                if (_debug) {
-                    console.log("");
-                    console.log("_calculateYield | Full period result: %s", i);
-                    console.log(
-                        "_calculateYield | - firstDayYield: %s",
-                        result[i - params.yieldRateRange.startIndex].firstDayYield
-                    );
-                    console.log(
-                        "_calculateYield | - fullDaysYield: %s",
-                        result[i - params.yieldRateRange.startIndex].fullDaysYield
-                    );
-                    console.log(
-                        "_calculateYield | - lastDayYield: %s",
-                        result[i - params.yieldRateRange.startIndex].lastDayYield
-                    );
-                }
+                // if (_debug) {
+                //     console.log("");
+                //     console.log("_calculateYield | Full period result: %s", i);
+                //     console.log(
+                //         "_calculateYield | - firstDayYield: %s",
+                //         result[i - params.yieldRateRange.startIndex].firstDayYield
+                //     );
+                //     console.log(
+                //         "_calculateYield | - fullDaysYield: %s",
+                //         result[i - params.yieldRateRange.startIndex].fullDaysYield
+                //     );
+                //     console.log(
+                //         "_calculateYield | - lastDayYield: %s",
+                //         result[i - params.yieldRateRange.startIndex].lastDayYield
+                //     );
+                // }
 
                 currentBalance +=
                     result[i - params.yieldRateRange.startIndex].firstDayYield +
@@ -703,26 +705,26 @@ contract YieldStreamerPrimary is
             localFromTimestamp = yieldRates[params.yieldRateRange.startIndex + ratePeriods - 1].effectiveDay * 1 days;
             localToTimestamp = params.toTimestamp;
 
-            if (_debug) {
-                console.log("");
-                console.log(" _calculateYield | - Calculating yield for last period:");
-                console.log(
-                    " _calculateYield | -- yieldRate: %s",
-                    yieldRates[params.yieldRateRange.startIndex + ratePeriods - 1].value
-                );
-                console.log(
-                    " _calculateYield | -- fromTimestamp: %s (day: %s + seconds: %s)",
-                    localFromTimestamp,
-                    _effectiveDay(localFromTimestamp),
-                    _remainingSeconds(localFromTimestamp)
-                );
-                console.log(
-                    " _calculateYield | -- toTimestamp: %s (day: %s + seconds: %s)",
-                    localToTimestamp,
-                    _effectiveDay(localToTimestamp),
-                    _remainingSeconds(localToTimestamp)
-                );
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | - Calculating yield for last period:");
+            //     console.log(
+            //         " _calculateYield | -- yieldRate: %s",
+            //         yieldRates[params.yieldRateRange.startIndex + ratePeriods - 1].value
+            //     );
+            //     console.log(
+            //         " _calculateYield | -- fromTimestamp: %s (day: %s + seconds: %s)",
+            //         localFromTimestamp,
+            //         _effectiveDay(localFromTimestamp),
+            //         _remainingSeconds(localFromTimestamp)
+            //     );
+            //     console.log(
+            //         " _calculateYield | -- toTimestamp: %s (day: %s + seconds: %s)",
+            //         localToTimestamp,
+            //         _effectiveDay(localToTimestamp),
+            //         _remainingSeconds(localToTimestamp)
+            //     );
+            // }
 
             result[ratePeriods - 1] = _compoundYield(
                 localFromTimestamp,
@@ -732,19 +734,19 @@ contract YieldStreamerPrimary is
                 0
             );
 
-            if (_debug) {
-                console.log("");
-                console.log("_calculateYield | Last period result:");
-                console.log("_calculateYield | - firstDayYield: %s", result[ratePeriods - 1].firstDayYield);
-                console.log("_calculateYield | - fullDaysYield: %s", result[ratePeriods - 1].fullDaysYield);
-                console.log("_calculateYield | - lastDayYield: %s", result[ratePeriods - 1].lastDayYield);
-            }
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_calculateYield | Last period result:");
+            //     console.log("_calculateYield | - firstDayYield: %s", result[ratePeriods - 1].firstDayYield);
+            //     console.log("_calculateYield | - fullDaysYield: %s", result[ratePeriods - 1].fullDaysYield);
+            //     console.log("_calculateYield | - lastDayYield: %s", result[ratePeriods - 1].lastDayYield);
+            // }
         }
 
-        if (_debug) {
-            console.log("");
-            console.log(" _calculateYield | END");
-        }
+        // if (_debug) {
+        //     console.log("");
+        //     console.log("_calculateYield | END");
+        // }
 
         return result;
     }
@@ -754,45 +756,45 @@ contract YieldStreamerPrimary is
         uint256 fromTimestamp,
         uint256 toTimestamp
     ) internal view returns (Range memory range) {
-        bool _debug = true;
+        // bool _debug = false;
 
-        if (_debug) {
-            console.log("");
-            console.log("_inRangeYieldRates | START");
-            console.log("_inRangeYieldRates | Getting yield rates from %s to %s", fromTimestamp, toTimestamp);
+        // if (_debug) {
+        //     console.log("");
+        //     console.log("_inRangeYieldRates | START");
+        //     console.log("_inRangeYieldRates | Getting yield rates from %s to %s", fromTimestamp, toTimestamp);
 
-            console.log("");
-            console.log("_inRangeYieldRates | Input yield rates:");
-            for (uint256 k = 0; k < yieldRates.length; k++) {
-                console.log(
-                    "_inRangeYieldRates | - [%s] effectiveDay: %s, value: %s",
-                    k,
-                    yieldRates[k].effectiveDay,
-                    yieldRates[k].value
-                );
-            }
+        //     console.log("");
+        //     console.log("_inRangeYieldRates | Input yield rates:");
+        //     for (uint256 k = 0; k < yieldRates.length; k++) {
+        //         console.log(
+        //             "_inRangeYieldRates | - [%s] effectiveDay: %s, value: %s",
+        //             k,
+        //             yieldRates[k].effectiveDay,
+        //             yieldRates[k].value
+        //         );
+        //     }
 
-            console.log("");
-            console.log("_inRangeYieldRates | Starting loop:");
-        }
+        //     console.log("");
+        //     console.log("_inRangeYieldRates | Starting loop:");
+        // }
 
         uint256 i = yieldRates.length;
 
         do {
             i--;
 
-            if (_debug) {
-                console.log("_inRangeYieldRates | - iteration: %s", i);
-            }
+            // if (_debug) {
+            //     console.log("_inRangeYieldRates | - iteration: %s", i);
+            // }
 
             if (yieldRates[i].effectiveDay * 1 days >= toTimestamp) {
-                if (_debug) {
-                    console.log(
-                        "-- _inRangeYieldRates | loop continue: effectiveDay >= toTimestamp: %s >= %s",
-                        yieldRates[i].effectiveDay,
-                        toTimestamp
-                    );
-                }
+                // if (_debug) {
+                //     console.log(
+                //         "-- _inRangeYieldRates | loop continue: effectiveDay >= toTimestamp: %s >= %s",
+                //         yieldRates[i].effectiveDay,
+                //         toTimestamp
+                //     );
+                // }
                 continue;
             }
 
@@ -800,37 +802,37 @@ contract YieldStreamerPrimary is
                 range.endIndex = i;
             }
 
-            if (_debug) {
-                console.log(
-                    "--  _inRangeYieldRates | loop include: effectiveDay=%s, value=%s",
-                    yieldRates[i].effectiveDay,
-                    yieldRates[i].value
-                );
-            }
+            // if (_debug) {
+            //     console.log(
+            //         "--  _inRangeYieldRates | loop include: effectiveDay=%s, value=%s",
+            //         yieldRates[i].effectiveDay,
+            //         yieldRates[i].value
+            //     );
+            // }
 
             if (yieldRates[i].effectiveDay * 1 days < fromTimestamp) {
                 range.startIndex = i;
-                if (_debug) {
-                    console.log(
-                        "--  _inRangeYieldRates | loop break: effectiveDay < fromTimestamp: %s < %s",
-                        yieldRates[i].effectiveDay,
-                        fromTimestamp
-                    );
-                }
+                // if (_debug) {
+                //     console.log(
+                //         "--  _inRangeYieldRates | loop break: effectiveDay < fromTimestamp: %s < %s",
+                //         yieldRates[i].effectiveDay,
+                //         fromTimestamp
+                //     );
+                // }
                 break;
             }
         } while (i > 0);
 
-        if (_debug) {
-            console.log("");
-            console.log("_inRangeYieldRates | Result yield rates:");
-            for (uint256 k = range.startIndex; k <= range.endIndex; k++) {
-                console.log("-- [%s] effectiveDay: %s, value: %s", k, yieldRates[k].effectiveDay, yieldRates[k].value);
-            }
+        // if (_debug) {
+        //     console.log("");
+        //     console.log("_inRangeYieldRates | Result yield rates:");
+        //     for (uint256 k = range.startIndex; k <= range.endIndex; k++) {
+        //         console.log("-- [%s] effectiveDay: %s, value: %s", k, yieldRates[k].effectiveDay, yieldRates[k].value);
+        //     }
 
-            console.log("");
-            console.log("_inRangeYieldRates | END");
-        }
+        //     console.log("");
+        //     console.log("_inRangeYieldRates | END");
+        // }
     }
 
     // -------------------- Yield math -------------------- //
@@ -853,28 +855,28 @@ contract YieldStreamerPrimary is
     function _aggregateYield(
         YieldResult[] memory yieldResults
     ) internal pure returns (uint256 accruedYield, uint256 streamYield) {
-        bool _debug = true;
+        // bool _debug = false;
 
-        if (_debug) {
-            console.log("");
-        }
+        // if (_debug) {
+        //     console.log("");
+        // }
 
         if (yieldResults.length > 1) {
-            if (_debug) {
-                console.log("_aggregateYield | accruedYield: %s += %s", accruedYield, yieldResults[0].lastDayYield);
-            }
+            // if (_debug) {
+            //     console.log("_aggregateYield | accruedYield: %s += %s", accruedYield, yieldResults[0].lastDayYield);
+            // }
             accruedYield += yieldResults[0].lastDayYield;
         }
 
         for (uint256 i = 0; i < yieldResults.length; i++) {
-            if (_debug) {
-                console.log(
-                    "_aggregateYield | accruedYield: %s += %s + %s",
-                    accruedYield,
-                    yieldResults[i].firstDayYield,
-                    yieldResults[i].fullDaysYield
-                );
-            }
+            // if (_debug) {
+            //     console.log(
+            //         "_aggregateYield | accruedYield: %s += %s + %s",
+            //         accruedYield,
+            //         yieldResults[i].firstDayYield,
+            //         yieldResults[i].fullDaysYield
+            //     );
+            // }
             accruedYield += yieldResults[i].firstDayYield + yieldResults[i].fullDaysYield;
         }
 
