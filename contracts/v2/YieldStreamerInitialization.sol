@@ -2,8 +2,11 @@
 
 pragma solidity ^0.8.0;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
+import { Bitwise } from "./libs/Bitwise.sol";
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
-import { IYieldStreamerInitialization_Types } from "./interfaces/IYieldStreamerInitialization.sol";
 import { IYieldStreamerInitialization_Errors } from "./interfaces/IYieldStreamerInitialization.sol";
 import { IYieldStreamerInitialization_Events } from "./interfaces/IYieldStreamerInitialization.sol";
 import { IYieldStreamerV1 } from "./interfaces/IYieldStreamerV1.sol";
@@ -11,90 +14,124 @@ import { IYieldStreamerV1 } from "./interfaces/IYieldStreamerV1.sol";
 /**
  * @title YieldStreamerInitialization contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev The contract that responsible for initializing the yield state.
+ * @dev The contract that responsible for yield state initialization.
  */
 abstract contract YieldStreamerInitialization is
     YieldStreamerStorage,
-    IYieldStreamerInitialization_Types,
     IYieldStreamerInitialization_Errors,
     IYieldStreamerInitialization_Events
 {
-    // ------------------ Functions ------------------------------- //
+    // ------------------ Libs ------------------------------------ //
+
+    using SafeCast for uint256;
+    using Bitwise for uint8;
+
+    // ------------------ Functions --------------------------------- //
 
     /**
-     * @dev Initializes the yield state for a given accounts.
-     * @param accounts The accounts to initialize the yield state for.
+     * @dev Initializes multiple accounts in hard mode (reverts if any account is already initialized).
+     * @param accounts The accounts to initialize.
      */
-    function _initializeYieldState(address[] memory accounts) internal {
+    function _initializeMultipleAccounts(address[] calldata accounts) internal {
         if (accounts.length == 0) {
             revert YieldStreamer_EmptyArray();
         }
 
-        for (uint256 i = 0; i < accounts.length; i++) {
-            _initializeYieldState(accounts[i]);
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldStreamerInitializationStorageLayout storage $init = _yieldStreamerInitializationStorage();
+        IYieldStreamerV1 sourceYieldStreamer = IYieldStreamerV1($init.sourceYieldStreamer);
+        uint256 blockTimestamp = _blockTimestamp();
+
+        _validateSourceYieldStreamer(sourceYieldStreamer);
+
+        uint256 len = accounts.length;
+        for (uint256 i = 0; i < len; ++i) {
+            address account = accounts[i];
+            YieldState storage state = $.yieldStates[account];
+
+            if (state.flags.isBitSet(uint256(YieldStateFlags.Initialized))) {
+                revert YieldStreamer_AccountAlreadyInitialized(account);
+            }
+            if (account == address(0)) {
+                revert YieldStreamer_AccountInitializationProhibited(account);
+            }
+
+            bytes32 groupKey = sourceYieldStreamer.getAccountGroup(account);
+
+            _initializeAccount(
+                account,
+                $init.groupIds[groupKey],
+                blockTimestamp,
+                $.underlyingToken,
+                sourceYieldStreamer,
+                state
+            );
         }
     }
 
     /**
-     * @dev Initializes the yield state for a given accounts and yields.
-     * @param accounts The accounts to initialize the yield state for.
-     * @param yields The yields to initialize the yield state for.
+     * @dev Initializes a single account in soft mode (does nothing if the account is already initialized).
+     * @param account The account to initialize.
      */
-    function _initializeYieldState(address[] memory accounts, uint256[] memory yields) internal {
-        if (accounts.length == 0) {
-            revert YieldStreamer_EmptyArray();
-        }
-        if (accounts.length != yields.length) {
-            revert YieldStreamer_InvalidArrayLength();
-        }
+    function _initializeSingleAccount(address account) internal virtual {
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState storage state = $.yieldStates[account];
 
-        for (uint256 i = 0; i < accounts.length; i++) {
-            _initializeYieldState(accounts[i], yields[i]);
-        }
-    }
-
-    /**
-     * @dev Initializes the yield state for a given account.
-     * @param account The account to initialize the yield state for.
-     */
-    function _initializeYieldState(address account) internal virtual {
-        YieldStreamerInitializationStorageLayout storage $ = _yieldStreamerInitializationStorage();
-
-        if ($.sourceYieldStreamer == address(0)) {
+        if (state.flags.isBitSet(uint256(YieldStateFlags.Initialized))) {
             return;
         }
 
-        // TODO: See how much gas left and if it's over cap don't call claimAllPreview?
+        YieldStreamerInitializationStorageLayout storage $init = _yieldStreamerInitializationStorage();
+        IYieldStreamerV1 sourceYieldStreamer = IYieldStreamerV1($init.sourceYieldStreamer);
 
-        try IYieldStreamerV1($.sourceYieldStreamer).claimAllPreview(account) returns (
-            IYieldStreamerV1.ClaimResult memory claimResult
-        ) {
-            _initializeYieldState(account, claimResult);
-        } catch Error(string memory reason) {
-            emit YieldStreamer_YieldStateInitializationFailed(account, reason, 0, "");
-        } catch Panic(uint errorCode) {
-            emit YieldStreamer_YieldStateInitializationFailed(account, "", errorCode, "");
-        } catch (bytes memory lowLevelData) {
-            emit YieldStreamer_YieldStateInitializationFailed(account, "", 0, lowLevelData);
-        }
+        _validateSourceYieldStreamer(sourceYieldStreamer);
+
+        bytes32 groupKey = sourceYieldStreamer.getAccountGroup(account);
+
+        _initializeAccount(
+            account,
+            $init.groupIds[groupKey],
+            _blockTimestamp(),
+            $.underlyingToken,
+            sourceYieldStreamer,
+            state
+        );
     }
 
     /**
-     * @dev Initializes the yield state for a given account and yield.
-     * @param account The account to initialize the yield state for.
-     * @param yield The yield to initialize the yield state for.
+     * @dev Initializes a given account.
+     * @param account The account to initialize.
+     * @param groupId The group id to assign the account to.
+     * @param timestamp The timestamp at the time of initialization.
+     * @param underlyingToken The underlying token address.
+     * @param sourceYieldStreamer The source yield streamer address.
+     * @param state The yield state to initialize.
      */
-    function _initializeYieldState(address account, uint256 yield) internal {
-        // TBD
-    }
+    function _initializeAccount(
+        address account,
+        uint256 groupId,
+        uint256 timestamp,
+        address underlyingToken,
+        IYieldStreamerV1 sourceYieldStreamer,
+        YieldState storage state
+    ) internal virtual {
+        _assignAccountToGroup(groupId, account);
 
-    /**
-     * @dev Initializes the yield state for a given account and claim result.
-     * @param account The account to initialize the yield state for.
-     * @param claimResult The claim result to initialize the yield state from.
-     */
-    function _initializeYieldState(address account, IYieldStreamerV1.ClaimResult memory claimResult) internal {
-        // TBD
+        IYieldStreamerV1.ClaimResult memory claimPreview = sourceYieldStreamer.claimAllPreview(account);
+        sourceYieldStreamer.blocklist(account);
+
+        state.accruedYield = (claimPreview.primaryYield + claimPreview.lastDayYield).toUint64();
+        state.balanceAtLastUpdate = IERC20(underlyingToken).balanceOf(account).toUint64();
+        state.timestampAtLastUpdate = timestamp.toUint40();
+        state.flags.setBit(uint256(YieldStateFlags.Initialized));
+
+        emit YieldStreamer_AccountInitialized(
+            account,
+            groupId,
+            state.balanceAtLastUpdate,
+            state.accruedYield,
+            state.streamYield
+        );
     }
 
     /**
@@ -102,14 +139,59 @@ abstract contract YieldStreamerInitialization is
      * @param newSourceYieldStreamer The new source yield streamer.
      */
     function _setSourceYieldStreamer(address newSourceYieldStreamer) internal {
-        YieldStreamerInitializationStorageLayout storage $ = _yieldStreamerInitializationStorage();
+        YieldStreamerInitializationStorageLayout storage $init = _yieldStreamerInitializationStorage();
 
-        if ($.sourceYieldStreamer == newSourceYieldStreamer) {
-            return;
+        if ($init.sourceYieldStreamer == newSourceYieldStreamer) {
+            revert YieldStreamer_SourceYieldStreamerAlreadyConfigured();
         }
 
-        emit YieldStreamer_SourceYieldStreamerChanged($.sourceYieldStreamer, newSourceYieldStreamer);
+        emit YieldStreamer_SourceYieldStreamerChanged($init.sourceYieldStreamer, newSourceYieldStreamer);
 
-        $.sourceYieldStreamer = newSourceYieldStreamer;
+        $init.sourceYieldStreamer = newSourceYieldStreamer;
     }
+
+    /**
+     * @dev Sets the group mapping for the source yield streamer.
+     * @param groupKey The group key to map from.
+     * @param groupId The group id to map to.
+     */
+    function _mapSourceYieldStreamerGroup(bytes32 groupKey, uint256 groupId) internal {
+        YieldStreamerInitializationStorageLayout storage $init = _yieldStreamerInitializationStorage();
+        uint256 oldGroupId = $init.groupIds[groupKey];
+
+        if (oldGroupId == groupId) {
+            revert YieldStreamer_SourceYieldStreamerGroupAlreadyMapped();
+        }
+
+        $init.groupIds[groupKey] = groupId;
+
+        emit YieldStreamer_GroupMapped(groupKey, groupId, oldGroupId);
+    }
+
+    /**
+     * @dev Validates the source yield streamer.
+     * @param sourceYieldStreamer The source yield streamer to validate.
+     */
+    function _validateSourceYieldStreamer(IYieldStreamerV1 sourceYieldStreamer) internal view {
+        if (address(sourceYieldStreamer) == address(0)) {
+            revert YieldStreamer_SourceYieldStreamerNotConfigured();
+        }
+        if (!sourceYieldStreamer.isBlocklister(address(this))) {
+            revert YieldStreamer_SourceYieldStreamerUnauthorizedBlocklister();
+        }
+    }
+
+    // ------------------ Overrides ------------------------------- //
+
+    /**
+     * @dev Returns the current block timestamp.
+     */
+    function _blockTimestamp() internal view virtual returns (uint256);
+
+    /**
+     * @dev Assigns an account to a group.
+     * @param groupId The group id to assign the account to.
+     * @param account The account to assign to the group.
+     */
+    function _assignAccountToGroup(uint256 groupId, address account) internal virtual;
 }

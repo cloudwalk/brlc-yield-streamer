@@ -12,7 +12,7 @@ import { IYieldStreamerConfiguration_Events } from "./interfaces/IYieldStreamerC
 /**
  * @title YieldStreamerConfiguration contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev The contract that responsible for configuring the yield streamer.
+ * @dev The contract that responsible for the yield streamer configuration.
  */
 abstract contract YieldStreamerConfiguration is
     YieldStreamerStorage,

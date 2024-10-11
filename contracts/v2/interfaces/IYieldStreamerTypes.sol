@@ -9,6 +9,15 @@ pragma solidity ^0.8.0;
  */
 interface IYieldStreamerTypes {
     /**
+     * @dev Enum to represent the flags of the yield state.
+     *
+     * Values:
+     *  - Initialized: -- The yield state has been initialized.
+     */
+    enum YieldStateFlags {
+        Initialized
+    }
+    /**
      * @dev Structure to store the group information.
      *
      * Fields:
@@ -36,16 +45,19 @@ interface IYieldStreamerTypes {
      * @dev Structure to store the yield state of an account.
      *
      * Fields:
+     *  - flags: ------------------ The flags of the yield state.
      *  - timestampAtLastUpdate: -- The timestamp of the last update.
      *  - balanceAtLastUpdate: ---- The balance at the last update.
      *  - accruedYield: ----------- The accrued yield.
      *  - streamYield: ------------ The stream yield.
      */
     struct YieldState {
-        uint64 timestampAtLastUpdate;
+        uint8 flags;
+        uint40 timestampAtLastUpdate;
         uint64 balanceAtLastUpdate;
         uint64 accruedYield;
         uint64 streamYield;
+        // uint16 __reserved; // Reserved for future use until the end of the storage slot.
     }
 
     /**

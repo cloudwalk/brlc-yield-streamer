@@ -7,6 +7,7 @@ import "hardhat/console.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
+import { Bitwise } from "./libs/Bitwise.sol";
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
 import { IYieldStreamerPrimary_Errors } from "./interfaces/IYieldStreamerPrimary.sol";
 import { IYieldStreamerPrimary_Events } from "./interfaces/IYieldStreamerPrimary.sol";
@@ -15,7 +16,7 @@ import { IERC20Hook } from "../interfaces/IERC20Hook.sol";
 /**
  * @title YieldStreamerPrimary contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev The contract that responsible for calculating and distributing the yield.
+ * @dev The contract that responsible for the yield calculation and distribution.
  */
 abstract contract YieldStreamerPrimary is
     YieldStreamerStorage,
@@ -26,6 +27,7 @@ abstract contract YieldStreamerPrimary is
     // -------------------- Libs ---------------------------------- //
 
     using SafeCast for uint256;
+    using Bitwise for uint8;
 
     // -------------------- Structs ------------------------------- //
 
@@ -104,15 +106,23 @@ abstract contract YieldStreamerPrimary is
      * @inheritdoc IERC20Hook
      */
     function afterTokenTransfer(address from, address to, uint256 amount) external onlyToken {
-        if (from != address(0) && from.code.length == 0) {
-            _initializeYieldState(from);
+        if (_validateAccount(from)) {
+            if (ENABLE_YIELD_STATE_AUTO_INITIALIZATION) {
+                _initializeSingleAccount(from);
+            }
             _decreaseTokenBalance(from, amount);
         }
 
-        if (to != address(0) && to.code.length == 0) {
-            _initializeYieldState(to);
+        if (_validateAccount(to)) {
+            if (ENABLE_YIELD_STATE_AUTO_INITIALIZATION) {
+                _initializeSingleAccount(to);
+            }
             _increaseTokenBalance(to, amount);
         }
+    }
+
+    function _validateAccount(address account) internal view returns (bool) {
+        return account != address(0) && account.code.length == 0;
     }
 
     // -------------------- Functions ------------------------------ //
@@ -297,7 +307,7 @@ abstract contract YieldStreamerPrimary is
             preview.streamYieldBefore
         );
 
-        state.timestampAtLastUpdate = preview.toTimestamp.toUint64();
+        state.timestampAtLastUpdate = preview.toTimestamp.toUint40();
         state.accruedYield = preview.accruedYieldAfter.toUint64();
         state.streamYield = preview.streamYieldAfter.toUint64();
     }
@@ -356,7 +366,7 @@ abstract contract YieldStreamerPrimary is
 
         emit YieldStreamer_YieldAccrued(account, accruedYield, streamYield, state.accruedYield, state.streamYield);
 
-        state.timestampAtLastUpdate = _blockTimestamp().toUint64();
+        state.timestampAtLastUpdate = _blockTimestamp().toUint40();
         state.accruedYield = accruedYield.toUint64();
         state.streamYield = streamYield.toUint64();
 
@@ -1190,8 +1200,8 @@ abstract contract YieldStreamerPrimary is
     // ------------------ Overrides ------------------------------- //
 
     /**
-     * @dev Initializes the yield state for the given account.
+     * @dev Initializes a single account.
      * @param account The account to initialize.
      */
-    function _initializeYieldState(address account) internal virtual;
+    function _initializeSingleAccount(address account) internal virtual;
 }

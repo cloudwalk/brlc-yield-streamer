@@ -183,15 +183,8 @@ contract YieldStreamerV2 is
     /**
      * @inheritdoc IYieldStreamerInitialization_Functions
      */
-    function initializeYieldState(address[] memory accounts) external onlyRole(OWNER_ROLE) {
-        _initializeYieldState(accounts);
-    }
-
-    /**
-     * @inheritdoc IYieldStreamerInitialization_Functions
-     */
-    function initializeYieldState(address[] memory accounts, uint256[] memory yields) external onlyRole(OWNER_ROLE) {
-        _initializeYieldState(accounts, yields);
+    function initializeAccounts(address[] calldata accounts) external onlyRole(OWNER_ROLE) {
+        _initializeMultipleAccounts(accounts);
     }
 
     /**
@@ -201,15 +194,22 @@ contract YieldStreamerV2 is
         _setSourceYieldStreamer(sourceYieldStreamer);
     }
 
+    /**
+     * @inheritdoc IYieldStreamerInitialization_Functions
+     */
+    function mapSourceYieldStreamerGroup(bytes32 groupKey, uint256 groupId) external onlyRole(OWNER_ROLE) {
+        _mapSourceYieldStreamerGroup(groupKey, groupId);
+    }
+
     // ------------------ Overrides ------------------------------- //
 
     /**
      * @inheritdoc YieldStreamerInitialization
      */
-    function _initializeYieldState(
+    function _initializeSingleAccount(
         address account
     ) internal override(YieldStreamerPrimary, YieldStreamerInitialization) {
-        YieldStreamerInitialization._initializeYieldState(account);
+        YieldStreamerInitialization._initializeSingleAccount(account);
     }
 
     /**
@@ -230,10 +230,19 @@ contract YieldStreamerV2 is
     function _blockTimestamp()
         internal
         view
-        override(YieldStreamerPrimary, YieldStreamerConfiguration)
+        override(YieldStreamerPrimary, YieldStreamerConfiguration, YieldStreamerInitialization)
         returns (uint256)
     {
         return YieldStreamerPrimary._blockTimestamp();
+    }
+
+    /**
+     * @dev Assigns an account to a group.
+     * @param groupId The group id to assign the account to.
+     * @param account The account to assign to the group.
+     */
+    function _assignAccountToGroup(uint256 groupId, address account) internal override(YieldStreamerInitialization) {
+     //   YieldStreamerInitialization._assignAccountToGroup(groupId, account);
     }
 
     // ------------------ Upgrade Authorization ------------------ //

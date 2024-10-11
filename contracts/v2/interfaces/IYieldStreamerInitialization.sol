@@ -3,39 +3,6 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title IYieldStreamerInitialization_Types interface
- * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev Defines the types used in the yield streamer initialization contract.
- */
-interface IYieldStreamerInitialization_Types {
-    /**
-     * @dev Enum that represents the initialization mode.
-     *
-     * Values:
-     *  - Uninitialized: -- The yield state was not initialized.
-     *  - Automatic: ------ The yield state was initialized automatically.
-     *  - Manual: --------- The yield state was initialized manually.
-     */
-    enum InitializationMode {
-        Uninitialized,
-        Automatic,
-        Manual
-    }
-
-    /**
-     * @dev Structure that represents a range of values.
-     *
-     * Fields:
-     *  - mode: ------------ The initialization mode.
-     *  - timestamp: ------- The timestamp of the initialization.
-     */
-    struct InitializationState {
-        InitializationMode mode;
-        uint64 timestamp;
-    }
-}
-
-/**
  * @title IYieldStreamerInitialization_Errors interface
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev Defines the errors used in the yield streamer initialization contract.
@@ -44,8 +11,23 @@ interface IYieldStreamerInitialization_Errors {
     /// @dev Thrown when the array is empty.
     error YieldStreamer_EmptyArray();
 
-    /// @dev Thrown when the array length is invalid.
-    error YieldStreamer_InvalidArrayLength();
+    /// @dev Thrown when an account is already initialized.
+    error YieldStreamer_AccountAlreadyInitialized(address account);
+
+    /// @dev Thrown when account initialization is prohibited.
+    error YieldStreamer_AccountInitializationProhibited(address account);
+
+    /// @dev Thrown when the source yield streamer is not configured.
+    error YieldStreamer_SourceYieldStreamerNotConfigured();
+
+    /// @dev Thrown when the source yield streamer is already configured.
+    error YieldStreamer_SourceYieldStreamerAlreadyConfigured();
+
+    /// @dev Thrown when the source yield streamer group is already mapped.
+    error YieldStreamer_SourceYieldStreamerGroupAlreadyMapped();
+
+    /// @dev Thrown when this contract is not authorized to blocklist accounts on the source yield streamer.
+    error YieldStreamer_SourceYieldStreamerUnauthorizedBlocklister();
 }
 
 /**
@@ -55,25 +37,20 @@ interface IYieldStreamerInitialization_Errors {
  */
 interface IYieldStreamerInitialization_Events {
     /**
-     * @dev Emitted when the yield state initialization failed.
-     * @param account The account that failed to initialize the yield state.
-     * @param reason The reason for the failure (optional).
-     * @param code The code of the failure (optional).
-     * @param data The data of the failure (optional).
-     */
-    event YieldStreamer_YieldStateInitializationFailed(
-        address indexed account, // Tools: this comment prevents Prettier from formatting into a single line.
-        string reason,
-        uint256 code,
-        bytes data
-    );
-
-    /**
-     * @dev Emitted when the yield state was initialized.
+     * @dev Emitted when an account is initialized.
      * @param account The account that was initialized.
-     * @param yield The yield that was initialized.
+     * @param groupId The group id that the account was assigned to.
+     * @param accountBalance The balance of the account at the time of initialization.
+     * @param accruedYield The accrued yield of the account at the time of initialization.
+     * @param streamYield The stream yield of the account at the time of initialization.
      */
-    event YieldStreamer_YieldStateInitialized(address indexed account, uint256 yield);
+    event YieldStreamer_AccountInitialized(
+        address indexed account,
+        uint256 indexed groupId,
+        uint256 accountBalance,
+        uint256 accruedYield,
+        uint256 streamYield
+    );
 
     /**
      * @dev Emitted when the source yield streamer was changed.
@@ -84,6 +61,18 @@ interface IYieldStreamerInitialization_Events {
         address indexed oldSourceYieldStreamer,
         address indexed newSourceYieldStreamer
     );
+
+    /**
+     * @dev Emitted when a source yield streamer group is mapped.
+     * @param groupKey The group key that was mapped.
+     * @param newGroupId The new group id that was mapped.
+     * @param oldGroupId The old group id that was mapped.
+     */
+    event YieldStreamer_GroupMapped(
+        bytes32 groupKey, // Tools: this comment prevents Prettier from formatting into a single line.
+        uint256 newGroupId,
+        uint256 oldGroupId
+    );
 }
 
 /**
@@ -92,11 +81,24 @@ interface IYieldStreamerInitialization_Events {
  * @dev Defines the functions used in the yield streamer initialization contract.
  */
 interface IYieldStreamerInitialization_Functions {
-    function initializeYieldState(address[] memory accounts) external;
+    /**
+     * @dev Initializes multiple accounts.
+     * @param accounts The accounts to initialize.
+     */
+    function initializeAccounts(address[] calldata accounts) external;
 
-    function initializeYieldState(address[] memory accounts, uint256[] memory yields) external;
-
+    /**
+     * @dev Sets the source yield streamer.
+     * @param sourceYieldStreamer The source yield streamer to set.
+     */
     function setSourceYieldStreamer(address sourceYieldStreamer) external;
+
+    /**
+     * @dev Maps a source yield streamer group.
+     * @param groupKey The group key to map.
+     * @param groupId The group id to map.
+     */
+    function mapSourceYieldStreamerGroup(bytes32 groupKey, uint256 groupId) external;
 }
 
 /**
@@ -106,7 +108,6 @@ interface IYieldStreamerInitialization_Functions {
  *      by combining the types, errors, events and functions interfaces.
  */
 interface IYieldStreamerInitialization is
-    IYieldStreamerInitialization_Types,
     IYieldStreamerInitialization_Errors,
     IYieldStreamerInitialization_Events,
     IYieldStreamerInitialization_Functions

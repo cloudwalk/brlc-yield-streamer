@@ -37,4 +37,24 @@ interface IYieldStreamerV1 {
      * @return The result of the claim preview.
      */
     function claimAllPreview(address account) external view returns (ClaimResult memory);
+
+    /**
+     * @notice Adds an account to the blocklist.
+     * @param account The address to add to the blocklist.
+     */
+    function blocklist(address account) external;
+
+    /**
+     * @notice Checks if the account is configured as a blocklister.
+     * @param account The address to check.
+     * @return True if the account is a blocklister, False otherwise.
+     */
+    function isBlocklister(address account) external view returns (bool);
+
+    /**
+     * @dev Gets the group key for a given account.
+     * @param account The address to get the group key for.
+     * @return The group key for the given account.
+     */
+    function getAccountGroup(address account) external view returns (bytes32);
 }

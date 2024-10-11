@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import { IYieldStreamerTypes } from "./interfaces/IYieldStreamerTypes.sol";
-import { IYieldStreamerInitialization_Types } from "./interfaces/IYieldStreamerInitialization.sol";
 
 /**
  * @title YieldStreamerStorage_Constants contract
@@ -28,6 +27,9 @@ contract YieldStreamerStorage_Constants {
 
     /// @dev The minimum amount that is allowed to be claimed.
     uint256 public constant MIN_CLAIM_AMOUNT = 1000000;
+
+    /// @dev Whether yield state auto initialization is enabled.
+    bool public constant ENABLE_YIELD_STATE_AUTO_INITIALIZATION = false;
 }
 
 /**
@@ -44,7 +46,7 @@ contract YieldStreamerStorage_Initialization {
     /// @custom:storage-location cloudwalk.yieldstreamer.initialization.storage
     struct YieldStreamerInitializationStorageLayout {
         address sourceYieldStreamer;
-        mapping(address => IYieldStreamerInitialization_Types.InitializationState) initializationStates;
+        mapping(bytes32 => uint256) groupIds;
     }
 
     /// @dev The function to access the namespaced storage.
