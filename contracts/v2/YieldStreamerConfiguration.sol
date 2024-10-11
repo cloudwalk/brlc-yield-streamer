@@ -135,10 +135,4 @@ abstract contract YieldStreamerConfiguration is
     function _normalizeGroupId(uint256 groupId) internal pure returns (uint32) {
         return uint32(groupId);
     }
-
-    function _validateGroupId(uint256 groupId) internal pure {
-        if (groupId > type(uint32).max) {
-            revert YieldStreamer_GroupIdInvalid();
-        }
-    }
 }

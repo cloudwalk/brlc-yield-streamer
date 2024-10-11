@@ -39,11 +39,11 @@ interface IYieldStreamerInitialization_Events {
     );
 }
 
-interface IYieldStreamerInitialization_Functions {
+interface IYieldStreamerInitialization_Functions is IYieldStreamerInitialization_Types {
     function initializeAccountBatch(
-        uint256 mode, // TODO: Should we use enum here instead?
-        uint256 groupId, // TODO: Should we use uint32 here instead?
-        uint256 startYieldOrParameter, // TODO: Should we use uint64 here instead?
+        InitializationMode mode,
+        uint32 groupId,
+        uint64 startYieldOrParameter,
         address[] calldata accounts
     ) external;
 

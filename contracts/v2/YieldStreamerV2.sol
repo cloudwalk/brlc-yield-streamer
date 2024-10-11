@@ -76,13 +76,13 @@ contract YieldStreamerV2 is
     // ------------------ IYieldStreamerInitialization ------------------//
 
     function initializeAccountBatch(
-        uint256 mode,
-        uint256 groupId,
-        uint256 startYieldOrParameter,
+        InitializationMode mode,
+        uint32 groupId,
+        uint64 startYieldOrParameter,
         address[] calldata accounts
     ) external onlyRole(OWNER_ROLE) {
         _initializeAccountBatch(
-            mode, // Tools: this comment prevents Prettier from formatting into a single line.
+            uint256(mode), // Tools: this comment prevents Prettier from formatting into a single line.
             groupId,
             startYieldOrParameter,
             accounts

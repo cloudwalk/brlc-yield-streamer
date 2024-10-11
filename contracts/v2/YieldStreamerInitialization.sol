@@ -109,12 +109,10 @@ abstract contract YieldStreamerInitialization is
         uint256 startYieldOrParameter,
         address sourceYieldStreamer
     ) internal view {
-        _validateGroupId(groupId);
         // TODO: Maybe this check is redundant
         if (groupId == 0) {
             revert YieldStreamer_GroupForInitializationInvalid();
         }
-        _validateInitializationMode(mode);
         if (mode == uint256(InitializationMode.Migration)) {
             if (sourceYieldStreamer == address(0)) {
                 revert YieldStreamer_SourceYieldStreamerNotConfigured();
@@ -122,12 +120,9 @@ abstract contract YieldStreamerInitialization is
             if (!IYieldStreamerV1Blocklistable(sourceYieldStreamer).isBlocklister(address(this))) {
                 revert YieldStreamer_ContractUnauthorizedAsBlocklisterOnSourceYieldStreamer();
             }
-        } else {
-            // TODO: Replace with a centralize validation function
-            if (startYieldOrParameter > type(uint64).max) {
-                revert YieldStreamer_InitializationYieldInvalid();
-            }
         }
+        // No checks are need for this parameter now
+        startYieldOrParameter;
     }
 
     function _migrateYield(
@@ -146,11 +141,5 @@ abstract contract YieldStreamerInitialization is
         address sourceYieldStreamer
     ) internal {
         IYieldStreamerV1Blocklistable(sourceYieldStreamer).blocklist(account);
-    }
-
-    function _validateInitializationMode(uint256 mode) internal pure {
-        if (mode > uint256(type(InitializationMode).max)) {
-            revert YieldStreamer_InitializationModeInvalid();
-        }
     }
 }
