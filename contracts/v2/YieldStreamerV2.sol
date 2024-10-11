@@ -16,15 +16,20 @@ import { IYieldStreamerInitialization } from "./interfaces/IYieldStreamerInitial
 import { IYieldStreamerInitialization_Functions } from "./interfaces/IYieldStreamerInitialization.sol";
 
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
-import { YieldStreamerInitialization } from "./YieldStreamerInitialization.sol";
-import { YieldStreamerConfiguration } from "./YieldStreamerConfiguration.sol";
 import { YieldStreamerPrimary } from "./YieldStreamerPrimary.sol";
+import { YieldStreamerConfiguration } from "./YieldStreamerConfiguration.sol";
+import { YieldStreamerInitialization } from "./YieldStreamerInitialization.sol";
 
+/**
+ * @title YieldStreamerV2 contract
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
+ * @dev The contract that combines the primary, configuration and initialization contracts.
+ */
 contract YieldStreamerV2 is
+    UUPSUpgradeable,
     AccessControlExtUpgradeable,
     PausableExtUpgradeable,
     RescuableUpgradeable,
-    UUPSUpgradeable,
     YieldStreamerPrimary,
     YieldStreamerConfiguration,
     YieldStreamerInitialization,
@@ -32,7 +37,7 @@ contract YieldStreamerV2 is
     IYieldStreamerConfiguration,
     IYieldStreamerInitialization
 {
-    // ------------------ Constants ------------------ //
+    // ------------------ Constants ------------------------------- //
 
     /// @dev The role of this contract owner.
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
@@ -40,17 +45,31 @@ contract YieldStreamerV2 is
     /// @dev The role of this contract admin.
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    // ------------------ Errors ------------------ //
+    // ------------------ Errors ---------------------------------- //
 
     error YieldStreamer_TokenAddressZero();
 
+    // ------------------ Initializers ---------------------------- //
 
-    function initialize(address token) external initializer {
-        __YieldStreamer_init(token);
+    /**
+     * @dev Initializer of the upgradable contract.
+     *
+     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
+     *
+     * @param underlyingToken The address of the token to set as the underlying one.
+     */
+    function initialize(address underlyingToken) external initializer {
+        __YieldStreamer_init(underlyingToken);
     }
 
-
-    function __YieldStreamer_init(address token) internal onlyInitializing {
+    /**
+     * @dev Internal initializer of the upgradable contract.
+     *
+     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
+     *
+     * @param underlyingToken The address of the token to set as the underlying one.
+     */
+    function __YieldStreamer_init(address underlyingToken) internal onlyInitializing {
         __Context_init_unchained();
         __ERC165_init_unchained();
         __AccessControl_init_unchained();
@@ -60,68 +79,78 @@ contract YieldStreamerV2 is
         __Rescuable_init_unchained(OWNER_ROLE);
         __UUPSUpgradeable_init_unchained();
 
-        __YieldStreamer_init_init_unchained(token);
+        __YieldStreamer_init_init_unchained(underlyingToken);
     }
 
-
-    function __YieldStreamer_init_init_unchained(address token) internal onlyInitializing {
-        if (token == address(0)) {
+    /**
+     * @dev Unchained internal initializer of the upgradable contract.
+     *
+     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
+     *
+     * Requirements:
+     *
+     * - The passed address of the underlying token must not be zero.
+     *
+     * @param underlyingToken The address of the token to set as the underlying one.
+     */
+    function __YieldStreamer_init_init_unchained(address underlyingToken) internal onlyInitializing {
+        if (underlyingToken == address(0)) {
             revert YieldStreamer_TokenAddressZero();
         }
 
-        _yieldStreamerStorage().underlyingToken = token;
+        _yieldStreamerStorage().underlyingToken = underlyingToken;
 
         _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
         _setRoleAdmin(ADMIN_ROLE, OWNER_ROLE);
         _grantRole(OWNER_ROLE, _msgSender());
     }
 
-    // ------------------ IYieldStreamerInitialization ------------------//
+    // ------------------ IYieldStreamerPrimary ------------------- //
 
-    function initializeYieldState(address[] memory accounts) external onlyRole(OWNER_ROLE) {
-        for (uint256 i = 0; i < accounts.length; i++) {
-            _initializeYieldState(accounts[i]);
-        }
-    }
-
-    function initializeYieldState(address[] memory accounts, uint256[] memory yields) external onlyRole(OWNER_ROLE) {
-        for (uint256 i = 0; i < accounts.length; i++) {
-            _initializeYieldState(accounts[i], yields[i]);
-        }
-    }
-
-    function setSourceYieldStreamer(address sourceYieldStreamer) external onlyRole(OWNER_ROLE) {
-        _setSourceYieldStreamer(sourceYieldStreamer);
-    }
-
-    // ------------------ IYieldStreamerPrimary ------------------//
-
+    /**
+     * @inheritdoc IYieldStreamerPrimary_Functions
+     */
     function claimAmountFor(address account, uint256 amount) external onlyRole(ADMIN_ROLE) {
         _claimAmountFor(account, amount);
     }
 
+    /**
+     * @inheritdoc IYieldStreamerPrimary_Functions
+     */
     function getYieldState(address account) external view returns (YieldState memory) {
         return _getYieldState(account);
     }
 
+    /**
+     * @inheritdoc IYieldStreamerPrimary_Functions
+     */
     function getClaimPreview(address account) external view returns (ClaimPreview memory) {
         return _getClaimPreview(account);
     }
 
+    /**
+     * @inheritdoc IYieldStreamerPrimary_Functions
+     */
     function getAccruePreview(address account) external view returns (AccruePreview memory) {
         return _getAccruePreview(account);
     }
 
-    // ------------------ IYieldStreamerConfiguration ------------------//
+    // ------------------ IYieldStreamerConfiguration ------------- //
 
+    /**
+     * @inheritdoc IYieldStreamerConfiguration_Functions
+     */
     function assignGroup(
         uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         address[] memory accounts,
-        bool accrueYield
+        bool forceYieldAccrue
     ) external onlyRole(OWNER_ROLE) {
-        _assignGroup(groupId, accounts, accrueYield);
+        _assignGroup(groupId, accounts, forceYieldAccrue);
     }
 
+    /**
+     * @inheritdoc IYieldStreamerConfiguration_Functions
+     */
     function addYieldRate(
         uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 effectiveDay,
@@ -130,26 +159,62 @@ contract YieldStreamerV2 is
         _addYieldRate(groupId, effectiveDay, rateValue);
     }
 
+    /**
+     * @inheritdoc IYieldStreamerConfiguration_Functions
+     */
     function updateYieldRate(
         uint32 groupId,
+        uint256 itemIndex,
         uint256 effectiveDay,
-        uint256 rateValue,
-        uint256 recordIndex
+        uint256 rateValue
     ) external onlyRole(OWNER_ROLE) {
-        _updateYieldRate(groupId, effectiveDay, rateValue, recordIndex);
+        _updateYieldRate(groupId, itemIndex, effectiveDay, rateValue);
     }
 
+    /**
+     * @inheritdoc IYieldStreamerConfiguration_Functions
+     */
     function setFeeReceiver(address newFeeReceiver) external onlyRole(OWNER_ROLE) {
         _setFeeReceiver(newFeeReceiver);
     }
 
-    // ------------------ Overrides ------------------ //
+    // ------------------ IYieldStreamerInitialization ------------ //
 
+    /**
+     * @inheritdoc IYieldStreamerInitialization_Functions
+     */
+    function initializeYieldState(address[] memory accounts) external onlyRole(OWNER_ROLE) {
+        _initializeYieldState(accounts);
+    }
+
+    /**
+     * @inheritdoc IYieldStreamerInitialization_Functions
+     */
+    function initializeYieldState(address[] memory accounts, uint256[] memory yields) external onlyRole(OWNER_ROLE) {
+        _initializeYieldState(accounts, yields);
+    }
+
+    /**
+     * @inheritdoc IYieldStreamerInitialization_Functions
+     */
+    function setSourceYieldStreamer(address sourceYieldStreamer) external onlyRole(OWNER_ROLE) {
+        _setSourceYieldStreamer(sourceYieldStreamer);
+    }
+
+    // ------------------ Overrides ------------------------------- //
+
+    /**
+     * @inheritdoc YieldStreamerInitialization
+     */
     function _initializeYieldState(
         address account
     ) internal override(YieldStreamerPrimary, YieldStreamerInitialization) {
         YieldStreamerInitialization._initializeYieldState(account);
     }
+
+    /**
+     * @inheritdoc YieldStreamerPrimary
+     */
     function _accrueYield(
         address account,
         YieldState storage state,
@@ -159,6 +224,9 @@ contract YieldStreamerV2 is
         YieldStreamerPrimary._accrueYield(account, state, fromTimestamp, toTimestamp);
     }
 
+    /**
+     * @inheritdoc YieldStreamerPrimary
+     */
     function _blockTimestamp()
         internal
         view
@@ -170,8 +238,11 @@ contract YieldStreamerV2 is
 
     // ------------------ Upgrade Authorization ------------------ //
 
-
+    /**
+     * @dev The upgrade authorization function for UUPSProxy.
+     * @param newImplementation The address of the new implementation.
+     */
     function _authorizeUpgrade(address newImplementation) internal view override onlyRole(OWNER_ROLE) {
-        newImplementation;
+        newImplementation; // Suppresses a compiler warning about the unused variable.
     }
 }

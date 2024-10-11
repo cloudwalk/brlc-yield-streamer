@@ -12,23 +12,64 @@ import { IYieldStreamerPrimary_Errors } from "./interfaces/IYieldStreamerPrimary
 import { IYieldStreamerPrimary_Events } from "./interfaces/IYieldStreamerPrimary.sol";
 import { IERC20Hook } from "../interfaces/IERC20Hook.sol";
 
+/**
+ * @title YieldStreamerPrimary contract
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
+ * @dev The contract that responsible for calculating and distributing the yield.
+ */
 abstract contract YieldStreamerPrimary is
     YieldStreamerStorage,
     IYieldStreamerPrimary_Errors,
     IYieldStreamerPrimary_Events,
     IERC20Hook
 {
-    // -------------------- Libraries -------------------- //
+    // -------------------- Libs ---------------------------------- //
 
     using SafeCast for uint256;
 
-    // -------------------- Structs -------------------- //
+    // -------------------- Structs ------------------------------- //
 
+    /**
+     * @dev Structure that represents a range of values.
+     *
+     * Fields:
+     *  - startIndex: -- The value the range starts at.
+     *  - endIndex: ---- The value the range ends at.
+     */
     struct Range {
         uint256 startIndex;
         uint256 endIndex;
     }
 
+    /**
+     * @dev Structure that contains the parameters for calculating the yield.
+     *
+     * Fields:
+     *  - fromTimestamp: -- The timestamp of the period start.
+     *  - toTimestamp: ---- The timestamp of the period end.
+     *  - yieldRate: ------ The yield rate.
+     *  - balance: -------- The balance.
+     *  - streamYield: ---- The stream yield.
+     */
+    struct CompoundYieldParams {
+        uint256 fromTimestamp;
+        uint256 toTimestamp;
+        uint256 yieldRate;
+        uint256 balance;
+        uint256 streamYield;
+    }
+
+    /**
+     * @dev Structure that contains the parameters for calculating the yield.
+     *
+     * Fields:
+     *  - fromTimestamp: -------- The timestamp of the period start.
+     *  - toTimestamp: ---------- The timestamp of the period end.
+     *  - initialBalance: ------- The initial balance at the period start.
+     *  - initialAccruedYield: -- The initial accrued yield at the period start.
+     *  - initialStreamYield: --- The initial stream yield at the period start.
+     *  - yieldRateRange: ------- The range of yield rates that are applicable for the period.
+     */
     struct CalculateYieldParams {
         uint256 fromTimestamp;
         uint256 toTimestamp;
@@ -38,16 +79,19 @@ abstract contract YieldStreamerPrimary is
         Range yieldRateRange;
     }
 
-    // -------------------- Modifiers -------------------- //
+    // -------------------- Modifiers ----------------------------- //
 
+    /**
+     * @dev Modifier to ensure the caller is the underlying token.
+     */
     modifier onlyToken() {
         if (msg.sender != _yieldStreamerStorage().underlyingToken) {
-            revert YieldStreamer_UnauthorizedHookCaller();
+            revert YieldStreamer_HookCallerUnauthorized();
         }
         _;
     }
 
-    // -------------------- IERC20Hook -------------------- //
+    // -------------------- IERC20Hook ---------------------------- //
 
     /**
      * @inheritdoc IERC20Hook
@@ -60,26 +104,24 @@ abstract contract YieldStreamerPrimary is
      * @inheritdoc IERC20Hook
      */
     function afterTokenTransfer(address from, address to, uint256 amount) external onlyToken {
-        if (_validateAccount(from)) {
+        if (from != address(0) && from.code.length == 0) {
             _initializeYieldState(from);
             _decreaseTokenBalance(from, amount);
         }
 
-        if (_validateAccount(to)) {
+        if (to != address(0) && to.code.length == 0) {
             _initializeYieldState(to);
             _increaseTokenBalance(to, amount);
         }
     }
 
-    // -------------------- Functions -------------------- //
+    // -------------------- Functions ------------------------------ //
 
-    function _validateAccount(address account) internal pure returns (bool) {
-        // TODO: add other validations:
-        // - account is not a contract
-        // - etc.
-        return account != address(0);
-    }
-
+    /**
+     * @dev Claims the yield for a given account.
+     * @param account The account to claim the yield for.
+     * @param amount The amount of yield to claim.
+     */
     function _claimAmountFor(address account, uint256 amount) internal {
         if (amount < MIN_CLAIM_AMOUNT) {
             revert YieldStreamer_ClaimAmountBelowMinimum();
@@ -92,41 +134,120 @@ abstract contract YieldStreamerPrimary is
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
 
-        _accrueYield2(account, state, rates);
+        _accrueYield_NEW(account, state, rates);
         _transferYield(account, amount, state, $.feeReceiver, $.underlyingToken);
     }
 
-    function _getYieldState(address account) internal view returns (YieldState memory state) {
-        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        state = $.yieldStates[account];
-    }
-
-    function _map(AccruePreview memory accrue) internal pure returns (ClaimPreview memory claim) {
-        uint256 totalYield = accrue.accruedYieldAfter + accrue.streamYieldAfter;
-        claim.yield = _roundDown(totalYield);
-        claim.fee = 0;
-        claim.balance = accrue.balance;
-        claim.rate = accrue.rates[accrue.rates.length - 1].value;
-    }
-
-    function _getClaimPreview(address account) internal view returns (ClaimPreview memory preview) {
+    /**
+     * @dev Increases the token balance for a given account.
+     * @param account The account to increase the token balance for.
+     * @param amount The amount of token to increase.
+     */
+    function _increaseTokenBalance(address account, uint256 amount) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        preview = _map(_getAccruePreview(state, rates));
+        _accrueYield_NEW(account, state, rates);
+        state.balanceAtLastUpdate += amount.toUint64();
     }
 
-    function _getAccruePreview(address account) internal view returns (AccruePreview memory preview) {
+    /**
+     * @dev Decreases the token balance for a given account.
+     * @param account The account to decrease the token balance for.
+     * @param amount The amount of token to decrease.
+     */
+    function _decreaseTokenBalance(address account, uint256 amount) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        preview = _getAccruePreview(state, rates);
+        _accrueYield_NEW(account, state, rates);
+        state.balanceAtLastUpdate -= amount.toUint64();
     }
 
+    /**
+     * @dev Transfers the yield for a given account.
+     * @param account The account to transfer the yield for.
+     * @param amount The amount of yield to transfer.
+     * @param state The current state of the yield.
+     * @param feeReceiver The address to receive the fee.
+     * @param token The address of the underlying token.
+     */
+    function _transferYield(
+        address account, // Format: prevent collapse
+        uint256 amount,
+        YieldState storage state,
+        address feeReceiver,
+        address token
+    ) internal {
+        uint256 totalYield = state.accruedYield + state.streamYield;
+
+        if (amount > totalYield) {
+            revert YieldStreamer_YieldBalanceInsufficient();
+        }
+
+        if (amount > state.accruedYield) {
+            emit YieldStreamer_YieldTransferred(account, state.accruedYield, amount - state.accruedYield);
+            state.streamYield -= (amount - state.accruedYield).toUint64();
+            state.accruedYield = 0;
+        } else {
+            emit YieldStreamer_YieldTransferred(account, amount, 0);
+            state.accruedYield -= amount.toUint64();
+        }
+
+        if (FEE_RATE != 0 && feeReceiver != address(0)) {
+            uint256 fee = _roundUp(_calculateFee(amount));
+            amount -= fee;
+            IERC20(token).transfer(feeReceiver, fee);
+        }
+
+        IERC20(token).transfer(account, amount);
+    }
+
+    /**
+     * @dev Gets the yield state for a given account.
+     * @param account The account to get the yield state for.
+     * @return The yield state.
+     */
+    function _getYieldState(address account) internal view returns (YieldState memory) {
+        return _yieldStreamerStorage().yieldStates[account];
+    }
+
+    /**
+     * @dev Gets the claim preview for a given account.
+     * @param account The account to get the claim preview for.
+     * @return The claim preview.
+     */
+    function _getClaimPreview(address account) internal view returns (ClaimPreview memory) {
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState storage state = $.yieldStates[account];
+        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        return _map(_getAccruePreview(state, rates));
+    }
+
+    /**
+     * @dev Gets the accrue preview for a given account.
+     * @param account The account to get the accrue preview for.
+     * @return The accrue preview.
+     */
+    function _getAccruePreview(address account) internal view returns (AccruePreview memory) {
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState storage state = $.yieldStates[account];
+        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        return _getAccruePreview(state, rates);
+    }
+
+    /**
+     * @dev Gets the accrue preview for a given account.
+     * @param state The current state of the yield.
+     * @param rates The yield rates to use for the calculation.
+     * @return The accrue preview.
+     */
     function _getAccruePreview(
         YieldState storage state,
         YieldRate[] storage rates
-    ) internal view returns (AccruePreview memory preview) {
+    ) internal view returns (AccruePreview memory) {
+        AccruePreview memory preview;
+
         preview.accruedYieldBefore = state.accruedYield;
         preview.streamYieldBefore = state.streamYield;
         preview.fromTimestamp = state.timestampAtLastUpdate;
@@ -149,24 +270,45 @@ abstract contract YieldStreamerPrimary is
 
         preview.rates = _truncateArray(yieldRateRange, rates);
         preview.results = calculateResults;
+
+        return preview;
     }
 
-    function _increaseTokenBalance(address account, uint256 amount) internal {
-        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldState storage state = $.yieldStates[account];
-        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        _accrueYield2(account, state, rates);
-        state.balanceAtLastUpdate += amount.toUint64();
+    // ------------------ Yield calculation ----------------------- //
+
+    /**
+     * @dev Accrues the yield for a given account.
+     * @param account The account to accrue the yield for.
+     * @param state The current state of the yield.
+     * @param rates The yield rates to use for the calculation.
+     */
+    function _accrueYield_NEW(
+        address account, // Tools: this comment prevents Prettier from formatting into a single line.
+        YieldState storage state,
+        YieldRate[] storage rates
+    ) internal {
+        AccruePreview memory preview = _getAccruePreview(state, rates);
+
+        emit YieldStreamer_YieldAccrued(
+            account,
+            preview.accruedYieldAfter,
+            preview.streamYieldAfter,
+            preview.accruedYieldBefore,
+            preview.streamYieldBefore
+        );
+
+        state.timestampAtLastUpdate = preview.toTimestamp.toUint64();
+        state.accruedYield = preview.accruedYieldAfter.toUint64();
+        state.streamYield = preview.streamYieldAfter.toUint64();
     }
 
-    function _decreaseTokenBalance(address account, uint256 amount) internal {
-        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldState storage state = $.yieldStates[account];
-        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        _accrueYield2(account, state, rates);
-        state.balanceAtLastUpdate -= amount.toUint64();
-    }
-
+    /**
+     * @dev Accrues the yield for a given account and period.
+     * @param account The account to accrue the yield for.
+     * @param state The current state of the yield.
+     * @param fromTimestamp The timestamp of the period start.
+     * @param toTimestamp The timestamp of the period end.
+     */
     function _accrueYield(
         address account,
         YieldState storage state,
@@ -231,213 +373,17 @@ abstract contract YieldStreamerPrimary is
         // }
     }
 
-    function _accrueYield2(address account, YieldState storage state, YieldRate[] storage rates) internal {
-        AccruePreview memory preview = _getAccruePreview(state, rates);
-
-        emit YieldStreamer_YieldAccrued(
-            account,
-            preview.accruedYieldAfter,
-            preview.streamYieldAfter,
-            preview.accruedYieldBefore,
-            preview.streamYieldBefore
-        );
-
-        state.timestampAtLastUpdate = preview.toTimestamp.toUint64();
-        state.accruedYield = preview.accruedYieldAfter.toUint64();
-        state.streamYield = preview.streamYieldAfter.toUint64();
-    }
-
-    function _transferYield(
-        address account, // Format: prevent collapse
-        uint256 amount,
-        YieldState storage state,
-        address feeReceiver,
-        address token
-    ) internal {
-        uint256 totalYield = state.accruedYield + state.streamYield;
-
-        if (amount > totalYield) {
-            revert YieldStreamer_InsufficientYieldBalance();
-        }
-
-        if (amount > state.accruedYield) {
-            emit YieldStreamer_YieldTransferred(account, state.accruedYield, amount - state.accruedYield);
-            state.streamYield -= (amount - state.accruedYield).toUint64();
-            state.accruedYield = 0;
-        } else {
-            emit YieldStreamer_YieldTransferred(account, amount, 0);
-            state.accruedYield -= amount.toUint64();
-        }
-
-        if (FEE_RATE != 0 && feeReceiver != address(0)) {
-            uint256 fee = _roundUp(_calculateFee(amount));
-            amount -= fee;
-            IERC20(token).transfer(feeReceiver, fee);
-        }
-
-        IERC20(token).transfer(account, amount);
-    }
-
-    function _compoundYield(
-        uint256 fromTimestamp,
-        uint256 toTimestamp,
-        uint256 yieldRate,
-        uint256 balance,
-        uint256 streamYield
-    ) internal pure returns (YieldResult memory result) {
-        // bool _debug = false;
-
-        // if (_debug) {
-        //     console.log("");
-        //     console.log("_compoundYield | START");
-
-        //     console.log("");
-        //     console.log("_compoundYield | Input params:");
-        //     console.log("_compoundYield | - fromTimestamp: %s", fromTimestamp);
-        //     console.log("_compoundYield | - toTimestamp: %s", toTimestamp);
-        //     console.log("_compoundYield | - yieldRate: %s", yieldRate);
-        //     console.log("_compoundYield | - balance: %s", balance);
-        //     console.log("_compoundYield | - streamYield: %s", streamYield);
-        // }
-
-        if (fromTimestamp > toTimestamp) {
-            revert YieldStreamer_InvalidTimeRange();
-        }
-        if (fromTimestamp == toTimestamp || balance == 0) {
-            // if (_debug) {
-            //     console.log("");
-            //     console.log("_compoundYield | Case 0: Early exit");
-
-            //     console.log("");
-            //     console.log("_compoundYield | END");
-            // }
-            return YieldResult(0, 0, 0);
-        }
-
-        uint256 totalBalance = balance;
-        uint256 nextDayStart = _nextDay(fromTimestamp);
-        uint256 partDayYield = 0;
-
-        if (nextDayStart >= toTimestamp) {
-            /**
-             * We are within the same day as the `fromTimestamp`.
-             */
-
-            partDayYield = _calculatePartDayYield(totalBalance, yieldRate, toTimestamp - fromTimestamp);
-            result.lastDayYield = streamYield + partDayYield;
-
-            // if (_debug) {
-            //     console.log("");
-            //     console.log("_compoundYield | Case 1: Within the same day");
-
-            //     console.log("");
-            //     console.log("_compoundYield | Calculating yield for elapsed time: %s", toTimestamp - fromTimestamp);
-            //     console.log(
-            //         "_compoundYield | - lastDayYield = streamYield + partDayYield: %s + %s = %s",
-            //         streamYield,
-            //         partDayYield,
-            //         result.lastDayYield
-            //     );
-            // }
-        } else {
-            /**
-             * We are spanning multiple days.
-             */
-
-            // if (_debug) {
-            //     console.log("");
-            //     console.log("_compoundYield | Case 2: Spanning multiple days");
-            // }
-
-            /**
-             * 1. Calculate yield for the first partial day.
-             */
-
-            uint256 firstDaySeconds = nextDayStart - fromTimestamp;
-
-            if (firstDaySeconds != 1 days) {
-                partDayYield = _calculatePartDayYield(totalBalance, yieldRate, firstDaySeconds);
-                result.firstDayYield = streamYield + partDayYield;
-
-                // if (_debug) {
-                //     console.log("");
-                //     console.log(
-                //         "_compoundYield | Calculating yield for the first partial day remaining seconds %s",
-                //         firstDaySeconds
-                //     );
-                //     console.log(
-                //         "_compoundYield | - firstDayYield = streamYield + partDayYield: %s + %s = %s",
-                //         streamYield,
-                //         partDayYield,
-                //         result.firstDayYield
-                //     );
-                // }
-
-                totalBalance += result.firstDayYield;
-                fromTimestamp = nextDayStart;
-            }
-
-            /**
-             * 2. Calculate yield for each full day.
-             */
-
-            uint256 fullDaysCount = (toTimestamp - fromTimestamp) / 1 days;
-
-            if (fullDaysCount > 0) {
-                // if (_debug) {
-                //     console.log("");
-                //     console.log("_compoundYield | Calculating yield for full days count: %s", fullDaysCount);
-                // }
-
-                for (uint256 i = 0; i < fullDaysCount; i++) {
-                    uint256 dailyYield = _calculateFullDayYield(totalBalance + result.fullDaysYield, yieldRate);
-                    result.fullDaysYield += dailyYield;
-
-                    // if (_debug) {
-                    //     console.log("_compoundYield | - [%s] full day yield: %s", i, dailyYield);
-                    // }
-                }
-
-                totalBalance += result.fullDaysYield;
-                fromTimestamp += fullDaysCount * 1 days;
-            }
-
-            /**
-             * 3. Calculate yield for the last partial day.
-             */
-
-            if (fromTimestamp < toTimestamp) {
-                // if (_debug) {
-                //     console.log("");
-                //     console.log("_compoundYield | Calculating yield for the last partial day");
-                // }
-
-                uint256 lastDaySeconds = toTimestamp - fromTimestamp;
-                result.lastDayYield = _calculatePartDayYield(totalBalance, yieldRate, lastDaySeconds);
-
-                // if (_debug) {
-                //     console.log("_compoundYield | - last day remaining seconds: %s", lastDaySeconds);
-                //     console.log("_compoundYield | - last day partial yield: %s", result.lastDayYield);
-                // }
-            }
-        }
-
-        // if (_debug) {
-        //     console.log("");
-        //     console.log("_compoundYield | Final result:");
-        //     console.log("_compoundYield | - firstDayYield: %s", result.firstDayYield);
-        //     console.log("_compoundYield | - fullDaysYield: %s", result.fullDaysYield);
-        //     console.log("_compoundYield | - lastDayYield: %s", result.lastDayYield);
-
-        //     console.log("");
-        //     console.log("_compoundYield | END");
-        // }
-    }
-
+    /**
+     * @dev Calculates the yield for a given period.
+     * @param params The parameters for the yield calculation.
+     * @param yieldRates The array of yield rates to use for the calculation.
+     * @return The yield results for the given period.
+     */
     function _calculateYield(
         CalculateYieldParams memory params,
         YieldRate[] storage yieldRates // Format: prevent collapse
-    ) internal view returns (YieldResult[] memory result) {
+    ) internal view returns (YieldResult[] memory) {
+        YieldResult[] memory results;
         uint256 ratePeriods = params.yieldRateRange.endIndex - params.yieldRateRange.startIndex + 1;
         uint256 localFromTimestamp = params.fromTimestamp;
         uint256 localToTimestamp = params.toTimestamp;
@@ -489,7 +435,7 @@ abstract contract YieldStreamerPrimary is
             //     console.log("_calculateYield | Scenario 0: No yield rates in range");
             // }
 
-            result = new YieldResult[](0);
+            results = new YieldResult[](0);
         } else if (ratePeriods == 1) {
             /**
              * Scenario 1
@@ -518,13 +464,15 @@ abstract contract YieldStreamerPrimary is
             //     );
             // }
 
-            result = new YieldResult[](1);
-            result[0] = _compoundYield(
-                localFromTimestamp,
-                localToTimestamp,
-                yieldRates[params.yieldRateRange.startIndex].value,
-                params.initialBalance + params.initialAccruedYield,
-                params.initialStreamYield
+            results = new YieldResult[](1);
+            results[0] = _compoundYield(
+                CompoundYieldParams(
+                    localFromTimestamp,
+                    localToTimestamp,
+                    yieldRates[params.yieldRateRange.startIndex].value,
+                    params.initialBalance + params.initialAccruedYield,
+                    params.initialStreamYield
+                )
             );
 
             // if (_debug) {
@@ -547,7 +495,7 @@ abstract contract YieldStreamerPrimary is
             //     console.log("_calculateYield | Scenario 2: Two yield rates in range");
             // }
 
-            result = new YieldResult[](2);
+            results = new YieldResult[](2);
             localFromTimestamp = params.fromTimestamp;
             localToTimestamp = yieldRates[params.yieldRateRange.startIndex + 1].effectiveDay * 1 days;
 
@@ -569,12 +517,14 @@ abstract contract YieldStreamerPrimary is
             //     );
             // }
 
-            result[0] = _compoundYield(
-                localFromTimestamp,
-                localToTimestamp,
-                yieldRates[params.yieldRateRange.startIndex].value,
-                params.initialBalance + params.initialAccruedYield,
-                params.initialStreamYield
+            results[0] = _compoundYield(
+                CompoundYieldParams(
+                    localFromTimestamp,
+                    localToTimestamp,
+                    yieldRates[params.yieldRateRange.startIndex].value,
+                    params.initialBalance + params.initialAccruedYield,
+                    params.initialStreamYield
+                )
             );
 
             // if (_debug) {
@@ -609,16 +559,18 @@ abstract contract YieldStreamerPrimary is
             //     );
             // }
 
-            result[1] = _compoundYield(
-                localFromTimestamp,
-                localToTimestamp,
-                yieldRates[params.yieldRateRange.startIndex + 1].value,
-                params.initialBalance +
-                    params.initialAccruedYield +
-                    result[0].firstDayYield +
-                    result[0].fullDaysYield +
-                    result[0].lastDayYield,
-                0
+            results[1] = _compoundYield(
+                CompoundYieldParams(
+                    localFromTimestamp,
+                    localToTimestamp,
+                    yieldRates[params.yieldRateRange.startIndex + 1].value,
+                    params.initialBalance +
+                        params.initialAccruedYield +
+                        results[0].firstDayYield +
+                        results[0].fullDaysYield +
+                        results[0].lastDayYield,
+                    params.initialStreamYield
+                )
             );
 
             // if (_debug) {
@@ -644,7 +596,7 @@ abstract contract YieldStreamerPrimary is
             // }
 
             uint256 currentBalance = params.initialBalance + params.initialAccruedYield;
-            result = new YieldResult[](ratePeriods);
+            results = new YieldResult[](ratePeriods);
             localFromTimestamp = params.fromTimestamp;
             localToTimestamp = yieldRates[params.yieldRateRange.startIndex + 1].effectiveDay * 1 days;
 
@@ -668,12 +620,14 @@ abstract contract YieldStreamerPrimary is
             //     );
             // }
 
-            result[0] = _compoundYield(
-                localFromTimestamp,
-                localToTimestamp,
-                yieldRates[params.yieldRateRange.startIndex].value,
-                currentBalance,
-                params.initialStreamYield
+            results[0] = _compoundYield(
+                CompoundYieldParams(
+                    localFromTimestamp,
+                    localToTimestamp,
+                    yieldRates[params.yieldRateRange.startIndex].value,
+                    currentBalance,
+                    params.initialStreamYield
+                )
             );
 
             // if (_debug) {
@@ -684,7 +638,7 @@ abstract contract YieldStreamerPrimary is
             //     console.log("_calculateYield | - lastDayYield: %s", result[0].lastDayYield);
             // }
 
-            currentBalance += result[0].firstDayYield + result[0].fullDaysYield + result[0].lastDayYield;
+            currentBalance += results[0].firstDayYield + results[0].fullDaysYield + results[0].lastDayYield;
 
             // Calculate yield for the intermediate periods
 
@@ -715,12 +669,8 @@ abstract contract YieldStreamerPrimary is
                 //     );
                 // }
 
-                result[i - params.yieldRateRange.startIndex] = _compoundYield(
-                    localFromTimestamp,
-                    localToTimestamp,
-                    yieldRates[i].value,
-                    currentBalance,
-                    0
+                results[i - params.yieldRateRange.startIndex] = _compoundYield(
+                    CompoundYieldParams(localFromTimestamp, localToTimestamp, yieldRates[i].value, currentBalance, 0)
                 );
 
                 // if (_debug) {
@@ -741,9 +691,9 @@ abstract contract YieldStreamerPrimary is
                 // }
 
                 currentBalance +=
-                    result[i - params.yieldRateRange.startIndex].firstDayYield +
-                    result[i - params.yieldRateRange.startIndex].fullDaysYield +
-                    result[i - params.yieldRateRange.startIndex].lastDayYield;
+                    results[i - params.yieldRateRange.startIndex].firstDayYield +
+                    results[i - params.yieldRateRange.startIndex].fullDaysYield +
+                    results[i - params.yieldRateRange.startIndex].lastDayYield;
             }
 
             // Calculate yield for the last period
@@ -772,12 +722,14 @@ abstract contract YieldStreamerPrimary is
             //     );
             // }
 
-            result[ratePeriods - 1] = _compoundYield(
-                localFromTimestamp,
-                localToTimestamp,
-                yieldRates[params.yieldRateRange.startIndex + ratePeriods - 1].value,
-                currentBalance,
-                0
+            results[ratePeriods - 1] = _compoundYield(
+                CompoundYieldParams(
+                    localFromTimestamp,
+                    localToTimestamp,
+                    yieldRates[params.yieldRateRange.startIndex + ratePeriods - 1].value,
+                    currentBalance,
+                    0
+                )
             );
 
             // if (_debug) {
@@ -794,14 +746,212 @@ abstract contract YieldStreamerPrimary is
         //     console.log("_calculateYield | END");
         // }
 
+        return results;
+    }
+
+    /**
+     * @dev Compounds the yield for a given period.
+     * @param params The parameters for the yield calculation.
+     * @return The yield result for the given period.
+     */
+    function _compoundYield(CompoundYieldParams memory params) internal pure returns (YieldResult memory) {
+        // bool _debug = false;
+
+        // if (_debug) {
+        //     console.log("");
+        //     console.log("_compoundYield | START");
+
+        //     console.log("");
+        //     console.log("_compoundYield | Input params:");
+        //     console.log("_compoundYield | - fromTimestamp: %s", fromTimestamp);
+        //     console.log("_compoundYield | - toTimestamp: %s", toTimestamp);
+        //     console.log("_compoundYield | - yieldRate: %s", yieldRate);
+        //     console.log("_compoundYield | - balance: %s", balance);
+        //     console.log("_compoundYield | - streamYield: %s", streamYield);
+        // }
+
+        YieldResult memory result;
+
+        if (params.fromTimestamp > params.toTimestamp) {
+            revert YieldStreamer_TimeRangeInvalid();
+        }
+        if (params.fromTimestamp == params.toTimestamp || params.balance == 0) {
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_compoundYield | Case 0: Early exit");
+
+            //     console.log("");
+            //     console.log("_compoundYield | END");
+            // }
+            return YieldResult(0, 0, 0);
+        }
+
+        uint256 totalBalance = params.balance;
+        uint256 nextDayStart = _nextDay(params.fromTimestamp);
+        uint256 partDayYield = 0;
+
+        if (nextDayStart >= params.toTimestamp) {
+            /**
+             * We are within the same day as the `fromTimestamp`.
+             */
+
+            partDayYield = _calculatePartDayYield(
+                totalBalance,
+                params.yieldRate,
+                params.toTimestamp - params.fromTimestamp
+            );
+            result.lastDayYield = params.streamYield + partDayYield;
+
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_compoundYield | Case 1: Within the same day");
+
+            //     console.log("");
+            //     console.log("_compoundYield | Calculating yield for elapsed time: %s", toTimestamp - fromTimestamp);
+            //     console.log(
+            //         "_compoundYield | - lastDayYield = streamYield + partDayYield: %s + %s = %s",
+            //         streamYield,
+            //         partDayYield,
+            //         result.lastDayYield
+            //     );
+            // }
+        } else {
+            /**
+             * We are spanning multiple days.
+             */
+
+            // if (_debug) {
+            //     console.log("");
+            //     console.log("_compoundYield | Case 2: Spanning multiple days");
+            // }
+
+            /**
+             * 1. Calculate yield for the first partial day.
+             */
+
+            uint256 firstDaySeconds = nextDayStart - params.fromTimestamp;
+
+            if (firstDaySeconds != 1 days) {
+                partDayYield = _calculatePartDayYield(totalBalance, params.yieldRate, firstDaySeconds);
+                result.firstDayYield = params.streamYield + partDayYield;
+
+                // if (_debug) {
+                //     console.log("");
+                //     console.log(
+                //         "_compoundYield | Calculating yield for the first partial day remaining seconds %s",
+                //         firstDaySeconds
+                //     );
+                //     console.log(
+                //         "_compoundYield | - firstDayYield = streamYield + partDayYield: %s + %s = %s",
+                //         streamYield,
+                //         partDayYield,
+                //         result.firstDayYield
+                //     );
+                // }
+
+                totalBalance += result.firstDayYield;
+                params.fromTimestamp = nextDayStart;
+            }
+
+            /**
+             * 2. Calculate yield for each full day.
+             */
+
+            uint256 fullDaysCount = (params.toTimestamp - params.fromTimestamp) / 1 days;
+
+            if (fullDaysCount > 0) {
+                // if (_debug) {
+                //     console.log("");
+                //     console.log("_compoundYield | Calculating yield for full days count: %s", fullDaysCount);
+                // }
+
+                for (uint256 i = 0; i < fullDaysCount; i++) {
+                    uint256 dailyYield = _calculateFullDayYield(totalBalance + result.fullDaysYield, params.yieldRate);
+                    result.fullDaysYield += dailyYield;
+
+                    // if (_debug) {
+                    //     console.log("_compoundYield | - [%s] full day yield: %s", i, dailyYield);
+                    // }
+                }
+
+                totalBalance += result.fullDaysYield;
+                params.fromTimestamp += fullDaysCount * 1 days;
+            }
+
+            /**
+             * 3. Calculate yield for the last partial day.
+             */
+
+            if (params.fromTimestamp < params.toTimestamp) {
+                // if (_debug) {
+                //     console.log("");
+                //     console.log("_compoundYield | Calculating yield for the last partial day");
+                // }
+
+                uint256 lastDaySeconds = params.toTimestamp - params.fromTimestamp;
+                result.lastDayYield = _calculatePartDayYield(totalBalance, params.yieldRate, lastDaySeconds);
+
+                // if (_debug) {
+                //     console.log("_compoundYield | - last day remaining seconds: %s", lastDaySeconds);
+                //     console.log("_compoundYield | - last day partial yield: %s", result.lastDayYield);
+                // }
+            }
+        }
+
+        // if (_debug) {
+        //     console.log("");
+        //     console.log("_compoundYield | Final result:");
+        //     console.log("_compoundYield | - firstDayYield: %s", result.firstDayYield);
+        //     console.log("_compoundYield | - fullDaysYield: %s", result.fullDaysYield);
+        //     console.log("_compoundYield | - lastDayYield: %s", result.lastDayYield);
+
+        //     console.log("");
+        //     console.log("_compoundYield | END");
+        // }
+
         return result;
     }
 
+    /**
+     * @dev Calculates the yield for a partial day.
+     * @param amount The amount to calculate the yield for.
+     * @param yieldRate The yield rate.
+     * @param elapsedSeconds The elapsed seconds.
+     * @return The yield for the partial day.
+     */
+    function _calculatePartDayYield(
+        uint256 amount,
+        uint256 yieldRate,
+        uint256 elapsedSeconds
+    ) internal pure returns (uint256) {
+        return (amount * yieldRate * elapsedSeconds) / (1 days * RATE_FACTOR);
+    }
+
+    /**
+     * @dev Calculates the yield for a full day.
+     * @param amount The amount to calculate the yield for.
+     * @param yieldRate The yield rate.
+     * @return The yield for the full day.
+     */
+    function _calculateFullDayYield(
+        uint256 amount, // Tools: this comment prevents Prettier from formatting into a single line.
+        uint256 yieldRate
+    ) internal pure returns (uint256) {
+        return (amount * yieldRate) / RATE_FACTOR;
+    }
+
+    /**
+     * @dev Finds the yield rates within a given timestamp range.
+     * @param yieldRates The array of yield rates to search.
+     * @param fromTimestamp The start timestamp.
+     * @param toTimestamp The end timestamp.
+     * @return The yield rate range.
+     */
     function _inRangeYieldRates(
         YieldRate[] storage yieldRates,
         uint256 fromTimestamp,
         uint256 toTimestamp
-    ) internal view returns (Range memory range) {
+    ) internal view returns (Range memory) {
         // bool _debug = false;
 
         // if (_debug) {
@@ -823,6 +973,8 @@ abstract contract YieldStreamerPrimary is
         //     console.log("");
         //     console.log("_inRangeYieldRates | Starting loop:");
         // }
+
+        Range memory range;
 
         uint256 i = yieldRates.length;
 
@@ -879,33 +1031,24 @@ abstract contract YieldStreamerPrimary is
         //     console.log("");
         //     console.log("_inRangeYieldRates | END");
         // }
+
+        return range;
     }
 
-    // -------------------- Yield math -------------------- //
-
-    function _calculatePartDayYield(
-        uint256 amount,
-        uint256 yieldRate,
-        uint256 elapsedSeconds
-    ) internal pure returns (uint256) {
-        return (amount * yieldRate * elapsedSeconds) / (1 days * RATE_FACTOR);
-    }
-
-    function _calculateFullDayYield(
-        uint256 amount, // Format: prevent collapse
-        uint256 yieldRate
-    ) internal pure returns (uint256) {
-        return (amount * yieldRate) / RATE_FACTOR;
-    }
-
-    function _aggregateYield(
-        YieldResult[] memory yieldResults
-    ) internal pure returns (uint256 accruedYield, uint256 streamYield) {
+    /**
+     * @dev Aggregates the yield results.
+     * @param yieldResults The yield results to aggregate.
+     * @return The final accrued yield and stream yield.
+     */
+    function _aggregateYield(YieldResult[] memory yieldResults) internal pure returns (uint256, uint256) {
         // bool _debug = false;
 
         // if (_debug) {
         //     console.log("");
         // }
+
+        uint256 accruedYield = 0;
+        uint256 streamYield = 0;
 
         if (yieldResults.length > 1) {
             // if (_debug) {
@@ -927,27 +1070,98 @@ abstract contract YieldStreamerPrimary is
         }
 
         streamYield = yieldResults[yieldResults.length - 1].lastDayYield;
+
+        return (accruedYield, streamYield);
     }
 
+    // ------------------ Timestamp ------------------------------- //
+
+    /**
+     * @dev Calculates a timestamp for the beginning of the next day.
+     * @param timestamp The timestamp to calculate from.
+     * @return The timestamp of the next day.
+     */
+    function _nextDay(uint256 timestamp) internal pure returns (uint256) {
+        return timestamp - (timestamp % 1 days) + 1 days;
+    }
+
+    /**
+     * @dev Calculates the number of the effective day from a timestamp.
+     * @param timestamp The timestamp to calculate from.
+     * @return The number of the effective day.
+     */
+    function _effectiveDay(uint256 timestamp) internal pure returns (uint256) {
+        return timestamp / 1 days;
+    }
+
+    /**
+     * @dev Calculates the remaining seconds before the next day.
+     * @param timestamp The timestamp to calculate from.
+     * @return The remaining seconds.
+     */
+    function _remainingSeconds(uint256 timestamp) internal pure returns (uint256) {
+        return timestamp % 1 days;
+    }
+
+    /**
+     * @dev Calculates the timestamp of the beginning of the day.
+     * @param timestamp The timestamp to calculate from.
+     * @return The timestamp of the day.
+     */
+    function _effectiveTimestamp(uint256 timestamp) internal pure returns (uint256) {
+        return (timestamp / 1 days) * 1 days;
+    }
+
+    /**
+     * @dev Calculates the block timestamp including the negative time shift.
+     * @return The block timestamp.
+     */
+    function _blockTimestamp() internal view virtual returns (uint256) {
+        return block.timestamp - NEGATIVE_TIME_SHIFT;
+    }
+
+    // ------------------ Utility --------------------------------- //
+
+    /**
+     * @dev Truncates an array of yield rates.
+     * @param range The range describing the truncation.
+     * @param yieldRates The array to truncate.
+     * @return The truncated array.
+     */
     function _truncateArray(
         Range memory range,
         YieldRate[] storage yieldRates
-    ) internal view returns (YieldRate[] memory truncatedArray) {
-        truncatedArray = new YieldRate[](range.endIndex - range.startIndex + 1);
+    ) internal view returns (YieldRate[] memory) {
+        YieldRate[] memory result = new YieldRate[](range.endIndex - range.startIndex + 1);
         for (uint256 i = range.startIndex; i <= range.endIndex; i++) {
-            truncatedArray[i - range.startIndex] = yieldRates[i];
+            result[i - range.startIndex] = yieldRates[i];
         }
-        return truncatedArray;
+        return result;
     }
 
+    /**
+     * @dev Calculates the fee for a given amount.
+     * @param amount The amount to calculate the fee for.
+     * @return The fee amount.
+     */
     function _calculateFee(uint256 amount) internal pure returns (uint256) {
         return (amount * FEE_RATE) / RATE_FACTOR;
     }
 
+    /**
+     * @dev Rounds down an amount.
+     * @param amount The amount to round down.
+     * @return The rounded down amount.
+     */
     function _roundDown(uint256 amount) internal pure returns (uint256) {
         return (amount / ROUND_FACTOR) * ROUND_FACTOR;
     }
 
+    /**
+     * @dev Rounds up an amount.
+     * @param amount The amount to round up.
+     * @return The rounded up amount.
+     */
     function _roundUp(uint256 amount) internal pure returns (uint256) {
         uint256 roundedAmount = _roundDown(amount);
 
@@ -958,29 +1172,26 @@ abstract contract YieldStreamerPrimary is
         return roundedAmount;
     }
 
-    // -------------------- Timestamp -------------------- //
-
-    function _nextDay(uint256 timestamp) internal pure returns (uint256) {
-        return timestamp - (timestamp % 1 days) + 1 days;
+    /**
+     * @dev Maps the accrue preview to a claim preview.
+     * @param accrue The accrue preview.
+     * @return The claim preview.
+     */
+    function _map(AccruePreview memory accrue) internal pure returns (ClaimPreview memory) {
+        ClaimPreview memory claim;
+        uint256 totalYield = accrue.accruedYieldAfter + accrue.streamYieldAfter;
+        claim.yield = _roundDown(totalYield);
+        claim.fee = 0;
+        claim.balance = accrue.balance;
+        claim.rate = accrue.rates[accrue.rates.length - 1].value;
+        return claim;
     }
 
-    function _effectiveDay(uint256 timestamp) internal pure returns (uint256) {
-        return timestamp / 1 days;
-    }
+    // ------------------ Overrides ------------------------------- //
 
-    function _remainingSeconds(uint256 timestamp) internal pure returns (uint256) {
-        return timestamp % 1 days;
-    }
-
-    function _effectiveTimestamp(uint256 timestamp) internal pure returns (uint256) {
-        return (timestamp / 1 days) * 1 days;
-    }
-
-    function _blockTimestamp() internal view virtual returns (uint256) {
-        return block.timestamp - NEGATIVE_TIME_SHIFT;
-    }
-
-    // -------------------- Overrides -------------------- //
-
+    /**
+     * @dev Initializes the yield state for the given account.
+     * @param account The account to initialize.
+     */
     function _initializeYieldState(address account) internal virtual;
 }
