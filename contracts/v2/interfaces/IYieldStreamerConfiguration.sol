@@ -13,6 +13,8 @@ interface IYieldStreamerConfiguration_Errors {
 
     error YieldStreamer_GroupAlreadyAssigned(address account);
 
+    error YieldStreamer_GroupIdInvalid();
+
     error YieldStreamer_FeeReceiverAlreadyConfigured();
 }
 

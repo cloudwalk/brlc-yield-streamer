@@ -11,15 +11,24 @@ interface IYieldStreamerInitialization_Types {
 
 interface IYieldStreamerInitialization_Errors {
     error YieldStreamer_AccountAlreadyInitialized(address account);
+
     error YieldStreamer_AccountInitializationProhibited(address account);
+
+    error YieldStreamer_ContractUnauthorizedAsBlocklisterOnSourceYieldStreamer();
+
     error YieldStreamer_GroupForInitializationInvalid();
+
+    error YieldStreamer_InitializationModeInvalid();
+
+    error YieldStreamer_InitializationYieldInvalid();
+
     error YieldStreamer_SourceYieldStreamerNotConfigured();
 }
 
 interface IYieldStreamerInitialization_Events {
     event YieldStreamer_AccountInitialized(
         address indexed account,
-        uint256 indexed grouId,
+        uint256 indexed groupId,
         uint256 accruedYield,
         uint256 streamYield
     );
@@ -30,11 +39,11 @@ interface IYieldStreamerInitialization_Events {
     );
 }
 
-interface IYieldStreamerInitialization_Functions is IYieldStreamerInitialization_Types {
+interface IYieldStreamerInitialization_Functions {
     function initializeAccountBatch(
-        uint256 groupId,
-        InitializationMode mode,
-        uint256 startYieldOrParameter,
+        uint256 mode, // TODO: Should we use enum here instead?
+        uint256 groupId, // TODO: Should we use uint32 here instead?
+        uint256 startYieldOrParameter, // TODO: Should we use uint64 here instead?
         address[] calldata accounts
     ) external;
 

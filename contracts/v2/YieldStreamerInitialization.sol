@@ -14,6 +14,7 @@ import { IYieldStreamerInitialization_Errors } from "./interfaces/IYieldStreamer
 import { IYieldStreamerInitialization_Events } from "./interfaces/IYieldStreamerInitialization.sol";
 import { IYieldStreamerInitialization_Types } from "./interfaces/IYieldStreamerInitialization.sol";
 import { IYieldStreamerV1 } from "./interfaces/IYieldStreamerV1.sol";
+import { IYieldStreamerV1Blocklistable } from "./interfaces/IYieldStreamerV1Blocklistable.sol";
 
 abstract contract YieldStreamerInitialization is
     YieldStreamerStorage,
@@ -29,37 +30,37 @@ abstract contract YieldStreamerInitialization is
 
     // ------------------ Functions ------------------ //
     function _initializeAccountBatch(
-        uint256 groupId,
         uint256 mode,
+        uint256 groupId,
         uint256 startYieldOrParameter,
         address[] calldata accounts
     ) internal virtual {
         YieldStreamerStorageLayout storage primaryStorage = _yieldStreamerStorage();
-
-        // TODO: Move sourceYieldStreamer to the primary storage
-
         address sourceYieldStreamer = _yieldStreamerInitializationStorage().sourceYieldStreamer;
-        _validateInitialization(groupId, mode, sourceYieldStreamer);
+        _validateInitialization(groupId, mode, startYieldOrParameter, sourceYieldStreamer);
+        uint256 blockTimestamp = _blockTimestamp();
 
         uint256 accountCount = accounts.length;
         for (uint256 i = 0; i < accountCount; ++i) {
             _initializeAccount(
-                groupId, // Tools: this comment prevents Prettier from formatting into a single line.
-                mode,
+                mode, // Tools: this comment prevents Prettier from formatting into a single line.
+                groupId,
                 accounts[i],
                 startYieldOrParameter,
                 sourceYieldStreamer,
+                blockTimestamp,
                 primaryStorage
             );
         }
     }
 
     function _initializeAccount(
-        uint256 groupId,
         uint256 mode,
+        uint256 groupId,
         address account,
         uint256 startYieldOrParameter,
         address sourceYieldStreamer,
+        uint256 blockTimestamp,
         YieldStreamerStorageLayout storage primaryStorage
     ) internal virtual {
         YieldState storage yieldState = primaryStorage.yieldStates[account];
@@ -71,16 +72,23 @@ abstract contract YieldStreamerInitialization is
             revert YieldStreamer_AccountInitializationProhibited(account);
         }
 
-        _assignAccountToGroup(uint32(groupId), account, primaryStorage);
+        _assignAccountToGroup(_normalizeGroupId(groupId), account, primaryStorage);
 
         if (mode == uint256(InitializationMode.Migration)) {
-            _migrateState(account, sourceYieldStreamer, yieldState);
-            _blockAccountOnSourceYieldStreamer(account, sourceYieldStreamer);
+            _migrateYield(account, sourceYieldStreamer, yieldState);
+            _blocklistAccountOnSourceYieldStreamer(account, sourceYieldStreamer);
         } else {
             yieldState.accruedYield = startYieldOrParameter.toUint64();
-            yieldState.balanceAtLastUpdate = IERC20(primaryStorage.underlyingToken).balanceOf(account).toUint64();
-            yieldState.timestampAtLastUpdate = _blockTimestamp().toUint40();
         }
+        yieldState.balanceAtLastUpdate = IERC20(primaryStorage.underlyingToken).balanceOf(account).toUint64();
+        yieldState.timestampAtLastUpdate = _normalizeBlockTimestamp(blockTimestamp);
+
+        emit YieldStreamer_AccountInitialized(
+            account, // Tools: this comment prevents Prettier from formatting into a single line.
+            groupId,
+            yieldState.accruedYield,
+            yieldState.streamYield
+        );
     }
 
     function _setSourceYieldStreamer(address sourceYieldStreamer) internal {
@@ -96,22 +104,33 @@ abstract contract YieldStreamerInitialization is
     }
 
     function _validateInitialization(
-        uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
-        uint256 mode,
+        uint256 mode, // Tools: this comment prevents Prettier from formatting into a single line.
+        uint256 groupId,
+        uint256 startYieldOrParameter,
         address sourceYieldStreamer
-    ) internal pure {
-        if (groupId == 0 || groupId > type(uint32).max) {
+    ) internal view {
+        _validateGroupId(groupId);
+        // TODO: Maybe this check is redundant
+        if (groupId == 0) {
             revert YieldStreamer_GroupForInitializationInvalid();
         }
+        _validateInitializationMode(mode);
         if (mode == uint256(InitializationMode.Migration)) {
             if (sourceYieldStreamer == address(0)) {
                 revert YieldStreamer_SourceYieldStreamerNotConfigured();
             }
-            // TODO: Check we can block users on the source yield streamer
+            if (!IYieldStreamerV1Blocklistable(sourceYieldStreamer).isBlocklister(address(this))) {
+                revert YieldStreamer_ContractUnauthorizedAsBlocklisterOnSourceYieldStreamer();
+            }
+        } else {
+            // TODO: Replace with a centralize validation function
+            if (startYieldOrParameter > type(uint64).max) {
+                revert YieldStreamer_InitializationYieldInvalid();
+            }
         }
     }
 
-    function _migrateState(
+    function _migrateYield(
         address account, // Tools: this comment prevents Prettier from formatting into a single line.
         address sourceYieldStreamer,
         YieldState storage state
@@ -120,15 +139,18 @@ abstract contract YieldStreamerInitialization is
             account
         );
         state.accruedYield = (claimPreview.primaryYield + claimPreview.lastDayYield).toUint64();
-        // TODO: Make other migration things
     }
 
-    function _blockAccountOnSourceYieldStreamer(
+    function _blocklistAccountOnSourceYieldStreamer(
         address account, // Tools: this comment prevents Prettier from formatting into a single line.
         address sourceYieldStreamer
-    ) internal pure {
-        account;
-        sourceYieldStreamer;
-        //TODO: Implement
+    ) internal {
+        IYieldStreamerV1Blocklistable(sourceYieldStreamer).blocklist(account);
+    }
+
+    function _validateInitializationMode(uint256 mode) internal pure {
+        if (mode > uint256(type(InitializationMode).max)) {
+            revert YieldStreamer_InitializationModeInvalid();
+        }
     }
 }

@@ -220,7 +220,7 @@ abstract contract YieldStreamerPrimary is
 
         emit YieldStreamer_YieldAccrued(account, accruedYield, streamYield, state.accruedYield, state.streamYield);
 
-        state.timestampAtLastUpdate = _blockTimestamp().toUint40();
+        state.timestampAtLastUpdate = _blockTimestamp();
         state.accruedYield = accruedYield.toUint64();
         state.streamYield = streamYield.toUint64();
 
@@ -248,7 +248,7 @@ abstract contract YieldStreamerPrimary is
             preview.streamYieldBefore
         );
 
-        state.timestampAtLastUpdate = preview.toTimestamp.toUint40();
+        state.timestampAtLastUpdate = _convertBlockTimestasmp(preview.toTimestamp);
         state.accruedYield = preview.accruedYieldAfter.toUint64();
         state.streamYield = preview.streamYieldAfter.toUint64();
     }
@@ -982,7 +982,15 @@ abstract contract YieldStreamerPrimary is
         return (timestamp / 1 days) * 1 days;
     }
 
-    function _blockTimestamp() internal view virtual returns (uint256) {
-        return block.timestamp - NEGATIVE_TIME_SHIFT;
+    function _blockTimestamp() internal view virtual returns (uint40) {
+        return (block.timestamp - NEGATIVE_TIME_SHIFT).toUint40();
+    }
+
+    function _normalizeBlockTimestamp(uint256 blockTimestamp) internal pure returns (uint40) {
+        return uint40(blockTimestamp);
+    }
+
+    function _convertBlockTimestasmp(uint256 blockTimestamp) internal pure returns (uint40) {
+        return blockTimestamp.toUint40();
     }
 }

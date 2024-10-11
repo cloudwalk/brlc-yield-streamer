@@ -20,6 +20,8 @@ contract YieldStreamerStorage_Initialization {
     bytes32 private constant _YIELD_STREAMER_INITIALIZATION_STORAGE_LOCATION =
         0xe30574a965b6970db31584ac81d5a366c5ee7e44e3db18d7f307802e0605a400;
 
+    // TODO: Move sourceYieldStreamer to the primary storage
+
     /// @custom:storage-location cloudwalk.yieldstreamer.initialization.storage
     struct YieldStreamerInitializationStorageLayout {
         address sourceYieldStreamer;
