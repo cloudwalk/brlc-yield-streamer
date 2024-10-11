@@ -8,6 +8,8 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
+import { Utils } from "./libs/Utils.sol";
+
 import { IYieldStreamerPrimary_Errors } from "./interfaces/IYieldStreamerPrimary.sol";
 import { IYieldStreamerPrimary_Events } from "./interfaces/IYieldStreamerPrimary.sol";
 import { IERC20Hook } from "../interfaces/IERC20Hook.sol";
@@ -61,23 +63,27 @@ abstract contract YieldStreamerPrimary is
      */
     function afterTokenTransfer(address from, address to, uint256 amount) external onlyToken {
         if (_validateAccount(from)) {
-            _initializeYieldState(from);
             _decreaseTokenBalance(from, amount);
         }
 
         if (_validateAccount(to)) {
-            _initializeYieldState(to);
             _increaseTokenBalance(to, amount);
         }
     }
 
     // -------------------- Functions -------------------- //
 
-    function _validateAccount(address account) internal pure returns (bool) {
-        // TODO: add other validations:
-        // - account is not a contract
-        // - etc.
-        return account != address(0);
+    function _validateAccount(address account) internal view returns (bool) {
+        if (account == address(0)) {
+            return false;
+        }
+
+        YieldStreamerStorageLayout storage storageLayout = _yieldStreamerStorage();
+        return
+            Utils._isBitSet(
+                storageLayout.yieldStates[account].flags, // Tools: this comment prevents Prettier from collapsing
+                uint256(YieldStateFlagIndex.Initialized)
+            );
     }
 
     function _claimAmountFor(address account, uint256 amount) internal {
@@ -214,7 +220,7 @@ abstract contract YieldStreamerPrimary is
 
         emit YieldStreamer_YieldAccrued(account, accruedYield, streamYield, state.accruedYield, state.streamYield);
 
-        state.timestampAtLastUpdate = _blockTimestamp().toUint64();
+        state.timestampAtLastUpdate = _blockTimestamp().toUint40();
         state.accruedYield = accruedYield.toUint64();
         state.streamYield = streamYield.toUint64();
 
@@ -242,7 +248,7 @@ abstract contract YieldStreamerPrimary is
             preview.streamYieldBefore
         );
 
-        state.timestampAtLastUpdate = preview.toTimestamp.toUint64();
+        state.timestampAtLastUpdate = preview.toTimestamp.toUint40();
         state.accruedYield = preview.accruedYieldAfter.toUint64();
         state.streamYield = preview.streamYieldAfter.toUint64();
     }
@@ -979,8 +985,4 @@ abstract contract YieldStreamerPrimary is
     function _blockTimestamp() internal view virtual returns (uint256) {
         return block.timestamp - NEGATIVE_TIME_SHIFT;
     }
-
-    // -------------------- Overrides -------------------- //
-
-    function _initializeYieldState(address account) internal virtual;
 }

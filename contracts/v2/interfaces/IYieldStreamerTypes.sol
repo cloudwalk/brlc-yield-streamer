@@ -3,8 +3,13 @@
 pragma solidity ^0.8.0;
 
 interface IYieldStreamerTypes {
+    enum YieldStateFlagIndex {
+        Initialized
+    }
+
     struct YieldState {
-        uint64 timestampAtLastUpdate;
+        uint8 flags;
+        uint40 timestampAtLastUpdate;
         uint64 balanceAtLastUpdate;
         uint64 accruedYield;
         uint64 streamYield;

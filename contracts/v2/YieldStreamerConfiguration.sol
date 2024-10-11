@@ -3,12 +3,16 @@
 pragma solidity ^0.8.0;
 
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
+import { YieldStreamerPrimary } from "./YieldStreamerPrimary.sol";
+
 import { AccessControlExtUpgradeable } from "./base/AccessControlExtUpgradeable.sol";
+
 import { IYieldStreamerConfiguration_Errors } from "./interfaces/IYieldStreamerConfiguration.sol";
 import { IYieldStreamerConfiguration_Events } from "./interfaces/IYieldStreamerConfiguration.sol";
 
 abstract contract YieldStreamerConfiguration is
     YieldStreamerStorage,
+    YieldStreamerPrimary,
     IYieldStreamerConfiguration_Errors,
     IYieldStreamerConfiguration_Events
 {
@@ -23,21 +27,27 @@ abstract contract YieldStreamerConfiguration is
         uint256 toTimestamp = _blockTimestamp();
 
         for (uint256 i = 0; i < accounts.length; i++) {
-            Group storage group = $.groups[accounts[i]];
-
-            if (group.id == groupId) {
-                revert YieldStreamer_GroupAlreadyAssigned(accounts[i]);
-            }
+            address account = accounts[i];
+            _assignAccountToGroup(groupId, account, $);
 
             if (accrueYield) {
-                YieldState storage state = $.yieldStates[accounts[i]];
-                _accrueYield(accounts[i], state, state.timestampAtLastUpdate, toTimestamp);
+                YieldState storage state = $.yieldStates[account];
+                _accrueYield(account, state, state.timestampAtLastUpdate, toTimestamp);
             }
-
-            group.id = groupId;
-
-            emit YieldStreamer_GroupAssigned(groupId, accounts[i]);
         }
+    }
+
+    function _assignAccountToGroup(
+        uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
+        address account,
+        YieldStreamerStorageLayout storage storageLayout
+    ) internal {
+        Group storage group = storageLayout.groups[account];
+        if (group.id == groupId) {
+            revert YieldStreamer_GroupAlreadyAssigned(account);
+        }
+        group.id = groupId;
+        emit YieldStreamer_GroupAssigned(groupId, account);
     }
 
     function _addYieldRate(
@@ -121,12 +131,4 @@ abstract contract YieldStreamerConfiguration is
 
         $.feeReceiver = newFeeReceiver;
     }
-    function _accrueYield(
-        address account,
-        YieldState storage state,
-        uint256 fromTimestamp,
-        uint256 toTimestamp
-    ) internal virtual;
-
-    function _blockTimestamp() internal view virtual returns (uint256);
 }

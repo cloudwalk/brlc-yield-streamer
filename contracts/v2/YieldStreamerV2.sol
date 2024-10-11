@@ -44,11 +44,9 @@ contract YieldStreamerV2 is
 
     error YieldStreamer_TokenAddressZero();
 
-
     function initialize(address token) external initializer {
         __YieldStreamer_init(token);
     }
-
 
     function __YieldStreamer_init(address token) internal onlyInitializing {
         __Context_init_unchained();
@@ -62,7 +60,6 @@ contract YieldStreamerV2 is
 
         __YieldStreamer_init_init_unchained(token);
     }
-
 
     function __YieldStreamer_init_init_unchained(address token) internal onlyInitializing {
         if (token == address(0)) {
@@ -78,16 +75,18 @@ contract YieldStreamerV2 is
 
     // ------------------ IYieldStreamerInitialization ------------------//
 
-    function initializeYieldState(address[] memory accounts) external onlyRole(OWNER_ROLE) {
-        for (uint256 i = 0; i < accounts.length; i++) {
-            _initializeYieldState(accounts[i]);
-        }
-    }
-
-    function initializeYieldState(address[] memory accounts, uint256[] memory yields) external onlyRole(OWNER_ROLE) {
-        for (uint256 i = 0; i < accounts.length; i++) {
-            _initializeYieldState(accounts[i], yields[i]);
-        }
+    function initializeAccountBatch(
+        uint256 groupId,
+        InitializationMode mode,
+        uint256 startYieldOrParameter,
+        address[] calldata accounts
+    ) external onlyRole(OWNER_ROLE) {
+        _initializeAccountBatch(
+            groupId, // Tools: this comment prevents Prettier from formatting into a single line.
+            uint256(mode),
+            startYieldOrParameter,
+            accounts
+        );
     }
 
     function setSourceYieldStreamer(address sourceYieldStreamer) external onlyRole(OWNER_ROLE) {
@@ -143,33 +142,7 @@ contract YieldStreamerV2 is
         _setFeeReceiver(newFeeReceiver);
     }
 
-    // ------------------ Overrides ------------------ //
-
-    function _initializeYieldState(
-        address account
-    ) internal override(YieldStreamerPrimary, YieldStreamerInitialization) {
-        YieldStreamerInitialization._initializeYieldState(account);
-    }
-    function _accrueYield(
-        address account,
-        YieldState storage state,
-        uint256 fromTimestamp,
-        uint256 toTimestamp
-    ) internal override(YieldStreamerPrimary, YieldStreamerConfiguration) {
-        YieldStreamerPrimary._accrueYield(account, state, fromTimestamp, toTimestamp);
-    }
-
-    function _blockTimestamp()
-        internal
-        view
-        override(YieldStreamerPrimary, YieldStreamerConfiguration)
-        returns (uint256)
-    {
-        return YieldStreamerPrimary._blockTimestamp();
-    }
-
     // ------------------ Upgrade Authorization ------------------ //
-
 
     function _authorizeUpgrade(address newImplementation) internal view override onlyRole(OWNER_ROLE) {
         newImplementation;

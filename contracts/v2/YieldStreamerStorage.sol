@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import { IYieldStreamerTypes } from "./interfaces/IYieldStreamerTypes.sol";
-import { IYieldStreamerInitialization_Types } from "./interfaces/IYieldStreamerInitialization.sol";
 
 contract YieldStreamerStorage_Constants {
     uint256 public constant ROUND_FACTOR = 10000;
@@ -24,7 +23,6 @@ contract YieldStreamerStorage_Initialization {
     /// @custom:storage-location cloudwalk.yieldstreamer.initialization.storage
     struct YieldStreamerInitializationStorageLayout {
         address sourceYieldStreamer;
-        mapping(address => IYieldStreamerInitialization_Types.InitializationState) initializationStates;
     }
 
     function _yieldStreamerInitializationStorage()
