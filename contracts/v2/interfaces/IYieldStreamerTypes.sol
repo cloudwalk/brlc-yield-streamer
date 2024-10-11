@@ -36,9 +36,9 @@ interface IYieldStreamerTypes {
      *  - value: --------- The rate value.
      */
     struct YieldRate {
-        uint64 effectiveDay;
-        uint64 value;
-        // uint128 __reserved; // Reserved for future use until the end of the storage slot.
+        uint16 effectiveDay;
+        uint32 value;
+        // uint208 __reserved; // Reserved for future use until the end of the storage slot.
     }
 
     /**

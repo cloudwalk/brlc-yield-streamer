@@ -57,7 +57,7 @@ abstract contract YieldStreamerConfiguration is
             revert YieldStreamer_YieldRateAlreadyConfigured();
         }
 
-        yieldRates.push(YieldRate({ effectiveDay: effectiveDay.toUint64(), value: rateValue.toUint64() }));
+        yieldRates.push(YieldRate({ effectiveDay: effectiveDay.toUint16(), value: rateValue.toUint32() }));
 
         emit YieldStreamer_YieldRateAdded(groupId, effectiveDay, rateValue);
     }
@@ -111,8 +111,8 @@ abstract contract YieldStreamerConfiguration is
 
         emit YieldStreamer_YieldRateUpdated(groupId, itemIndex, effectiveDay, rateValue);
 
-        yieldRate.effectiveDay = effectiveDay.toUint64();
-        yieldRate.value = rateValue.toUint64();
+        yieldRate.effectiveDay = effectiveDay.toUint16();
+        yieldRate.value = rateValue.toUint32();
     }
 
     /**
