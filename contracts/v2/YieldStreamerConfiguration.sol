@@ -40,24 +40,24 @@ abstract contract YieldStreamerConfiguration is
         uint256 rateValue
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldRate[] storage yieldRates = $.yieldRates[groupId];
+        YieldRate[] storage rates = $.yieldRates[groupId];
 
         // Ensure first item in the array always starts with effectiveDay 0
-        if (yieldRates.length == 0 && effectiveDay != 0) {
+        if (rates.length == 0 && effectiveDay != 0) {
             revert YieldStreamer_YieldRateInvalidEffectiveDay();
         }
 
         // Ensure that rates are always in ascending order
-        if (yieldRates.length > 0 && yieldRates[yieldRates.length - 1].effectiveDay >= effectiveDay) {
+        if (rates.length > 0 && rates[rates.length - 1].effectiveDay >= effectiveDay) {
             revert YieldStreamer_YieldRateInvalidEffectiveDay();
         }
 
         // Ensure that rates are not duplicated
-        if (yieldRates.length > 0 && yieldRates[yieldRates.length - 1].value == rateValue) {
+        if (rates.length > 0 && rates[rates.length - 1].value == rateValue) {
             revert YieldStreamer_YieldRateAlreadyConfigured();
         }
 
-        yieldRates.push(YieldRate({ effectiveDay: effectiveDay.toUint16(), value: rateValue.toUint32() }));
+        rates.push(YieldRate({ effectiveDay: effectiveDay.toUint16(), value: rateValue.toUint32() }));
 
         emit YieldStreamer_YieldRateAdded(groupId, effectiveDay, rateValue);
     }
@@ -80,7 +80,7 @@ abstract contract YieldStreamerConfiguration is
         uint256 rateValue
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldRate[] storage yieldRates = $.yieldRates[groupId];
+        YieldRate[] storage rates = $.yieldRates[groupId];
 
         // Ensure first item in the array always starts with effectiveDay = 0
         if (itemIndex == 0 && effectiveDay != 0) {
@@ -88,26 +88,26 @@ abstract contract YieldStreamerConfiguration is
         }
 
         // Ensure that item index is within the bounds of the array
-        if (itemIndex >= yieldRates.length) {
+        if (itemIndex >= rates.length) {
             revert YieldStreamer_YieldRateInvalidItemIndex();
         }
 
         // Ensure that rates are always in ascending order
-        uint256 lastIndex = yieldRates.length - 1;
+        uint256 lastIndex = rates.length - 1;
         if (lastIndex != 0) {
             int256 intEffectiveDay = int256(effectiveDay);
             int256 previousEffectiveDay = itemIndex != 0
-                ? int256(uint256(yieldRates[itemIndex - 1].effectiveDay))
+                ? int256(uint256(rates[itemIndex - 1].effectiveDay))
                 : type(int256).min;
             int256 nextEffectiveDay = itemIndex != lastIndex
-                ? int256(uint256(yieldRates[itemIndex + 1].effectiveDay))
+                ? int256(uint256(rates[itemIndex + 1].effectiveDay))
                 : type(int256).max;
             if (intEffectiveDay <= previousEffectiveDay || intEffectiveDay >= nextEffectiveDay) {
                 revert YieldStreamer_YieldRateInvalidEffectiveDay();
             }
         }
 
-        YieldRate storage yieldRate = yieldRates[itemIndex];
+        YieldRate storage yieldRate = rates[itemIndex];
 
         emit YieldStreamer_YieldRateUpdated(groupId, itemIndex, effectiveDay, rateValue);
 
