@@ -29,7 +29,7 @@ abstract contract YieldStreamerInitialization is
     // ------------------ Functions --------------------------------- //
 
     /**
-     * @dev Initializes multiple accounts in hard mode (reverts if any account is already initialized).
+     * @dev Initializes multiple accounts in a hard mode (reverts if any account is already initialized).
      * @param accounts The accounts to initialize.
      */
     function _initializeMultipleAccounts(address[] calldata accounts) internal {
@@ -70,7 +70,7 @@ abstract contract YieldStreamerInitialization is
     }
 
     /**
-     * @dev Initializes a single account in soft mode (does nothing if the account is already initialized).
+     * @dev Initializes a single account in a soft mode (does nothing if the account is already initialized).
      * @param account The account to initialize.
      */
     function _initializeSingleAccount(address account) internal virtual {
@@ -115,7 +115,7 @@ abstract contract YieldStreamerInitialization is
         IYieldStreamerV1 sourceYieldStreamer,
         YieldState storage state
     ) internal virtual {
-        _assignAccountToGroup(groupId, account);
+        _assignSingleAccountToGroup(groupId, account);
 
         IYieldStreamerV1.ClaimResult memory claimPreview = sourceYieldStreamer.claimAllPreview(account);
         sourceYieldStreamer.blocklist(account);
@@ -193,5 +193,5 @@ abstract contract YieldStreamerInitialization is
      * @param groupId The group id to assign the account to.
      * @param account The account to assign to the group.
      */
-    function _assignAccountToGroup(uint256 groupId, address account) internal virtual;
+    function _assignSingleAccountToGroup(uint256 groupId, address account) internal virtual;
 }

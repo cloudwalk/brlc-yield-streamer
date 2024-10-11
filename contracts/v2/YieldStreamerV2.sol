@@ -145,7 +145,7 @@ contract YieldStreamerV2 is
         address[] memory accounts,
         bool forceYieldAccrue
     ) external onlyRole(OWNER_ROLE) {
-        _assignGroup(groupId, accounts, forceYieldAccrue);
+        _assignMultipleAccountsToGroup(groupId, accounts, forceYieldAccrue);
     }
 
     /**
@@ -204,15 +204,6 @@ contract YieldStreamerV2 is
     // ------------------ Overrides ------------------------------- //
 
     /**
-     * @inheritdoc YieldStreamerInitialization
-     */
-    function _initializeSingleAccount(
-        address account
-    ) internal override(YieldStreamerPrimary, YieldStreamerInitialization) {
-        YieldStreamerInitialization._initializeSingleAccount(account);
-    }
-
-    /**
      * @inheritdoc YieldStreamerPrimary
      */
     function _accrueYield(
@@ -237,12 +228,22 @@ contract YieldStreamerV2 is
     }
 
     /**
-     * @dev Assigns an account to a group.
-     * @param groupId The group id to assign the account to.
-     * @param account The account to assign to the group.
+     * @inheritdoc YieldStreamerInitialization
      */
-    function _assignAccountToGroup(uint256 groupId, address account) internal override(YieldStreamerInitialization) {
-     //   YieldStreamerInitialization._assignAccountToGroup(groupId, account);
+    function _initializeSingleAccount(
+        address account
+    ) internal override(YieldStreamerPrimary, YieldStreamerInitialization) {
+        YieldStreamerInitialization._initializeSingleAccount(account);
+    }
+
+    /**
+     * @inheritdoc YieldStreamerConfiguration
+     */
+    function _assignSingleAccountToGroup(
+        uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
+        address account
+    ) internal override(YieldStreamerConfiguration, YieldStreamerInitialization) {
+        YieldStreamerConfiguration._assignSingleAccountToGroup(groupId, account);
     }
 
     // ------------------ Upgrade Authorization ------------------ //

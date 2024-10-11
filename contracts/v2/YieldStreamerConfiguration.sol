@@ -117,16 +117,17 @@ abstract contract YieldStreamerConfiguration is
     }
 
     /**
-     * @dev Assigns a group to the accounts.
+     * @dev Assigns multiple accounts to a group in a hard mode (reverts if any account is already
+     *      assigned to the group).
      *
      * Emits:
      *  - {YieldStreamer_GroupAssigned}
      *
-     * @param groupId The ID of the group to assign.
+     * @param groupId The ID of the group to assign the accounts to.
      * @param accounts The accounts to assign to the group.
      * @param forceYieldAccrue Whether to accrue yield for the accounts.
      */
-    function _assignGroup(
+    function _assignMultipleAccountsToGroup(
         uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         address[] memory accounts,
         bool forceYieldAccrue
@@ -150,6 +151,29 @@ abstract contract YieldStreamerConfiguration is
 
             group.id = groupId;
         }
+    }
+
+    /**
+     * @dev Assigns a single account to a group in a soft mode (does nothing if the account is already
+     *      assigned to the group).
+     *
+     * Emits:
+     *  - {YieldStreamer_GroupAssigned}
+     *
+     * @param groupId The ID of the group to assign the account to.
+     * @param account The account to assign to the group.
+     */
+    function _assignSingleAccountToGroup(uint256 groupId, address account) internal virtual {
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        Group storage group = $.groups[account];
+
+        if (group.id == groupId) {
+            return;
+        }
+
+        emit YieldStreamer_GroupAssigned(account, groupId, group.id);
+
+        $.groups[account].id = groupId.toUint32();
     }
 
     /**
