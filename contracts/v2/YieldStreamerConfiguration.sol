@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
-import { AccessControlExtUpgradeable } from "./base/AccessControlExtUpgradeable.sol";
 import { IYieldStreamerConfiguration_Errors } from "./interfaces/IYieldStreamerConfiguration.sol";
 import { IYieldStreamerConfiguration_Events } from "./interfaces/IYieldStreamerConfiguration.sol";
 
@@ -53,7 +52,7 @@ abstract contract YieldStreamerConfiguration is
             revert YieldStreamer_YieldRateInvalidEffectiveDay();
         }
 
-        // Ensure that rates are not duplicate
+        // Ensure that rates are not duplicated
         if (yieldRates.length > 0 && yieldRates[yieldRates.length - 1].value == rateValue) {
             revert YieldStreamer_YieldRateAlreadyConfigured();
         }
