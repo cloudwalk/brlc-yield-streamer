@@ -172,7 +172,7 @@ abstract contract YieldStreamerInitialization is
      * @dev Validates the source yield streamer.
      * @param sourceYieldStreamer The source yield streamer to validate.
      */
-    function _validateSourceYieldStreamer(IYieldStreamerV1 sourceYieldStreamer) internal view {
+    function _validateSourceYieldStreamer(IYieldStreamerV1 sourceYieldStreamer) private view {
         if (address(sourceYieldStreamer) == address(0)) {
             revert YieldStreamer_SourceYieldStreamerNotConfigured();
         }

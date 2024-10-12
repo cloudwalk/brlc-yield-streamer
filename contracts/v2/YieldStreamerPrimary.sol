@@ -121,7 +121,7 @@ abstract contract YieldStreamerPrimary is
         }
     }
 
-    function _validateAccount(address account) internal view returns (bool) {
+    function _validateAccount(address account) private view returns (bool) {
         return account != address(0) && account.code.length == 0;
     }
 
@@ -153,7 +153,7 @@ abstract contract YieldStreamerPrimary is
      * @param account The account to increase the token balance for.
      * @param amount The amount of token to increase.
      */
-    function _increaseTokenBalance(address account, uint256 amount) internal {
+    function _increaseTokenBalance(address account, uint256 amount) private {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
@@ -166,7 +166,7 @@ abstract contract YieldStreamerPrimary is
      * @param account The account to decrease the token balance for.
      * @param amount The amount of token to decrease.
      */
-    function _decreaseTokenBalance(address account, uint256 amount) internal {
+    function _decreaseTokenBalance(address account, uint256 amount) private {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
@@ -188,7 +188,7 @@ abstract contract YieldStreamerPrimary is
         YieldState storage state,
         address feeReceiver,
         address token
-    ) internal {
+    ) private {
         uint256 totalYield = state.accruedYield + state.streamYield;
 
         if (amount > totalYield) {
@@ -255,7 +255,7 @@ abstract contract YieldStreamerPrimary is
     function _getAccruePreview(
         YieldState storage state,
         YieldRate[] storage rates
-    ) internal view returns (AccruePreview memory) {
+    ) private view returns (AccruePreview memory) {
         AccruePreview memory preview;
 
         preview.accruedYieldBefore = state.accruedYield;
@@ -296,7 +296,7 @@ abstract contract YieldStreamerPrimary is
         address account, // Tools: this comment prevents Prettier from formatting into a single line.
         YieldState storage state,
         YieldRate[] storage rates
-    ) internal {
+    ) private {
         AccruePreview memory preview = _getAccruePreview(state, rates);
 
         emit YieldStreamer_YieldAccrued(
@@ -392,7 +392,7 @@ abstract contract YieldStreamerPrimary is
     function _calculateYield(
         CalculateYieldParams memory params,
         YieldRate[] storage rates // Format: prevent collapse
-    ) internal view returns (YieldResult[] memory) {
+    ) private view returns (YieldResult[] memory) {
         YieldResult[] memory results;
         uint256 ratePeriods = params.yieldRateRange.endIndex - params.yieldRateRange.startIndex + 1;
         uint256 localFromTimestamp = params.fromTimestamp;
@@ -764,7 +764,7 @@ abstract contract YieldStreamerPrimary is
      * @param params The parameters for the yield calculation.
      * @return The yield result for the given period.
      */
-    function _compoundYield(CompoundYieldParams memory params) internal pure returns (YieldResult memory) {
+    function _compoundYield(CompoundYieldParams memory params) private pure returns (YieldResult memory) {
         // bool _debug = false;
 
         // if (_debug) {
@@ -933,7 +933,7 @@ abstract contract YieldStreamerPrimary is
         uint256 amount,
         uint256 yieldRate,
         uint256 elapsedSeconds
-    ) internal pure returns (uint256) {
+    ) private pure returns (uint256) {
         return (amount * yieldRate * elapsedSeconds) / (1 days * RATE_FACTOR);
     }
 
@@ -946,7 +946,7 @@ abstract contract YieldStreamerPrimary is
     function _calculateFullDayYield(
         uint256 amount, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 yieldRate
-    ) internal pure returns (uint256) {
+    ) private pure returns (uint256) {
         return (amount * yieldRate) / RATE_FACTOR;
     }
 
@@ -961,7 +961,7 @@ abstract contract YieldStreamerPrimary is
         YieldRate[] storage rates,
         uint256 fromTimestamp,
         uint256 toTimestamp
-    ) internal view returns (Range memory) {
+    ) private view returns (Range memory) {
         // bool _debug = false;
 
         // if (_debug) {
@@ -1050,7 +1050,7 @@ abstract contract YieldStreamerPrimary is
      * @param yieldResults The yield results to aggregate.
      * @return The final accrued yield and stream yield.
      */
-    function _aggregateYield(YieldResult[] memory yieldResults) internal pure returns (uint256, uint256) {
+    function _aggregateYield(YieldResult[] memory yieldResults) private pure returns (uint256, uint256) {
         // bool _debug = false;
 
         // if (_debug) {
@@ -1091,7 +1091,7 @@ abstract contract YieldStreamerPrimary is
      * @param timestamp The timestamp to calculate from.
      * @return The timestamp of the next day.
      */
-    function _nextDay(uint256 timestamp) internal pure returns (uint256) {
+    function _nextDay(uint256 timestamp) private pure returns (uint256) {
         return timestamp - (timestamp % 1 days) + 1 days;
     }
 
@@ -1100,7 +1100,7 @@ abstract contract YieldStreamerPrimary is
      * @param timestamp The timestamp to calculate from.
      * @return The number of the effective day.
      */
-    function _effectiveDay(uint256 timestamp) internal pure returns (uint256) {
+    function _effectiveDay(uint256 timestamp) private pure returns (uint256) {
         return timestamp / 1 days;
     }
 
@@ -1109,7 +1109,7 @@ abstract contract YieldStreamerPrimary is
      * @param timestamp The timestamp to calculate from.
      * @return The remaining seconds.
      */
-    function _remainingSeconds(uint256 timestamp) internal pure returns (uint256) {
+    function _remainingSeconds(uint256 timestamp) private pure returns (uint256) {
         return timestamp % 1 days;
     }
 
@@ -1118,7 +1118,7 @@ abstract contract YieldStreamerPrimary is
      * @param timestamp The timestamp to calculate from.
      * @return The timestamp of the day.
      */
-    function _effectiveTimestamp(uint256 timestamp) internal pure returns (uint256) {
+    function _effectiveTimestamp(uint256 timestamp) private pure returns (uint256) {
         return (timestamp / 1 days) * 1 days;
     }
 
@@ -1138,7 +1138,7 @@ abstract contract YieldStreamerPrimary is
      * @param rates The array to truncate.
      * @return The truncated array.
      */
-    function _truncateArray(Range memory range, YieldRate[] storage rates) internal view returns (YieldRate[] memory) {
+    function _truncateArray(Range memory range, YieldRate[] storage rates) private view returns (YieldRate[] memory) {
         YieldRate[] memory result = new YieldRate[](range.endIndex - range.startIndex + 1);
         for (uint256 i = range.startIndex; i <= range.endIndex; i++) {
             result[i - range.startIndex] = rates[i];
@@ -1151,7 +1151,7 @@ abstract contract YieldStreamerPrimary is
      * @param amount The amount to calculate the fee for.
      * @return The fee amount.
      */
-    function _calculateFee(uint256 amount) internal pure returns (uint256) {
+    function _calculateFee(uint256 amount) private pure returns (uint256) {
         return (amount * FEE_RATE) / RATE_FACTOR;
     }
 
@@ -1160,7 +1160,7 @@ abstract contract YieldStreamerPrimary is
      * @param amount The amount to round down.
      * @return The rounded down amount.
      */
-    function _roundDown(uint256 amount) internal pure returns (uint256) {
+    function _roundDown(uint256 amount) private pure returns (uint256) {
         return (amount / ROUND_FACTOR) * ROUND_FACTOR;
     }
 
@@ -1169,7 +1169,7 @@ abstract contract YieldStreamerPrimary is
      * @param amount The amount to round up.
      * @return The rounded up amount.
      */
-    function _roundUp(uint256 amount) internal pure returns (uint256) {
+    function _roundUp(uint256 amount) private pure returns (uint256) {
         uint256 roundedAmount = _roundDown(amount);
 
         if (roundedAmount < amount) {
@@ -1184,7 +1184,7 @@ abstract contract YieldStreamerPrimary is
      * @param accrue The accrue preview.
      * @return The claim preview.
      */
-    function _map(AccruePreview memory accrue) internal pure returns (ClaimPreview memory) {
+    function _map(AccruePreview memory accrue) private pure returns (ClaimPreview memory) {
         ClaimPreview memory claim;
         uint256 totalYield = accrue.accruedYieldAfter + accrue.streamYieldAfter;
         claim.yield = _roundDown(totalYield);
