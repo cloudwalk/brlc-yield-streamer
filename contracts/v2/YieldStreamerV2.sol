@@ -221,6 +221,7 @@ contract YieldStreamerV2 is
     function _blockTimestamp()
         internal
         view
+        virtual
         override(YieldStreamerPrimary, YieldStreamerConfiguration, YieldStreamerInitialization)
         returns (uint256)
     {
