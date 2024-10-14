@@ -106,23 +106,8 @@ abstract contract YieldStreamerPrimary is
      * @inheritdoc IERC20Hook
      */
     function afterTokenTransfer(address from, address to, uint256 amount) external onlyToken {
-        if (_validateAccount(from)) {
-            if (ENABLE_YIELD_STATE_AUTO_INITIALIZATION) {
-                _initializeSingleAccount(from);
-            }
-            _decreaseTokenBalance(from, amount);
-        }
-
-        if (_validateAccount(to)) {
-            if (ENABLE_YIELD_STATE_AUTO_INITIALIZATION) {
-                _initializeSingleAccount(to);
-            }
-            _increaseTokenBalance(to, amount);
-        }
-    }
-
-    function _validateAccount(address account) private view returns (bool) {
-        return account != address(0) && account.code.length == 0;
+        _decreaseTokenBalance(from, amount);
+        _increaseTokenBalance(to, amount);
     }
 
     // -------------------- Functions ------------------------------ //
@@ -156,9 +141,12 @@ abstract contract YieldStreamerPrimary is
     function _increaseTokenBalance(address account, uint256 amount) private {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
-        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        _accrueYield_NEW(account, state, rates);
-        state.balanceAtLastUpdate += amount.toUint64();
+
+        if (state.flags.isBitSet(uint256(YieldStateFlags.Initialized)) || _tryInitializeAccount(account)) {
+            YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+            _accrueYield_NEW(account, state, rates);
+            state.balanceAtLastUpdate += amount.toUint64();
+        }
     }
 
     /**
@@ -169,9 +157,27 @@ abstract contract YieldStreamerPrimary is
     function _decreaseTokenBalance(address account, uint256 amount) private {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
-        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        _accrueYield_NEW(account, state, rates);
-        state.balanceAtLastUpdate -= amount.toUint64();
+
+        if (state.flags.isBitSet(uint256(YieldStateFlags.Initialized)) || _tryInitializeAccount(account)) {
+            YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+            _accrueYield_NEW(account, state, rates);
+            state.balanceAtLastUpdate -= amount.toUint64();
+        }
+    }
+
+    /**
+     * @dev Tries to initialize a yield state for a given account.
+     * @param account The account to try to initialize.
+     * @return True if the account was initialized, false otherwise.
+     */
+    function _tryInitializeAccount(address account) private returns (bool) {
+        if (ENABLE_YIELD_STATE_AUTO_INITIALIZATION) {
+            if (account != address(0) && account.code.length == 0) {
+                _initializeSingleAccount(account);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
