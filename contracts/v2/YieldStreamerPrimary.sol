@@ -618,7 +618,7 @@ abstract contract YieldStreamerPrimary is
             uint256 currentBalance = params.initialBalance + params.initialAccruedYield;
             results = new YieldResult[](ratePeriods);
             localFromTimestamp = params.fromTimestamp;
-            localToTimestamp = rates[params.yieldRateRange.startIndex + 1].effectiveDay * 1 days;
+            localToTimestamp = uint256(rates[params.yieldRateRange.startIndex + 1].effectiveDay) * 1 days;
 
             // Calculate yield for the first period
 
@@ -668,8 +668,8 @@ abstract contract YieldStreamerPrimary is
             // }
 
             for (uint256 i = params.yieldRateRange.startIndex + 1; i < params.yieldRateRange.endIndex; i++) {
-                localFromTimestamp = rates[i].effectiveDay * 1 days;
-                localToTimestamp = rates[i + 1].effectiveDay * 1 days;
+                localFromTimestamp = uint256(rates[i].effectiveDay) * 1 days;
+                localToTimestamp = uint256(rates[i + 1].effectiveDay) * 1 days;
 
                 // if (_debug) {
                 //     console.log("");
@@ -718,7 +718,7 @@ abstract contract YieldStreamerPrimary is
 
             // Calculate yield for the last period
 
-            localFromTimestamp = rates[params.yieldRateRange.startIndex + ratePeriods - 1].effectiveDay * 1 days;
+            localFromTimestamp = uint256(rates[params.yieldRateRange.startIndex + ratePeriods - 1].effectiveDay) * 1 days;
             localToTimestamp = params.toTimestamp;
 
             // if (_debug) {
@@ -1005,7 +1005,7 @@ abstract contract YieldStreamerPrimary is
             //     console.log("_inRangeYieldRates | - iteration: %s", i);
             // }
 
-            if (rates[i].effectiveDay * 1 days >= toTimestamp) {
+            if (uint256(rates[i].effectiveDay) * 1 days >= toTimestamp) {
                 // if (_debug) {
                 //     console.log(
                 //         "-- _inRangeYieldRates | loop continue: effectiveDay >= toTimestamp: %s >= %s",
@@ -1028,7 +1028,7 @@ abstract contract YieldStreamerPrimary is
             //     );
             // }
 
-            if (rates[i].effectiveDay * 1 days < fromTimestamp) {
+            if (uint256(rates[i].effectiveDay) * 1 days < fromTimestamp) {
                 range.startIndex = i;
                 // if (_debug) {
                 //     console.log(
