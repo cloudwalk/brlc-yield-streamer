@@ -243,7 +243,9 @@ abstract contract YieldStreamerPrimary is
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        return _map(_getAccruePreview(state, rates));
+        ClaimPreview memory preview = _map(_getAccruePreview(state, rates));
+        preview.timestamp = _blockTimestamp();
+        return preview;
     }
 
     /**

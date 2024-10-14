@@ -66,12 +66,14 @@ interface IYieldStreamerTypes {
      * Fields:
      *  - yield: ---- The yield amount available that can be claimed.
      *  - fee: ------ The fee amount that will be charged during the claim.
+     *  - timestamp: - The timestamp of the claim (current timestamp).
      *  - balance: -- The principal balance after the claim.
      *  - rate: ----- The current yield rate.
      */
     struct ClaimPreview {
         uint256 yield;
         uint256 fee;
+        uint256 timestamp;
         uint256 balance;
         uint256 rate;
     }
