@@ -143,8 +143,10 @@ abstract contract YieldStreamerPrimary is
         YieldState storage state = $.yieldStates[account];
 
         if (state.flags.isBitSet(uint256(YieldStateFlags.Initialized)) || _tryInitializeAccount(account)) {
-            YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-            _accrueYield_NEW(account, state, rates);
+            if (state.timestampAtLastUpdate != _blockTimestamp()) {
+                YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+                _accrueYield_NEW(account, state, rates);
+            }
             state.balanceAtLastUpdate += amount.toUint64();
         }
     }
@@ -159,8 +161,10 @@ abstract contract YieldStreamerPrimary is
         YieldState storage state = $.yieldStates[account];
 
         if (state.flags.isBitSet(uint256(YieldStateFlags.Initialized)) || _tryInitializeAccount(account)) {
-            YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-            _accrueYield_NEW(account, state, rates);
+            if (state.timestampAtLastUpdate != _blockTimestamp()) {
+                YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+                _accrueYield_NEW(account, state, rates);
+            }
             state.balanceAtLastUpdate -= amount.toUint64();
         }
     }
