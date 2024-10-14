@@ -169,7 +169,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
     return { erc20Token, yieldStreamer };
   }
 
-  describe("Function 'deposit()' and 'withdraw()'", function () {
+  describe("Function 'deposit()'", function () {
     it("Should correctly update state for Deposit Schedule 1", async function () {
       const { erc20Token, yieldStreamer }: { erc20Token: Contract; yieldStreamer: Contract } =
         await setUpFixture(deployContracts);
@@ -282,6 +282,9 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       const yieldRates: YieldRate[] = [
         { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) } // 40% yield rate
       ];
+
+      // Set the initialized state for the user
+      yieldStreamer.setInitialized(user.address, true);
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
@@ -412,6 +415,9 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
         } // 40% yield rate
       ];
 
+      // Set the initialized state for the user
+      yieldStreamer.setInitialized(user.address, true);
+
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
 
@@ -533,6 +539,9 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       const yieldRates: YieldRate[] = [
         { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) } // 40% yield rate
       ];
+
+      // Set the initialized state for the user
+      yieldStreamer.setInitialized(user.address, true);
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
@@ -662,6 +671,9 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
           rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100)
         } // 40% yield rate
       ];
+
+      // Set the initialized state for the user
+      yieldStreamer.setInitialized(user.address, true);
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);

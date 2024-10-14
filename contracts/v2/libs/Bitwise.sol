@@ -30,6 +30,20 @@ library Bitwise {
     }
 
     /**
+     * @dev Clears a bit at the given index.
+     * @param flags The flags value to clear the bit for.
+     * @param bitIndex The index of the bit to clear.
+     * @return The flags with the bit cleared.
+     */
+    function clearBit(uint8 flags, uint256 bitIndex) internal pure returns (uint8) {
+        if (bitIndex >= 8) {
+            revert Bitwise_BitIndexOutOfBounds();
+        }
+
+        return uint8(flags & ~(1 << bitIndex));
+    }
+
+    /**
      * @dev Checks if a bit at the given index is set.
      * @param flags The flags value to check the bit for.
      * @param bitIndex The index of the bit to check.

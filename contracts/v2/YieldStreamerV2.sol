@@ -201,6 +201,13 @@ contract YieldStreamerV2 is
         _mapSourceYieldStreamerGroup(groupKey, groupId);
     }
 
+    /**
+     * @inheritdoc IYieldStreamerInitialization_Functions
+     */
+    function setInitialized(address account, bool isInitialized) external onlyRole(OWNER_ROLE) {
+        _setInitialized(account, isInitialized);
+    }
+
     // ------------------ Overrides ------------------------------- //
 
     /**

@@ -88,6 +88,13 @@ interface IYieldStreamerInitialization_Functions {
     function initializeAccounts(address[] calldata accounts) external;
 
     /**
+     * @dev Sets the initialized state for an account.
+     * @param account The account to set the initialized state for.
+     * @param isInitialized The initialized state to set.
+     */
+    function setInitialized(address account, bool isInitialized) external;
+
+    /**
      * @dev Sets the source yield streamer.
      * @param sourceYieldStreamer The source yield streamer to set.
      */
