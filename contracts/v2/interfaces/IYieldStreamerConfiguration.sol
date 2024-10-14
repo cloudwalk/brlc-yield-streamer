@@ -50,7 +50,7 @@ interface IYieldStreamerConfiguration_Events {
      */
     event YieldStreamer_YieldRateAdded(
         uint256 indexed groupId, // Tools: this comment prevents Prettier from formatting into a single line.
-        uint256 indexed effectiveDay,
+        uint256 effectiveDay,
         uint256 rateValue
     );
 
@@ -73,7 +73,10 @@ interface IYieldStreamerConfiguration_Events {
      * @param newFeeReceiver The new fee receiver.
      * @param oldFeeReceiver The old fee receiver.
      */
-    event YieldStreamer_FeeReceiverChanged(address indexed newFeeReceiver, address indexed oldFeeReceiver);
+    event YieldStreamer_FeeReceiverChanged(
+        address indexed newFeeReceiver, // Tools: this comment prevents Prettier from formatting into a single line.
+        address indexed oldFeeReceiver
+    );
 }
 
 /**
