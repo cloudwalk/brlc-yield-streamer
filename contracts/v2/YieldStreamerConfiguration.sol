@@ -132,7 +132,6 @@ abstract contract YieldStreamerConfiguration is
         bool forceYieldAccrue
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        uint256 toTimestamp = _blockTimestamp();
         uint32 localGroupId = groupId.toUint32();
 
 
@@ -144,8 +143,7 @@ abstract contract YieldStreamerConfiguration is
             }
 
             if (forceYieldAccrue) {
-                YieldState storage state = $.yieldStates[accounts[i]];
-                _accrueYield(accounts[i], state, state.lastUpdateTimestamp, toTimestamp);
+                _accrueYield(accounts[i]);
             }
 
             emit YieldStreamer_GroupAssigned(accounts[i], localGroupId, group.id);
@@ -202,16 +200,8 @@ abstract contract YieldStreamerConfiguration is
     /**
      * @dev Accrues yield for the account.
      * @param account The account to accrue yield for.
-     * @param state The current yield state of the account.
-     * @param fromTimestamp The timestamp to accrue yield from.
-     * @param toTimestamp The timestamp to accrue yield to.
      */
-    function _accrueYield(
-        address account,
-        YieldState storage state,
-        uint256 fromTimestamp,
-        uint256 toTimestamp
-    ) internal virtual;
+    function _accrueYield(address account) internal virtual;
 
     /**
      * @dev Returns the current block timestamp.

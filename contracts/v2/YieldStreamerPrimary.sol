@@ -131,7 +131,7 @@ abstract contract YieldStreamerPrimary is
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
 
-        _accrueYield_NEW(account, state, rates);
+        _accrueYield(account, state, rates);
         _transferYield(account, amount, state, $.feeReceiver, $.underlyingToken);
     }
 
@@ -147,7 +147,7 @@ abstract contract YieldStreamerPrimary is
         if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account)) {
             if (state.lastUpdateTimestamp != _blockTimestamp()) {
                 YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-                _accrueYield_NEW(account, state, rates);
+                _accrueYield(account, state, rates);
             }
             state.lastUpdateBalance += amount.toUint64();
         }
@@ -165,7 +165,7 @@ abstract contract YieldStreamerPrimary is
         if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account)) {
             if (state.lastUpdateTimestamp != _blockTimestamp()) {
                 YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-                _accrueYield_NEW(account, state, rates);
+                _accrueYield(account, state, rates);
             }
             state.lastUpdateBalance -= amount.toUint64();
         }
@@ -311,7 +311,7 @@ abstract contract YieldStreamerPrimary is
      * @param state The current state of the yield.
      * @param rates The yield rates to use for the calculation.
      */
-    function _accrueYield_NEW(
+    function _accrueYield(
         address account, // Tools: this comment prevents Prettier from formatting into a single line.
         YieldState storage state,
         YieldRate[] storage rates
@@ -334,73 +334,12 @@ abstract contract YieldStreamerPrimary is
     /**
      * @dev Accrues the yield for a given account and period.
      * @param account The account to accrue the yield for.
-     * @param state The current state of the yield.
-     * @param fromTimestamp The timestamp of the period start.
-     * @param toTimestamp The timestamp of the period end.
      */
-    function _accrueYield(
-        address account,
-        YieldState storage state,
-        uint256 fromTimestamp,
-        uint256 toTimestamp
-    ) internal virtual {
+    function _accrueYield(address account) internal virtual {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-
-        // bool _debug = false;
-
-        // if (_debug) {
-        //     console.log("");
-        //     console.log("_accrueYield | START");
-        //     console.log("_accrueYield | - account: %s", account);
-        //     console.log("_accrueYield | - fromTime: %s, toTime: %s", fromTimestamp, toTimestamp);
-        //     console.log(
-        //         "_accrueYield | - fromDay: %s, toDay: %s",
-        //         _effectiveDay(fromTimestamp),
-        //         _effectiveDay(toTimestamp)
-        //     );
-
-        //     console.log("");
-        //     console.log("_accrueYield | State before accrual: %s", account);
-        //     console.log("_accrueYield | - lastUpdateTimestamp: %s", state.lastUpdateTimestamp);
-        //     console.log("_accrueYield | - lastUpdateBalance: %s", state.lastUpdateBalance);
-        //     console.log("_accrueYield | - accruedYield: %s", state.accruedYield);
-        //     console.log("_accrueYield | - streamYield: %s", state.streamYield);
-        // }
-
-        (uint256 rateStartIndex, uint256 rateEndIndex) = _inRangeYieldRates(rates, fromTimestamp, toTimestamp);
-
-        CalculateYieldParams memory calculateParams = CalculateYieldParams(
-            fromTimestamp,
-            toTimestamp,
-            rateStartIndex,
-            rateEndIndex,
-            state.lastUpdateBalance,
-            state.streamYield,
-            state.accruedYield
-        );
-
-        YieldResult[] memory calculateResults = _calculateYield(calculateParams, rates);
-        (uint256 accruedYield, uint256 streamYield) = _aggregateYield(calculateResults);
-        accruedYield += state.accruedYield;
-
-        emit YieldStreamer_YieldAccrued(account, accruedYield, streamYield, state.accruedYield, state.streamYield);
-
-        state.lastUpdateTimestamp = _blockTimestamp().toUint40();
-        state.accruedYield = accruedYield.toUint64();
-        state.streamYield = streamYield.toUint64();
-
-        // if (_debug) {
-        //     console.log("");
-        //     console.log("_accrueYield | State after accrual: %s", account);
-        //     console.log("_accrueYield | - lastUpdateTimestamp: %s", state.lastUpdateTimestamp);
-        //     console.log("_accrueYield | - lastUpdateBalance: %s", state.lastUpdateBalance);
-        //     console.log("_accrueYield | - accruedYield: %s", state.accruedYield);
-        //     console.log("_accrueYield | - streamYield: %s", state.streamYield);
-
-        //     console.log("");
-        //     console.log("_accrueYield | END");
-        // }
+        _accrueYield(account, state, rates);
     }
 
     /**
