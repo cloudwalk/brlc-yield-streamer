@@ -43,7 +43,7 @@ contract YieldStreamerStorage_Initialization {
     bytes32 private constant _YIELD_STREAMER_INITIALIZATION_STORAGE_LOCATION =
         0xe30574a965b6970db31584ac81d5a366c5ee7e44e3db18d7f307802e0605a400;
 
-    /// @custom:storage-location cloudwalk.yieldstreamer.initialization.storage
+    /// @custom:storage-location erc7201:cloudwalk.yieldstreamer.initialization.storage
     struct YieldStreamerInitializationStorageLayout {
         address sourceYieldStreamer;
         mapping(bytes32 => uint256) groupIds;
@@ -73,7 +73,7 @@ contract YieldStreamerStorage_Common is IYieldStreamerTypes {
     bytes32 private constant _YIELD_STREAMER_STORAGE_LOCATION =
         0x3ffa2d1fa1d7e119f4100ba678d1140b9dc5cebd13fdaaded481a6cf43d1a800;
 
-    /// @custom:storage-location cloudwalk.yieldstreamer.primary.storage
+    /// @custom:storage-location erc7201:cloudwalk.yieldstreamer.primary.storage
     struct YieldStreamerStorageLayout {
         address underlyingToken;
         address feeReceiver;
