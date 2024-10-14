@@ -49,7 +49,7 @@ abstract contract YieldStreamerInitialization is
             address account = accounts[i];
             YieldState storage state = $.yieldStates[account];
 
-            if (state.flags.isBitSet(uint256(YieldStateFlags.Initialized))) {
+            if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized))) {
                 revert YieldStreamer_AccountAlreadyInitialized(account);
             }
             if (account == address(0)) {
@@ -77,7 +77,7 @@ abstract contract YieldStreamerInitialization is
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
 
-        if (state.flags.isBitSet(uint256(YieldStateFlags.Initialized))) {
+        if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized))) {
             return;
         }
 
@@ -123,7 +123,7 @@ abstract contract YieldStreamerInitialization is
         state.accruedYield = (claimPreview.primaryYield + claimPreview.lastDayYield).toUint64();
         state.balanceAtLastUpdate = IERC20(underlyingToken).balanceOf(account).toUint64();
         state.timestampAtLastUpdate = timestamp.toUint40();
-        state.flags = state.flags.setBit(uint256(YieldStateFlags.Initialized));
+        state.flags = state.flags.setBit(uint256(YieldStateFlagIndex.Initialized));
 
         emit YieldStreamer_AccountInitialized(
             account,

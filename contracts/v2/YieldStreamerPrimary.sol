@@ -142,7 +142,7 @@ abstract contract YieldStreamerPrimary is
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
 
-        if (state.flags.isBitSet(uint256(YieldStateFlags.Initialized)) || _tryInitializeAccount(account)) {
+        if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account)) {
             if (state.timestampAtLastUpdate != _blockTimestamp()) {
                 YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
                 _accrueYield_NEW(account, state, rates);
@@ -160,7 +160,7 @@ abstract contract YieldStreamerPrimary is
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
 
-        if (state.flags.isBitSet(uint256(YieldStateFlags.Initialized)) || _tryInitializeAccount(account)) {
+        if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account)) {
             if (state.timestampAtLastUpdate != _blockTimestamp()) {
                 YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
                 _accrueYield_NEW(account, state, rates);

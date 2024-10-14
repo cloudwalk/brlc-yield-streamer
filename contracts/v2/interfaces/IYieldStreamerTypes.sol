@@ -9,12 +9,12 @@ pragma solidity ^0.8.0;
  */
 interface IYieldStreamerTypes {
     /**
-     * @dev Enum to represent the flags of the yield state.
+     * @dev Enum to represent the possible flag indices of the yield state.
      *
      * Values:
      *  - Initialized: -- The yield state has been initialized.
      */
-    enum YieldStateFlags {
+    enum YieldStateFlagIndex {
         Initialized
     }
     /**
