@@ -45,18 +45,18 @@ interface IYieldStreamerTypes {
      * @dev Structure to store the yield state of an account.
      *
      * Fields:
-     *  - flags: ------------------ The flags of the yield state.
-     *  - timestampAtLastUpdate: -- The timestamp of the last update.
-     *  - balanceAtLastUpdate: ---- The balance at the last update.
-     *  - accruedYield: ----------- The accrued yield.
-     *  - streamYield: ------------ The stream yield.
+     *  - flags: ---------------- The flags of the yield state.
+     *  - streamYield: ---------- The stream yield.
+     *  - accruedYield: --------- The accrued yield.
+     *  - lastUpdateTimestamp: -- The timestamp of the last update.
+     *  - lastUpdateBalance: ---- The balance at the last update.
      */
     struct YieldState {
         uint8 flags;
-        uint40 timestampAtLastUpdate;
-        uint64 balanceAtLastUpdate;
-        uint64 accruedYield;
         uint64 streamYield;
+        uint64 accruedYield;
+        uint40 lastUpdateTimestamp;
+        uint64 lastUpdateBalance;
         // uint16 __reserved; // Reserved for future use until the end of the storage slot.
     }
 

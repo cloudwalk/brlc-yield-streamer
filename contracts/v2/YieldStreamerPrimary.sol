@@ -145,11 +145,11 @@ abstract contract YieldStreamerPrimary is
         YieldState storage state = $.yieldStates[account];
 
         if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account)) {
-            if (state.timestampAtLastUpdate != _blockTimestamp()) {
+            if (state.lastUpdateTimestamp != _blockTimestamp()) {
                 YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
                 _accrueYield_NEW(account, state, rates);
             }
-            state.balanceAtLastUpdate += amount.toUint64();
+            state.lastUpdateBalance += amount.toUint64();
         }
     }
 
@@ -163,11 +163,11 @@ abstract contract YieldStreamerPrimary is
         YieldState storage state = $.yieldStates[account];
 
         if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account)) {
-            if (state.timestampAtLastUpdate != _blockTimestamp()) {
+            if (state.lastUpdateTimestamp != _blockTimestamp()) {
                 YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
                 _accrueYield_NEW(account, state, rates);
             }
-            state.balanceAtLastUpdate -= amount.toUint64();
+            state.lastUpdateBalance -= amount.toUint64();
         }
     }
 
@@ -272,7 +272,7 @@ abstract contract YieldStreamerPrimary is
 
         preview.accruedYieldBefore = state.accruedYield;
         preview.streamYieldBefore = state.streamYield;
-        preview.fromTimestamp = state.timestampAtLastUpdate;
+        preview.fromTimestamp = state.lastUpdateTimestamp;
         preview.toTimestamp = _blockTimestamp();
 
         (uint256 rateStartIndex, uint256 rateEndIndex) = _inRangeYieldRates(
@@ -286,7 +286,7 @@ abstract contract YieldStreamerPrimary is
             preview.toTimestamp,
             rateStartIndex,
             rateEndIndex,
-            state.balanceAtLastUpdate,
+            state.lastUpdateBalance,
             preview.streamYieldBefore,
             preview.accruedYieldBefore
         );
@@ -324,7 +324,7 @@ abstract contract YieldStreamerPrimary is
             preview.streamYieldBefore
         );
 
-        state.timestampAtLastUpdate = preview.toTimestamp.toUint40();
+        state.lastUpdateTimestamp = preview.toTimestamp.toUint40();
         state.accruedYield = preview.accruedYieldAfter.toUint64();
         state.streamYield = preview.streamYieldAfter.toUint64();
     }
@@ -360,8 +360,8 @@ abstract contract YieldStreamerPrimary is
 
         //     console.log("");
         //     console.log("_accrueYield | State before accrual: %s", account);
-        //     console.log("_accrueYield | - timestampAtLastUpdate: %s", state.timestampAtLastUpdate);
-        //     console.log("_accrueYield | - balanceAtLastUpdate: %s", state.balanceAtLastUpdate);
+        //     console.log("_accrueYield | - lastUpdateTimestamp: %s", state.lastUpdateTimestamp);
+        //     console.log("_accrueYield | - lastUpdateBalance: %s", state.lastUpdateBalance);
         //     console.log("_accrueYield | - accruedYield: %s", state.accruedYield);
         //     console.log("_accrueYield | - streamYield: %s", state.streamYield);
         // }
@@ -373,7 +373,7 @@ abstract contract YieldStreamerPrimary is
             toTimestamp,
             rateStartIndex,
             rateEndIndex,
-            state.balanceAtLastUpdate,
+            state.lastUpdateBalance,
             state.streamYield,
             state.accruedYield
         );
@@ -384,15 +384,15 @@ abstract contract YieldStreamerPrimary is
 
         emit YieldStreamer_YieldAccrued(account, accruedYield, streamYield, state.accruedYield, state.streamYield);
 
-        state.timestampAtLastUpdate = _blockTimestamp().toUint40();
+        state.lastUpdateTimestamp = _blockTimestamp().toUint40();
         state.accruedYield = accruedYield.toUint64();
         state.streamYield = streamYield.toUint64();
 
         // if (_debug) {
         //     console.log("");
         //     console.log("_accrueYield | State after accrual: %s", account);
-        //     console.log("_accrueYield | - timestampAtLastUpdate: %s", state.timestampAtLastUpdate);
-        //     console.log("_accrueYield | - balanceAtLastUpdate: %s", state.balanceAtLastUpdate);
+        //     console.log("_accrueYield | - lastUpdateTimestamp: %s", state.lastUpdateTimestamp);
+        //     console.log("_accrueYield | - lastUpdateBalance: %s", state.lastUpdateBalance);
         //     console.log("_accrueYield | - accruedYield: %s", state.accruedYield);
         //     console.log("_accrueYield | - streamYield: %s", state.streamYield);
 

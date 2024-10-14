@@ -121,14 +121,14 @@ abstract contract YieldStreamerInitialization is
         sourceYieldStreamer.blocklist(account);
 
         state.accruedYield = (claimPreview.primaryYield + claimPreview.lastDayYield).toUint64();
-        state.balanceAtLastUpdate = IERC20(underlyingToken).balanceOf(account).toUint64();
-        state.timestampAtLastUpdate = timestamp.toUint40();
+        state.lastUpdateBalance = IERC20(underlyingToken).balanceOf(account).toUint64();
+        state.lastUpdateTimestamp = timestamp.toUint40();
         state.flags = state.flags.setBit(uint256(YieldStateFlagIndex.Initialized));
 
         emit YieldStreamer_AccountInitialized(
             account,
             groupId,
-            state.balanceAtLastUpdate,
+            state.lastUpdateBalance,
             state.accruedYield,
             state.streamYield
         );

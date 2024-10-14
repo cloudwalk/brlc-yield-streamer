@@ -145,7 +145,7 @@ abstract contract YieldStreamerConfiguration is
 
             if (forceYieldAccrue) {
                 YieldState storage state = $.yieldStates[accounts[i]];
-                _accrueYield(accounts[i], state, state.timestampAtLastUpdate, toTimestamp);
+                _accrueYield(accounts[i], state, state.lastUpdateTimestamp, toTimestamp);
             }
 
             emit YieldStreamer_GroupAssigned(accounts[i], localGroupId, group.id);
