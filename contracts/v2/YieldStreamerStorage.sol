@@ -23,7 +23,7 @@ contract YieldStreamerStorage_Constants {
     uint240 public constant FEE_RATE = 0;
 
     /// @dev The negative time shift of a day in seconds.
-    uint256 public constant NEGATIVE_TIME_SHIFT = 0;
+    uint256 public constant NEGATIVE_TIME_SHIFT = 3 hours;
 
     /// @dev The minimum amount that is allowed to be claimed.
     uint256 public constant MIN_CLAIM_AMOUNT = 1000000;

@@ -8,27 +8,39 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 const RATE_FACTOR = BigInt(1000000000); // Factor used in yield rate calculations (10^9)
 const DAY = 24 * 60 * 60; // Number of seconds in a day
 const HOUR = 60 * 60; // Number of seconds in an hour
+const NEGATIVE_TIME_SHIFT = 3 * HOUR; // Negative time shift in seconds (3 hours)
 
 // Interface representing an action (deposit or withdraw) in the test schedule
 interface ActionItem {
   day: number; // Day number relative to the start time
   hour: number; // Hour of the day
-  amount: BigNumber; // Amount to deposit or withdraw
+  amount: bigint; // Amount to deposit or withdraw
   type: "deposit" | "withdraw"; // Type of action
 }
 
 // Interface representing the yield state expected after each action
 interface YieldState {
   lastUpdateTimestamp: number; // Timestamp when the state was last updated
-  lastUpdateBalance: BigNumber; // Balance at the last update
-  accruedYield: BigNumber; // Total accrued yield up to the last update
-  streamYield: BigNumber; // Yield that is being streamed since the last update
+  lastUpdateBalance: bigint; // Balance at the last update
+  accruedYield: bigint; // Total accrued yield up to the last update
+  streamYield: bigint; // Yield that is being streamed since the last update
 }
 
 // Interface representing a yield rate change in the contract
 interface YieldRate {
   effectiveDay: number; // Day when the yield rate becomes effective
-  rateValue: BigNumber; // Value of the new yield rate (expressed in RATE_FACTOR units)
+  rateValue: bigint; // Value of the new yield rate (expressed in RATE_FACTOR units)
+}
+
+/**
+ * Calculates the adjusted block time aligned to the contract's internal time.
+ * @returns The adjusted block time.
+ */
+async function getAdjustedBlockTime(): Promise<number> {
+  const currentBlockTime = Number(await time.latest());
+  let adjustedBlockTime = currentBlockTime - NEGATIVE_TIME_SHIFT;
+  adjustedBlockTime = Math.floor(adjustedBlockTime / DAY) * DAY + DAY - 1;
+  return adjustedBlockTime;
 }
 
 /**
@@ -61,24 +73,30 @@ async function testActionSchedule(
   actionItems: ActionItem[],
   expectedYieldStates: YieldState[]
 ): Promise<void> {
-  // Get the current block time and set the start time to the next day minus 1 second
-  let currentBlockTime = Number(await time.latest());
-  currentBlockTime = Math.trunc(currentBlockTime / DAY) * DAY + DAY - 1;
-  const startTime = currentBlockTime;
+  // Get the adjusted block time aligned to the contract's internal time
+  const adjustedBlockTime = await getAdjustedBlockTime();
+
+  // Calculate the start time (actual block timestamp)
+  const startTime = adjustedBlockTime + NEGATIVE_TIME_SHIFT;
 
   // Set the block timestamp to the calculated start time
-  await time.setNextBlockTimestamp(currentBlockTime);
+  await time.setNextBlockTimestamp(startTime);
 
   // Iterate over each action in the schedule
   for (const [index, actionItem] of actionItems.entries()) {
-    // Calculate the desired timestamp for the action based on day and hour offsets
-    const desiredTimestamp = startTime + (actionItem.day - 1) * DAY + actionItem.hour * HOUR;
+    // Calculate the desired internal timestamp for the action based on day and hour offsets
+    const desiredInternalTimestamp =
+      adjustedBlockTime + (actionItem.day - 1) * DAY + actionItem.hour * HOUR;
+
+    // Adjust for NEGATIVE_TIME_SHIFT to set the block.timestamp
+    const adjustedTimestamp = desiredInternalTimestamp + NEGATIVE_TIME_SHIFT;
 
     // Ensure the timestamp is strictly greater than the current block timestamp
     const currentBlockTimestamp = Number(await time.latest());
-    const timestampToSet = desiredTimestamp <= currentBlockTimestamp ? currentBlockTimestamp + 1 : desiredTimestamp;
+    const timestampToSet =
+      adjustedTimestamp <= currentBlockTimestamp ? currentBlockTimestamp + 1 : adjustedTimestamp;
 
-    // Increase the blockchain time to the desired timestamp
+    // Increase the blockchain time to the desired adjusted timestamp
     await time.increaseTo(timestampToSet);
 
     // Perform the deposit or withdraw action based on the action type
@@ -93,13 +111,17 @@ async function testActionSchedule(
     // Fetch the actual yield state from the contract after the action
     const contractYieldState = await getYieldState(yieldStreamer, user.address);
 
-    // Update the expected lastUpdateTimestamp with the actual block timestamp
+    // Update the expected lastUpdateTimestamp with the adjusted block timestamp
     const blockTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
-    expectedYieldStates[index].lastUpdateTimestamp = blockTimestamp;
+    expectedYieldStates[index].lastUpdateTimestamp = blockTimestamp - NEGATIVE_TIME_SHIFT;
 
     // Assert that the actual yield state matches the expected state
-    expect(contractYieldState.lastUpdateTimestamp).to.equal(expectedYieldStates[index].lastUpdateTimestamp);
-    expect(contractYieldState.lastUpdateBalance).to.equal(expectedYieldStates[index].lastUpdateBalance);
+    expect(contractYieldState.lastUpdateTimestamp).to.equal(
+      expectedYieldStates[index].lastUpdateTimestamp
+    );
+    expect(contractYieldState.lastUpdateBalance).to.equal(
+      expectedYieldStates[index].lastUpdateBalance
+    );
     expect(contractYieldState.accruedYield).to.equal(expectedYieldStates[index].accruedYield);
     expect(contractYieldState.streamYield).to.equal(expectedYieldStates[index].streamYield);
   }
@@ -118,13 +140,13 @@ async function addYieldRates(yieldStreamer: Contract, yieldRates: YieldRate[]): 
 }
 
 /**
- * Calculates the effective day number for a yield rate based on the current timestamp.
- * @param currentTimestamp The current blockchain timestamp.
- * @param dayNumber The day number offset from the current day.
+ * Calculates the effective day number for a yield rate based on the adjusted block time.
+ * @param adjustedBlockTime The adjusted block time.
+ * @param dayNumber The day number offset from the adjusted block time.
  * @returns The effective day number for the yield rate.
  */
-function calculateEffectiveDay(currentTimestamp: number, dayNumber: number): number {
-  return Math.trunc((currentTimestamp + dayNumber * DAY) / DAY);
+function calculateEffectiveDay(adjustedBlockTime: number, dayNumber: number): number {
+  return Math.floor((adjustedBlockTime + dayNumber * DAY) / DAY);
 }
 
 /**
@@ -144,10 +166,12 @@ async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
 
 describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
   let user: SignerWithAddress;
+  let adjustedBlockTime: number;
 
-  // Get the signer representing the test user before the tests run
+  // Get the signer representing the test user and adjusted block time before the tests run
   before(async function () {
     [user] = await ethers.getSigners();
+    adjustedBlockTime = await getAdjustedBlockTime();
   });
 
   /**
@@ -171,8 +195,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
 
   describe("Function 'deposit()'", function () {
     it("Should correctly update state for Deposit Schedule 1", async function () {
-      const { erc20Token, yieldStreamer }: { erc20Token: Contract; yieldStreamer: Contract } =
-        await setUpFixture(deployContracts);
+      const { erc20Token, yieldStreamer } = await setUpFixture(deployContracts);
 
       // Simulated action schedule of deposits
       const actionSchedule: ActionItem[] = [
@@ -284,7 +307,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Set the initialized state for the user
-      yieldStreamer.setInitialized(user.address, true);
+      await yieldStreamer.setInitialized(user.address, true);
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
@@ -294,8 +317,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
     });
 
     it("Should correctly update state for Deposit Schedule 2", async () => {
-      const { erc20Token, yieldStreamer }: { erc20Token: Contract; yieldStreamer: Contract } =
-        await setUpFixture(deployContracts);
+      const { erc20Token, yieldStreamer } = await setUpFixture(deployContracts);
 
       // Simulated deposit schedule
       const actionSchedule: ActionItem[] = [
@@ -402,21 +424,20 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Yield rates to be added to the contract
-      const currentBlockTime = Number(await time.latest());
       const yieldRates: YieldRate[] = [
         { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) }, // 40% yield rate
         {
-          effectiveDay: calculateEffectiveDay(currentBlockTime, 3),
+          effectiveDay: calculateEffectiveDay(adjustedBlockTime, 3),
           rateValue: (RATE_FACTOR * BigInt(80)) / BigInt(100)
         }, // 80% yield rate
         {
-          effectiveDay: calculateEffectiveDay(currentBlockTime, 5),
+          effectiveDay: calculateEffectiveDay(adjustedBlockTime, 5),
           rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100)
         } // 40% yield rate
       ];
 
       // Set the initialized state for the user
-      yieldStreamer.setInitialized(user.address, true);
+      await yieldStreamer.setInitialized(user.address, true);
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
@@ -426,10 +447,9 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
     });
   });
 
-  describe("Function 'withdraw()'", async () => {
+  describe("Function 'withdraw()'", function () {
     it("Should correctly update state for Withdraw Schedule 1", async () => {
-      const { erc20Token, yieldStreamer }: { erc20Token: Contract; yieldStreamer: Contract } =
-        await setUpFixture(deployContracts);
+      const { erc20Token, yieldStreamer } = await setUpFixture(deployContracts);
 
       // Simulated action schedule of deposits and withdrawals
       const actionSchedule: ActionItem[] = [
@@ -541,7 +561,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Set the initialized state for the user
-      yieldStreamer.setInitialized(user.address, true);
+      await yieldStreamer.setInitialized(user.address, true);
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
@@ -551,8 +571,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
     });
 
     it("Should correctly update state for Withdraw Schedule 2", async () => {
-      const { erc20Token, yieldStreamer }: { erc20Token: Contract; yieldStreamer: Contract } =
-        await setUpFixture(deployContracts);
+      const { erc20Token, yieldStreamer } = await setUpFixture(deployContracts);
 
       // Simulated action schedule
       const actionSchedule: ActionItem[] = [
@@ -659,21 +678,20 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Yield rates to be added to the contract
-      const currentBlockTime = Number(await time.latest());
       const yieldRates: YieldRate[] = [
         { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) }, // 40% yield rate
         {
-          effectiveDay: calculateEffectiveDay(currentBlockTime, 3),
+          effectiveDay: calculateEffectiveDay(adjustedBlockTime, 3),
           rateValue: (RATE_FACTOR * BigInt(80)) / BigInt(100)
         }, // 80% yield rate
         {
-          effectiveDay: calculateEffectiveDay(currentBlockTime, 5),
+          effectiveDay: calculateEffectiveDay(adjustedBlockTime, 5),
           rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100)
         } // 40% yield rate
       ];
 
       // Set the initialized state for the user
-      yieldStreamer.setInitialized(user.address, true);
+      await yieldStreamer.setInitialized(user.address, true);
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
