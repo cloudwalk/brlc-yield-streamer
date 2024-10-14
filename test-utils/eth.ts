@@ -1,7 +1,7 @@
-import { upgrades } from "hardhat";
-import { BaseContract, Contract, ContractFactory, TransactionReceipt, TransactionResponse } from "ethers";
-import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
+import { BaseContract, BlockTag, Contract, ContractFactory, TransactionReceipt, TransactionResponse } from "ethers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import { expect } from "chai";
 
 export async function checkContractUupsUpgrading(
   contract: Contract,
@@ -35,6 +35,15 @@ export function getAddress(contract: Contract): string {
     throw new Error("The '.target' field of the contract is not an address string");
   }
   return address;
+}
+
+export async function getBlockTimestamp(blockTag: BlockTag): Promise<number> {
+  const block = await ethers.provider.getBlock(blockTag);
+  return block?.timestamp ?? 0;
+}
+
+export async function getLatestBlockTimestamp(): Promise<number> {
+  return getBlockTimestamp("latest");
 }
 
 export async function proveTx(txResponsePromise: Promise<TransactionResponse>): Promise<TransactionReceipt> {
