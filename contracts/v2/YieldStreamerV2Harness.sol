@@ -57,20 +57,20 @@ contract YieldStreamerV2Harness is YieldStreamerV2 {
     }
 
     /**
-     * @dev Resets the yield state to default values for an account.
-     * @param account The address of the account to reset the yield state.
-     */
-    function resetYieldState(address account) external onlyRole(HARNESS_ADMIN_ROLE) {
-        delete _yieldStreamerStorage().yieldStates[account];
-    }
-
-    /**
      * @dev Sets the yield state for an account.
      * @param account The address of the account to set the yield state.
      * @param newState The new yield state to set for the account.
      */
     function setYieldState(address account, YieldState calldata newState) external onlyRole(HARNESS_ADMIN_ROLE) {
         _yieldStreamerStorage().yieldStates[account] = newState;
+    }
+
+    /**
+     * @dev Resets the yield state to default values for an account.
+     * @param account The address of the account to reset the yield state.
+     */
+    function resetYieldState(address account) external onlyRole(HARNESS_ADMIN_ROLE) {
+        delete _yieldStreamerStorage().yieldStates[account];
     }
 
     /**
@@ -95,12 +95,22 @@ contract YieldStreamerV2Harness is YieldStreamerV2 {
     // ------------------ View functions -------------------------- //
 
     /// @dev Returns the current harness storage layout.
-    function getHarnessStorageLayout() external view returns (YieldStreamerHarnessLayout memory) {
-        YieldStreamerHarnessLayout storage harnessLayoutStorage = _yieldStreamerHarnessStorage();
-        YieldStreamerHarnessLayout memory harnessLayoutMemory;
-        harnessLayoutMemory.currentBlockTimestamp = harnessLayoutStorage.currentBlockTimestamp;
-        harnessLayoutMemory.usingSpecialBlockTimestamps = harnessLayoutStorage.usingSpecialBlockTimestamps;
-        return harnessLayoutMemory;
+    function getHarnessStorageLayout() external pure returns (YieldStreamerHarnessLayout memory) {
+        return _yieldStreamerHarnessStorage();
+    }
+
+    /// @dev Returns the current underlying token contract.
+    function underlyingToken() external view returns (address) {
+        return _yieldStreamerStorage().underlyingToken;
+    }
+
+    /**
+     * @dev Returns an array of yield rates for a given account group.
+     * @param groupId The ID of the group to delete the array for.
+     * @return The array of yield rates
+     */
+    function getGroupYieldRates(uint256 groupId) public view returns (YieldRate[] memory) {
+        return _yieldStreamerStorage().yieldRates[groupId.toUint32()];
     }
 
     /// @dev Returns the current block timestamp according to the contract settings: a real one or a special one
