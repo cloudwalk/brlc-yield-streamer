@@ -141,7 +141,7 @@ contract YieldStreamerV2 is
      * @inheritdoc IYieldStreamerConfiguration_Functions
      */
     function assignGroup(
-        uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
+        uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         address[] memory accounts,
         bool forceYieldAccrue
     ) external onlyRole(OWNER_ROLE) {
@@ -152,7 +152,7 @@ contract YieldStreamerV2 is
      * @inheritdoc IYieldStreamerConfiguration_Functions
      */
     function addYieldRate(
-        uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
+        uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 effectiveDay,
         uint256 rateValue
     ) external onlyRole(OWNER_ROLE) {
@@ -163,7 +163,7 @@ contract YieldStreamerV2 is
      * @inheritdoc IYieldStreamerConfiguration_Functions
      */
     function updateYieldRate(
-        uint32 groupId,
+        uint256 groupId,
         uint256 itemIndex,
         uint256 effectiveDay,
         uint256 rateValue

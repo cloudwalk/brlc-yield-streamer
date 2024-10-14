@@ -92,7 +92,7 @@ interface IYieldStreamerConfiguration_Functions {
      * @param effectiveDay The effective day of the yield rate.
      * @param rateValue The value of the yield rate.
      */
-    function addYieldRate(uint32 groupId, uint256 effectiveDay, uint256 rateValue) external;
+    function addYieldRate(uint256 groupId, uint256 effectiveDay, uint256 rateValue) external;
 
     /**
      * @dev Updates a yield rate in the yield streamer.
@@ -105,7 +105,7 @@ interface IYieldStreamerConfiguration_Functions {
      * @param effectiveDay The effective day of the yield rate.
      * @param rateValue The value of the yield rate.
      */
-    function updateYieldRate(uint32 groupId, uint256 itemIndex, uint256 effectiveDay, uint256 rateValue) external;
+    function updateYieldRate(uint256 groupId, uint256 itemIndex, uint256 effectiveDay, uint256 rateValue) external;
 
     /**
      * @dev Assigns a group to the accounts.
@@ -117,7 +117,7 @@ interface IYieldStreamerConfiguration_Functions {
      * @param accounts The accounts to assign to the group.
      * @param forceYieldAccrue Whether to accrue yield for the accounts.
      */
-    function assignGroup(uint32 groupId, address[] memory accounts, bool forceYieldAccrue) external;
+    function assignGroup(uint256 groupId, address[] memory accounts, bool forceYieldAccrue) external;
 
     /**
      * @dev Sets the fee receiver for the yield streamer.

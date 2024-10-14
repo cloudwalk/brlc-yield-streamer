@@ -35,12 +35,12 @@ abstract contract YieldStreamerConfiguration is
      * @param rateValue The value of the yield rate.
      */
     function _addYieldRate(
-        uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
+        uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 effectiveDay,
         uint256 rateValue
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldRate[] storage rates = $.yieldRates[groupId];
+        YieldRate[] storage rates = $.yieldRates[groupId.toUint32()];
 
         // Ensure first item in the array always starts with effectiveDay 0
         if (rates.length == 0 && effectiveDay != 0) {
@@ -74,13 +74,13 @@ abstract contract YieldStreamerConfiguration is
      * @param rateValue The value of the yield rate.
      */
     function _updateYieldRate(
-        uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
+        uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 itemIndex,
         uint256 effectiveDay,
         uint256 rateValue
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldRate[] storage rates = $.yieldRates[groupId];
+        YieldRate[] storage rates = $.yieldRates[groupId.toUint32()];
 
         // Ensure first item in the array always starts with effectiveDay = 0
         if (itemIndex == 0 && effectiveDay != 0) {
@@ -127,17 +127,19 @@ abstract contract YieldStreamerConfiguration is
      * @param forceYieldAccrue Whether to accrue yield for the accounts.
      */
     function _assignMultipleAccountsToGroup(
-        uint32 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
+        uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         address[] memory accounts,
         bool forceYieldAccrue
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         uint256 toTimestamp = _blockTimestamp();
+        uint32 localGroupId = groupId.toUint32();
+
 
         for (uint256 i = 0; i < accounts.length; i++) {
             Group storage group = $.groups[accounts[i]];
 
-            if (group.id == groupId) {
+            if (group.id == localGroupId) {
                 revert YieldStreamer_GroupAlreadyAssigned(accounts[i]);
             }
 
@@ -146,9 +148,9 @@ abstract contract YieldStreamerConfiguration is
                 _accrueYield(accounts[i], state, state.timestampAtLastUpdate, toTimestamp);
             }
 
-            emit YieldStreamer_GroupAssigned(accounts[i], groupId, group.id);
+            emit YieldStreamer_GroupAssigned(accounts[i], localGroupId, group.id);
 
-            group.id = groupId;
+            group.id = localGroupId;
         }
     }
 
