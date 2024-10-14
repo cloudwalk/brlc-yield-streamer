@@ -120,7 +120,7 @@ abstract contract YieldStreamerInitialization is
         IYieldStreamerV1.ClaimResult memory claimPreview = sourceYieldStreamer.claimAllPreview(account);
         sourceYieldStreamer.blocklist(account);
 
-        state.accruedYield = (claimPreview.primaryYield + claimPreview.lastDayYield).toUint64();
+        state.accruedYield = (claimPreview.primaryYield + claimPreview.lastDayPartialYield).toUint64();
         state.lastUpdateBalance = IERC20(underlyingToken).balanceOf(account).toUint64();
         state.lastUpdateTimestamp = timestamp.toUint40();
         state.flags = state.flags.setBit(uint256(YieldStateFlagIndex.Initialized));

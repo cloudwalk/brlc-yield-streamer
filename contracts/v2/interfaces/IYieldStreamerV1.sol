@@ -13,7 +13,7 @@ interface IYieldStreamerV1 {
      *  - prevClaimDebit: -- The amount of yield that was already claimed previously for the first yield day.
      *  - primaryYield: ---- The yield primary amount based on the number of whole days passed since the previous claim.
      *  - streamYield: ----- The yield stream amount based on the time passed since the beginning of the current day.
-     *  - lastDayYield: ---- The whole-day yield for the last day in the time range of this claim.
+     *  - lastDayPartialYield: ---- The whole-day yield for the last day in the time range of this claim.
      *  - shortfall: ------- The amount of yield that is not enough to cover this claim.
      *  - fee: ------------- The amount of fee for this claim, rounded upward.
      *  - yield: ----------- The amount of final yield for this claim before applying the fee, rounded down.
@@ -25,7 +25,7 @@ interface IYieldStreamerV1 {
         uint256 prevClaimDebit;
         uint256 primaryYield;
         uint256 streamYield;
-        uint256 lastDayYield;
+        uint256 lastDayPartialYield;
         uint256 shortfall;
         uint256 fee;
         uint256 yield;

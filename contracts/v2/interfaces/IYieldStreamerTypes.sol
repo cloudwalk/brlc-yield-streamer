@@ -64,11 +64,11 @@ interface IYieldStreamerTypes {
      * @dev Structure to store the claim preview information.
      *
      * Fields:
-     *  - yield: ---- The yield amount available that can be claimed.
-     *  - fee: ------ The fee amount that will be charged during the claim.
-     *  - timestamp: - The timestamp of the claim (current timestamp).
-     *  - balance: -- The principal balance after the claim.
-     *  - rate: ----- The current yield rate.
+     *  - yield: ------ The yield amount available that can be claimed.
+     *  - fee: -------- The fee amount that will be charged during the claim.
+     *  - timestamp: -- The timestamp of the claim (current timestamp).
+     *  - balance: ---- The principal balance after the claim.
+     *  - rate: ------- The current yield rate.
      */
     struct ClaimPreview {
         uint256 yield;
@@ -108,13 +108,13 @@ interface IYieldStreamerTypes {
      * @dev Structure to store the yield calculation result for a specific period.
      *
      * Fields:
-     *  - firstDayYield: -- The (partial) yield for the first day of the period.
-     *  - fullDaysYield: -- The yield for the full days of the period.
-     *  - lastDayYield: --- The (partial) yield for the last day of the period.
+     *  - firstDayPartialYield: -- The (partial) yield for the first day of the period.
+     *  - fullDaysYield: --------- The yield for the full days of the period.
+     *  - lastDayPartialYield: --- The (partial) yield for the last day of the period.
      */
     struct YieldResult {
-        uint256 firstDayYield;
+        uint256 firstDayPartialYield;
         uint256 fullDaysYield;
-        uint256 lastDayYield;
+        uint256 lastDayPartialYield;
     }
 }

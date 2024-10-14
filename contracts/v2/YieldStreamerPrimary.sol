@@ -508,9 +508,9 @@ abstract contract YieldStreamerPrimary is
             // if (_debug) {
             //     console.log("");
             //     console.log("_calculateYield | Result:");
-            //     console.log("_calculateYield | - firstDayYield: %s", result[0].firstDayYield);
+            //     console.log("_calculateYield | - firstDayPartialYield: %s", result[0].firstDayPartialYield);
             //     console.log("_calculateYield | - fullDaysYield: %s", result[0].fullDaysYield);
-            //     console.log("_calculateYield | - lastDayYield: %s", result[0].lastDayYield);
+            //     console.log("_calculateYield | - lastDayPartialYield: %s", result[0].lastDayPartialYield);
             // }
         } else if (ratePeriods == 2) {
             /**
@@ -560,9 +560,9 @@ abstract contract YieldStreamerPrimary is
             // if (_debug) {
             //     console.log("");
             //     console.log("_calculateYield | Result:");
-            //     console.log("_calculateYield | - firstDayYield: %s", result[0].firstDayYield);
+            //     console.log("_calculateYield | - firstDayPartialYield: %s", result[0].firstDayPartialYield);
             //     console.log("_calculateYield | - fullDaysYield: %s", result[0].fullDaysYield);
-            //     console.log("_calculateYield | - lastDayYield: %s", result[0].lastDayYield);
+            //     console.log("_calculateYield | - lastDayPartialYield: %s", result[0].lastDayPartialYield);
             // }
 
             localFromTimestamp = localToTimestamp;
@@ -596,9 +596,9 @@ abstract contract YieldStreamerPrimary is
                     rates[params.rateStartIndex + 1].value,
                     params.initialBalance +
                         params.initialAccruedYield +
-                        results[0].firstDayYield +
+                        results[0].firstDayPartialYield +
                         results[0].fullDaysYield +
-                        results[0].lastDayYield,
+                        results[0].lastDayPartialYield,
                     params.initialStreamYield
                 )
             );
@@ -606,9 +606,9 @@ abstract contract YieldStreamerPrimary is
             // if (_debug) {
             //     console.log("");
             //     console.log("_calculateYield | Result:");
-            //     console.log("_calculateYield | - firstDayYield: %s", result[1].firstDayYield);
+            //     console.log("_calculateYield | - firstDayPartialYield: %s", result[1].firstDayPartialYield);
             //     console.log("_calculateYield | - fullDaysYield: %s", result[1].fullDaysYield);
-            //     console.log("_calculateYield | - lastDayYield: %s", result[1].lastDayYield);
+            //     console.log("_calculateYield | - lastDayPartialYield: %s", result[1].lastDayPartialYield);
             // }
         } else {
             /**
@@ -663,12 +663,12 @@ abstract contract YieldStreamerPrimary is
             // if (_debug) {
             //     console.log("");
             //     console.log("_calculateYield | First period result:");
-            //     console.log("_calculateYield | - firstDayYield: %s", result[0].firstDayYield);
+            //     console.log("_calculateYield | - firstDayPartialYield: %s", result[0].firstDayPartialYield);
             //     console.log("_calculateYield | - fullDaysYield: %s", result[0].fullDaysYield);
-            //     console.log("_calculateYield | - lastDayYield: %s", result[0].lastDayYield);
+            //     console.log("_calculateYield | - lastDayPartialYield: %s", result[0].lastDayPartialYield);
             // }
 
-            currentBalance += results[0].firstDayYield + results[0].fullDaysYield + results[0].lastDayYield;
+            currentBalance += results[0].firstDayPartialYield + results[0].fullDaysYield + results[0].lastDayPartialYield;
 
             // Calculate yield for the intermediate periods
 
@@ -707,23 +707,23 @@ abstract contract YieldStreamerPrimary is
                 //     console.log("");
                 //     console.log("_calculateYield | Full period result: %s", i);
                 //     console.log(
-                //         "_calculateYield | - firstDayYield: %s",
-                //         result[i - params.rateStartIndex].firstDayYield
+                //         "_calculateYield | - firstDayPartialYield: %s",
+                //         result[i - params.rateStartIndex].firstDayPartialYield
                 //     );
                 //     console.log(
                 //         "_calculateYield | - fullDaysYield: %s",
                 //         result[i - params.rateStartIndex].fullDaysYield
                 //     );
                 //     console.log(
-                //         "_calculateYield | - lastDayYield: %s",
-                //         result[i - params.rateStartIndex].lastDayYield
+                //         "_calculateYield | - lastDayPartialYield: %s",
+                //         result[i - params.rateStartIndex].lastDayPartialYield
                 //     );
                 // }
 
                 currentBalance +=
-                    results[i - params.rateStartIndex].firstDayYield +
+                    results[i - params.rateStartIndex].firstDayPartialYield +
                     results[i - params.rateStartIndex].fullDaysYield +
-                    results[i - params.rateStartIndex].lastDayYield;
+                    results[i - params.rateStartIndex].lastDayPartialYield;
             }
 
             // Calculate yield for the last period
@@ -765,9 +765,9 @@ abstract contract YieldStreamerPrimary is
             // if (_debug) {
             //     console.log("");
             //     console.log("_calculateYield | Last period result:");
-            //     console.log("_calculateYield | - firstDayYield: %s", result[ratePeriods - 1].firstDayYield);
+            //     console.log("_calculateYield | - firstDayPartialYield: %s", result[ratePeriods - 1].firstDayPartialYield);
             //     console.log("_calculateYield | - fullDaysYield: %s", result[ratePeriods - 1].fullDaysYield);
-            //     console.log("_calculateYield | - lastDayYield: %s", result[ratePeriods - 1].lastDayYield);
+            //     console.log("_calculateYield | - lastDayPartialYield: %s", result[ratePeriods - 1].lastDayPartialYield);
             // }
         }
 
@@ -830,7 +830,7 @@ abstract contract YieldStreamerPrimary is
                 params.yieldRate,
                 params.toTimestamp - params.fromTimestamp
             );
-            result.lastDayYield = params.streamYield + partDayYield;
+            result.lastDayPartialYield = params.streamYield + partDayYield;
 
             // if (_debug) {
             //     console.log("");
@@ -839,10 +839,10 @@ abstract contract YieldStreamerPrimary is
             //     console.log("");
             //     console.log("_compoundYield | Calculating yield for elapsed time: %s", toTimestamp - fromTimestamp);
             //     console.log(
-            //         "_compoundYield | - lastDayYield = streamYield + partDayYield: %s + %s = %s",
+            //         "_compoundYield | - lastDayPartialYield = streamYield + partDayYield: %s + %s = %s",
             //         streamYield,
             //         partDayYield,
-            //         result.lastDayYield
+            //         result.lastDayPartialYield
             //     );
             // }
         } else {
@@ -863,7 +863,7 @@ abstract contract YieldStreamerPrimary is
 
             if (firstDaySeconds != 1 days) {
                 partDayYield = _calculatePartDayYield(totalBalance, params.yieldRate, firstDaySeconds);
-                result.firstDayYield = params.streamYield + partDayYield;
+                result.firstDayPartialYield = params.streamYield + partDayYield;
 
                 // if (_debug) {
                 //     console.log("");
@@ -872,14 +872,14 @@ abstract contract YieldStreamerPrimary is
                 //         firstDaySeconds
                 //     );
                 //     console.log(
-                //         "_compoundYield | - firstDayYield = streamYield + partDayYield: %s + %s = %s",
+                //         "_compoundYield | - firstDayPartialYield = streamYield + partDayYield: %s + %s = %s",
                 //         streamYield,
                 //         partDayYield,
-                //         result.firstDayYield
+                //         result.firstDayPartialYield
                 //     );
                 // }
 
-                totalBalance += result.firstDayYield;
+                totalBalance += result.firstDayPartialYield;
                 params.fromTimestamp = nextDayStart;
             }
 
@@ -919,11 +919,11 @@ abstract contract YieldStreamerPrimary is
                 // }
 
                 uint256 lastDaySeconds = params.toTimestamp - params.fromTimestamp;
-                result.lastDayYield = _calculatePartDayYield(totalBalance, params.yieldRate, lastDaySeconds);
+                result.lastDayPartialYield = _calculatePartDayYield(totalBalance, params.yieldRate, lastDaySeconds);
 
                 // if (_debug) {
                 //     console.log("_compoundYield | - last day remaining seconds: %s", lastDaySeconds);
-                //     console.log("_compoundYield | - last day partial yield: %s", result.lastDayYield);
+                //     console.log("_compoundYield | - last day partial yield: %s", result.lastDayPartialYield);
                 // }
             }
         }
@@ -931,9 +931,9 @@ abstract contract YieldStreamerPrimary is
         // if (_debug) {
         //     console.log("");
         //     console.log("_compoundYield | Final result:");
-        //     console.log("_compoundYield | - firstDayYield: %s", result.firstDayYield);
+        //     console.log("_compoundYield | - firstDayPartialYield: %s", result.firstDayPartialYield);
         //     console.log("_compoundYield | - fullDaysYield: %s", result.fullDaysYield);
-        //     console.log("_compoundYield | - lastDayYield: %s", result.lastDayYield);
+        //     console.log("_compoundYield | - lastDayPartialYield: %s", result.lastDayPartialYield);
 
         //     console.log("");
         //     console.log("_compoundYield | END");
@@ -1082,9 +1082,9 @@ abstract contract YieldStreamerPrimary is
 
         if (yieldResults.length > 1) {
             // if (_debug) {
-            //     console.log("_aggregateYield | accruedYield: %s += %s", accruedYield, yieldResults[0].lastDayYield);
+            //     console.log("_aggregateYield | accruedYield: %s += %s", accruedYield, yieldResults[0].lastDayPartialYield);
             // }
-            accruedYield += yieldResults[0].lastDayYield;
+            accruedYield += yieldResults[0].lastDayPartialYield;
         }
 
         for (uint256 i = 0; i < yieldResults.length; i++) {
@@ -1092,14 +1092,14 @@ abstract contract YieldStreamerPrimary is
             //     console.log(
             //         "_aggregateYield | accruedYield: %s += %s + %s",
             //         accruedYield,
-            //         yieldResults[i].firstDayYield,
+            //         yieldResults[i].firstDayPartialYield,
             //         yieldResults[i].fullDaysYield
             //     );
             // }
-            accruedYield += yieldResults[i].firstDayYield + yieldResults[i].fullDaysYield;
+            accruedYield += yieldResults[i].firstDayPartialYield + yieldResults[i].fullDaysYield;
         }
 
-        streamYield = yieldResults[yieldResults.length - 1].lastDayYield;
+        streamYield = yieldResults[yieldResults.length - 1].lastDayPartialYield;
 
         return (accruedYield, streamYield);
     }
