@@ -270,8 +270,8 @@ abstract contract YieldStreamerPrimary is
     ) private view returns (AccruePreview memory) {
         AccruePreview memory preview;
 
-        preview.accruedYieldBefore = state.accruedYield;
         preview.streamYieldBefore = state.streamYield;
+        preview.accruedYieldBefore = state.accruedYield;
         preview.fromTimestamp = state.lastUpdateTimestamp;
         preview.toTimestamp = _blockTimestamp();
 
@@ -324,9 +324,9 @@ abstract contract YieldStreamerPrimary is
             preview.streamYieldBefore
         );
 
-        state.lastUpdateTimestamp = preview.toTimestamp.toUint40();
-        state.accruedYield = preview.accruedYieldAfter.toUint64();
         state.streamYield = preview.streamYieldAfter.toUint64();
+        state.accruedYield = preview.accruedYieldAfter.toUint64();
+        state.lastUpdateTimestamp = preview.toTimestamp.toUint40();
     }
 
     /**

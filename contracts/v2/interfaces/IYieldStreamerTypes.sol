@@ -94,10 +94,10 @@ interface IYieldStreamerTypes {
         uint256 fromTimestamp;
         uint256 toTimestamp;
         uint256 balance;
-        uint256 accruedYieldBefore;
         uint256 streamYieldBefore;
-        uint256 accruedYieldAfter;
+        uint256 accruedYieldBefore;
         uint256 streamYieldAfter;
+        uint256 accruedYieldAfter;
         YieldRate[] rates;
         YieldResult[] results;
     }
