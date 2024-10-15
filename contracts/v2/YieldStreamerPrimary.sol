@@ -96,8 +96,12 @@ abstract contract YieldStreamerPrimary is
      * @inheritdoc IERC20Hook
      */
     function afterTokenTransfer(address from, address to, uint256 amount) external onlyToken {
-        _decreaseTokenBalance(from, amount);
-        _increaseTokenBalance(to, amount);
+        if (from != address(0)) { // Saves gas during minting
+            _decreaseTokenBalance(from, amount);
+        }
+        if (to != address(0)) { // Saves gas during burning
+            _increaseTokenBalance(to, amount);
+        }
     }
 
     // -------------------- Functions ------------------------------ //
