@@ -73,6 +73,13 @@ interface IYieldStreamerInitialization_Events {
         uint256 newGroupId,
         uint256 oldGroupId
     );
+
+    /**
+     * @dev Emitted when the initialized flag is set manually.
+     * @param account The account that the initialized flag is set for.
+     * @param isInitialized The initialized flag value.
+     */
+    event YieldStreamer_InitializedFlagSet(address indexed account, bool isInitialized);
 }
 
 /**
@@ -92,7 +99,7 @@ interface IYieldStreamerInitialization_Functions {
      * @param account The account to set the initialized state for.
      * @param isInitialized The initialized state to set.
      */
-    function setInitialized(address account, bool isInitialized) external;
+    function setInitializedFlag(address account, bool isInitialized) external;
 
     /**
      * @dev Sets the source yield streamer.

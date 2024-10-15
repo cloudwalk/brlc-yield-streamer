@@ -307,7 +307,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Set the initialized state for the user
-      await yieldStreamer.setInitialized(user.address, true);
+      await yieldStreamer.setInitializedFlag(user.address, true);
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
@@ -437,7 +437,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Set the initialized state for the user
-      await yieldStreamer.setInitialized(user.address, true);
+      await yieldStreamer.setInitializedFlag(user.address, true);
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
@@ -561,7 +561,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Set the initialized state for the user
-      await yieldStreamer.setInitialized(user.address, true);
+      await yieldStreamer.setInitializedFlag(user.address, true);
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);
@@ -691,7 +691,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Set the initialized state for the user
-      await yieldStreamer.setInitialized(user.address, true);
+      await yieldStreamer.setInitializedFlag(user.address, true);
 
       // Add yield rates to the contract
       await addYieldRates(yieldStreamer, yieldRates);

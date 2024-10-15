@@ -204,8 +204,8 @@ contract YieldStreamerV2 is
     /**
      * @inheritdoc IYieldStreamerInitialization_Functions
      */
-    function setInitialized(address account, bool isInitialized) external onlyRole(OWNER_ROLE) {
-        _setInitialized(account, isInitialized);
+    function setInitializedFlag(address account, bool isInitialized) external onlyRole(OWNER_ROLE) {
+        _setInitializedFlag(account, isInitialized);
     }
 
     // ------------------ Overrides ------------------------------- //

@@ -135,18 +135,20 @@ abstract contract YieldStreamerInitialization is
     }
 
     /**
-     * @dev Sets the initialized state for an account.
-     * @param account The account to set the initialized state for.
-     * @param isInitialized The initialized state to set.
+     * @dev Sets the initialized flag for an account.
+     * @param account The account to set the initialized flag for.
+     * @param isInitialized The initialized flag to set.
      */
-    function _setInitialized(address account, bool isInitialized) internal {
+    function _setInitializedFlag(address account, bool isInitialized) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
 
         if (isInitialized && !state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized))) {
             state.flags = state.flags.setBit(uint256(YieldStateFlagIndex.Initialized));
+            emit YieldStreamer_InitializedFlagSet(account, true);
         } else if (!isInitialized && state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized))) {
             state.flags = state.flags.clearBit(uint256(YieldStateFlagIndex.Initialized));
+            emit YieldStreamer_InitializedFlagSet(account, false);
         }
     }
 
