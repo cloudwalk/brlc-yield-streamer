@@ -31,6 +31,14 @@ abstract contract YieldStreamerPrimary is
 
     // -------------------- Structs ------------------------------- //
 
+    /* ez-review-v1: This struct is never used. Should be removed? If not possible improvements:
+     * 1. Rename `Range` => `CellRange`
+     * 2. Fix the description like: Structure that represents a range of array cells.
+     * 3. If it is supposed to use as a common range structure,rename the fields like:
+     *    a. `startIndex` => `beg`,
+     *    b.  `endIndex` => `end`.
+     * 4. Explain how field `endIndex` should be treated: inclusive or exclusive.
+     */
     /**
      * @dev Structure that represents a range of values.
      *
