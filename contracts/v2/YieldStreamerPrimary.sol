@@ -229,6 +229,7 @@ abstract contract YieldStreamerPrimary is
         }
 
         if (FEE_RATE != 0 && feeReceiver != address(0)) {
+            // ez-review-v1: Should we revert if the feeReceiver address is not set?
             uint256 fee = _roundUp(_calculateFee(amount));
             amount -= fee;
             IERC20(token).transfer(feeReceiver, fee);
