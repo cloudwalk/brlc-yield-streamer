@@ -14,7 +14,7 @@ const ADDRESS_ZERO = ethers.ZeroAddress;
 const RATE_FACTOR = 10 ** 9;
 const ROUND_FACTOR = 10000;
 const FEE_RATE = 0;
-const NEGATIVE_TIME_SHIFT = 0;
+const NEGATIVE_TIME_SHIFT = 3 * 60 * 60;
 const MIN_CLAIM_AMOUNT = 1000000;
 const ENABLE_YIELD_STATE_AUTO_INITIALIZATION = false;
 
@@ -28,10 +28,10 @@ interface YieldRate {
 
 interface YieldState {
   flags: number;
-  timestampAtLastUpdate: bigint;
-  balanceAtLastUpdate: bigint;
-  accruedYield: bigint;
   streamYield: bigint;
+  accruedYield: bigint;
+  lastUpdateTimestamp: bigint;
+  lastUpdateBalance: bigint;
 
   // Indexing signature to ensure that fields are iterated over in a key-value style
   [key: string]: number | bigint;
@@ -205,10 +205,10 @@ describe("YieldStreamerV2Harness", function () {
       const accountAddress = "0x0000000000000000000000000000000000000001";
       const yieldState: YieldState = {
         flags: 0xff,
-        timestampAtLastUpdate: 2n ** 40n - 1n,
-        balanceAtLastUpdate: 2n ** 64n - 1n,
+        streamYield: 2n ** 64n - 1n,
         accruedYield: 2n ** 64n - 1n,
-        streamYield: 2n ** 64n - 1n
+        lastUpdateTimestamp: 2n ** 40n - 1n,
+        lastUpdateBalance: 2n ** 64n - 1n
       };
       await proveTx(yieldStreamerHarness.setYieldState(accountAddress, yieldState));
       const actualYieldState = await yieldStreamerHarness.getYieldState(accountAddress);
@@ -222,10 +222,10 @@ describe("YieldStreamerV2Harness", function () {
       const accountAddress = "0x0000000000000000000000000000000000000001";
       const yieldStateBefore: YieldState = {
         flags: 0xff,
-        timestampAtLastUpdate: 2n ** 40n - 1n,
-        balanceAtLastUpdate: 2n ** 64n - 1n,
+        streamYield: 2n ** 64n - 1n,
         accruedYield: 2n ** 64n - 1n,
-        streamYield: 2n ** 64n - 1n
+        lastUpdateTimestamp: 2n ** 40n - 1n,
+        lastUpdateBalance: 2n ** 64n - 1n
       };
       await proveTx(yieldStreamerHarness.setYieldState(accountAddress, yieldStateBefore));
       const actualYieldStateBefore = await yieldStreamerHarness.getYieldState(accountAddress);
@@ -233,10 +233,10 @@ describe("YieldStreamerV2Harness", function () {
 
       const yieldStateAfter: YieldState = {
         flags: 0,
-        timestampAtLastUpdate: 0n,
-        balanceAtLastUpdate: 0n,
+        streamYield: 0n,
         accruedYield: 0n,
-        streamYield: 0n
+        lastUpdateTimestamp: 0n,
+        lastUpdateBalance: 0n
       };
       await proveTx(yieldStreamerHarness.resetYieldState(accountAddress));
       const actualYieldStateAfter = await yieldStreamerHarness.getYieldState(accountAddress);
