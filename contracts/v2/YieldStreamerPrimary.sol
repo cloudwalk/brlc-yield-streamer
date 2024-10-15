@@ -272,6 +272,7 @@ abstract contract YieldStreamerPrimary is
     ) private view returns (AccruePreview memory) {
         AccruePreview memory preview;
 
+        preview.balance = state.lastUpdateBalance;
         preview.streamYieldBefore = state.streamYield;
         preview.accruedYieldBefore = state.accruedYield;
         preview.fromTimestamp = state.lastUpdateTimestamp;
