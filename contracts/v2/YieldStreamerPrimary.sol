@@ -209,7 +209,10 @@ abstract contract YieldStreamerPrimary is
         }
 
         uint256 fee = 0;
-        if (FEE_RATE != 0 && feeReceiver != address(0)) {
+        if (FEE_RATE != 0) {
+            if (feeReceiver == address(0)) {
+                revert YieldStreamer_FeeReceiverNotConfigured();
+            }
             fee = _roundUp(_calculateFee(amount));
             amount -= fee;
         }

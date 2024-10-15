@@ -24,6 +24,9 @@ interface IYieldStreamerPrimary_Errors {
 
     /// @dev Thrown when the claim amount is below the minimum.
     error YieldStreamer_ClaimAmountBelowMinimum();
+
+    /// @dev Thrown when the fee receiver is not configured.
+    error YieldStreamer_FeeReceiverNotConfigured();
 }
 
 /**
