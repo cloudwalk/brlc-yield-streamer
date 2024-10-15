@@ -551,7 +551,7 @@ abstract contract YieldStreamerPrimary is
                         results[0].firstDayPartialYield +
                         results[0].fullDaysYield +
                         results[0].lastDayPartialYield,
-                    params.initialStreamYield
+                    params.initialStreamYield // ez-review-v1: Should we use 0 here instead?
                 )
             );
 
