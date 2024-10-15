@@ -199,6 +199,13 @@ abstract contract YieldStreamerInitialization is
         }
     }
 
+    /**
+     * @dev Returns the source yield streamer address.
+     */
+    function _sourceYieldStreamer() internal view returns (address) {
+        return _yieldStreamerInitializationStorage().sourceYieldStreamer;
+    }
+
     // ------------------ Overrides ------------------------------- //
 
     /**

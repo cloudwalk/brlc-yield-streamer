@@ -113,6 +113,11 @@ interface IYieldStreamerInitialization_Functions {
      * @param groupId The group id to map.
      */
     function mapSourceYieldStreamerGroup(bytes32 groupKey, uint256 groupId) external;
+
+    /**
+     * @dev Returns the source yield streamer address.
+     */
+    function sourceYieldStreamer() external view returns (address);
 }
 
 /**
