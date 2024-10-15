@@ -309,6 +309,38 @@ abstract contract YieldStreamerPrimary is
         return preview;
     }
 
+    /**
+     * @dev Returns an array of yield rates for a given account group.
+     * @param groupId The ID of the group to get the yield rates for.
+     * @return The array of yield rates
+     */
+    function _getGroupYieldRates(uint256 groupId) internal view returns (YieldRate[] memory) {
+        return _yieldStreamerStorage().yieldRates[groupId.toUint32()];
+    }
+
+    /**
+     * @dev Returns the group ID for a given account.
+     * @param account The account to get the group ID for.
+     * @return The group ID.
+     */
+    function _getAccountGroup(address account) internal view returns (uint256) {
+        return _yieldStreamerStorage().groups[account].id;
+    }
+
+    /**
+     * @dev Returns the underlying token contract address.
+     */
+    function _underlyingToken() internal view returns (address) {
+        return _yieldStreamerStorage().underlyingToken;
+    }
+
+    /**
+     * @dev Returns the fee receiver address.
+     */
+    function _feeReceiver() internal view returns (address) {
+        return _yieldStreamerStorage().feeReceiver;
+    }
+
     // ------------------ Yield calculation ----------------------- //
 
     /**

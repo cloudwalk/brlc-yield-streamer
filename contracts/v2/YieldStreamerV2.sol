@@ -135,6 +135,41 @@ contract YieldStreamerV2 is
         return _getAccruePreview(account);
     }
 
+    /**
+     * @inheritdoc IYieldStreamerPrimary_Functions
+     */
+    function getGroupYieldRates(uint256 groupId) external view returns (YieldRate[] memory) {
+        return _getGroupYieldRates(groupId);
+    }
+
+    /**
+     * @inheritdoc IYieldStreamerPrimary_Functions
+     */
+    function getAccountGroup(address account) external view returns (uint256) {
+        return _getAccountGroup(account);
+    }
+
+    /**
+     * @inheritdoc IYieldStreamerPrimary_Functions
+     */
+    function underlyingToken() external view returns (address) {
+        return _underlyingToken();
+    }
+
+    /**
+     * @inheritdoc IYieldStreamerPrimary_Functions
+     */
+    function feeReceiver() external view returns (address) {
+        return _feeReceiver();
+    }
+
+    /**
+     * @inheritdoc IYieldStreamerPrimary_Functions
+     */
+    function blockTimestamp() external view returns (uint256) {
+        return _blockTimestamp();
+    }
+
     // ------------------ IYieldStreamerConfiguration ------------- //
 
     /**
@@ -206,6 +241,13 @@ contract YieldStreamerV2 is
      */
     function setInitializedFlag(address account, bool isInitialized) external onlyRole(OWNER_ROLE) {
         _setInitializedFlag(account, isInitialized);
+    }
+
+    /**
+     * @inheritdoc IYieldStreamerInitialization_Functions
+     */
+    function sourceYieldStreamer() external view returns (address) {
+        return _sourceYieldStreamer();
     }
 
     // ------------------ Overrides ------------------------------- //

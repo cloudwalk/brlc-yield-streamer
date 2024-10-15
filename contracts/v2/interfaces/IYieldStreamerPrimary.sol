@@ -100,6 +100,35 @@ interface IYieldStreamerPrimary_Functions {
      * @return The accrue preview.
      */
     function getAccruePreview(address account) external view returns (IYieldStreamerTypes.AccruePreview memory);
+
+    /**
+     * @dev Returns an array of yield rates for a given account group.
+     * @param groupId The ID of the group to get the yield rates for.
+     * @return The array of yield rates
+     */
+    function getGroupYieldRates(uint256 groupId) external view returns (IYieldStreamerTypes.YieldRate[] memory);
+
+    /**
+     * @dev Returns the group ID for a given account.
+     * @param account The account to get the group ID for.
+     * @return The group ID.
+     */
+    function getAccountGroup(address account) external view returns (uint256);
+
+    /**
+     * @dev Returns the underlying token contract address.
+     */
+    function underlyingToken() external view returns (address);
+
+    /**
+     * @dev Returns the fee receiver address.
+     */
+    function feeReceiver() external view returns (address);
+
+    /**
+     * @dev Returns the current block timestamp according to the contract settings.
+     */
+    function blockTimestamp() external view returns (uint256);
 }
 
 /**

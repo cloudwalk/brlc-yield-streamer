@@ -99,25 +99,6 @@ contract YieldStreamerV2Harness is YieldStreamerV2 {
         return _yieldStreamerHarnessStorage();
     }
 
-    /// @dev Returns the current underlying token contract.
-    function underlyingToken() external view returns (address) {
-        return _yieldStreamerStorage().underlyingToken;
-    }
-
-    /**
-     * @dev Returns an array of yield rates for a given account group.
-     * @param groupId The ID of the group to delete the array for.
-     * @return The array of yield rates
-     */
-    function getGroupYieldRates(uint256 groupId) public view returns (YieldRate[] memory) {
-        return _yieldStreamerStorage().yieldRates[groupId.toUint32()];
-    }
-
-    /// @dev Returns the current block timestamp according to the contract settings: a real one or a special one
-    function blockTimestamp() external view returns (uint256) {
-        return _blockTimestamp();
-    }
-
     // ------------------ Overrides ------------------------------- //
 
     /// @dev Returns the current block timestamp according to the contract settings: a real one or a special one
