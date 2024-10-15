@@ -156,7 +156,7 @@ abstract contract YieldStreamerPrimary is
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
 
-        if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account)) {
+        if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account, state)) {
             if (state.lastUpdateTimestamp != _blockTimestamp()) {
                 YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
                 _accrueYield(account, state, rates);
@@ -174,7 +174,7 @@ abstract contract YieldStreamerPrimary is
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
 
-        if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account)) {
+        if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account, state)) {
             if (state.lastUpdateTimestamp != _blockTimestamp()) {
                 YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
                 _accrueYield(account, state, rates);
@@ -188,11 +188,11 @@ abstract contract YieldStreamerPrimary is
      * @param account The account to try to initialize.
      * @return True if the account was initialized, false otherwise.
      */
-    function _tryInitializeAccount(address account) private returns (bool) {
+    function _tryInitializeAccount(address account, YieldState storage state) private returns (bool) {
         if (ENABLE_YIELD_STATE_AUTO_INITIALIZATION) {
             if (account != address(0) && account.code.length == 0) {
                 _initializeSingleAccount(account);
-                return true;
+                return state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized));
             }
         }
         return false;
