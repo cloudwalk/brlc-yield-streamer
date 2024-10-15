@@ -27,6 +27,9 @@ interface IYieldStreamerPrimary_Errors {
 
     /// @dev Thrown when the fee receiver is not configured.
     error YieldStreamer_FeeReceiverNotConfigured();
+
+    /// @dev Thrown when the account is not initialized.
+    error YieldStreamer_AccountNotInitialized();
 }
 
 /**
