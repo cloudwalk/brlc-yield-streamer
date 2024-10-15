@@ -32,18 +32,6 @@ abstract contract YieldStreamerPrimary is
     // -------------------- Structs ------------------------------- //
 
     /**
-     * @dev Structure that represents a range of values.
-     *
-     * Fields:
-     *  - startIndex: -- The value the range starts at.
-     *  - endIndex: ---- The value the range ends at.
-     */
-    struct Range {
-        uint256 startIndex;
-        uint256 endIndex;
-    }
-
-    /**
      * @dev Structure that contains the parameters for calculating the yield.
      *
      * Fields:
