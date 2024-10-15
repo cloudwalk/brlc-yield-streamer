@@ -95,7 +95,7 @@ interface IYieldStreamerTypes {
     struct AccruePreview {
         uint256 fromTimestamp;
         uint256 toTimestamp;
-        uint256 balance;
+        uint256 balance; // ez-review-v1: this field is never set during the code execution
         uint256 streamYieldBefore;
         uint256 accruedYieldBefore;
         uint256 streamYieldAfter;
