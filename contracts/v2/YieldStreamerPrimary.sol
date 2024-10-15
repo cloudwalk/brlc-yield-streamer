@@ -539,7 +539,7 @@ abstract contract YieldStreamerPrimary is
                         results[0].firstDayPartialYield +
                         results[0].fullDaysYield +
                         results[0].lastDayPartialYield,
-                    params.initialStreamYield
+                    0
                 )
             );
 
