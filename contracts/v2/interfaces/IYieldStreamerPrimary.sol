@@ -51,13 +51,13 @@ interface IYieldStreamerPrimary_Events {
     /**
      * @dev Emitted when the yield is transferred to an account.
      * @param account The account the yield was transferred to.
-     * @param accruedYield The amount of accrued yield transferred.
-     * @param streamYield The amount of stream yield transferred.
+     * @param yield The amount of yield transferred.
+     * @param fee The amount of fee transferred.
      */
     event YieldStreamer_YieldTransferred(
         address indexed account, // Tools: this comment prevents Prettier from formatting into a single line.
-        uint256 accruedYield,
-        uint256 streamYield
+        uint256 yield,
+        uint256 fee
     );
 }
 

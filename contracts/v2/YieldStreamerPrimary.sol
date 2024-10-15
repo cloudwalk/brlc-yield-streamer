@@ -96,10 +96,12 @@ abstract contract YieldStreamerPrimary is
      * @inheritdoc IERC20Hook
      */
     function afterTokenTransfer(address from, address to, uint256 amount) external onlyToken {
-        if (from != address(0)) { // Saves gas during minting
+        if (from != address(0)) {
+            // Saves gas during minting
             _decreaseTokenBalance(from, amount);
         }
-        if (to != address(0)) { // Saves gas during burning
+        if (to != address(0)) {
+            // Saves gas during burning
             _increaseTokenBalance(to, amount);
         }
     }
@@ -187,7 +189,7 @@ abstract contract YieldStreamerPrimary is
      * @param token The address of the underlying token.
      */
     function _transferYield(
-        address account, // Format: prevent collapse
+        address account,
         uint256 amount,
         YieldState storage state,
         address feeReceiver,
@@ -200,20 +202,23 @@ abstract contract YieldStreamerPrimary is
         }
 
         if (amount > state.accruedYield) {
-            emit YieldStreamer_YieldTransferred(account, state.accruedYield, amount - state.accruedYield);
             state.streamYield -= (amount - state.accruedYield).toUint64();
             state.accruedYield = 0;
         } else {
-            emit YieldStreamer_YieldTransferred(account, amount, 0);
             state.accruedYield -= amount.toUint64();
         }
 
+        uint256 fee = 0;
         if (FEE_RATE != 0 && feeReceiver != address(0)) {
-            uint256 fee = _roundUp(_calculateFee(amount));
+            fee = _roundUp(_calculateFee(amount));
             amount -= fee;
-            IERC20(token).transfer(feeReceiver, fee);
         }
 
+        emit YieldStreamer_YieldTransferred(account, amount, fee);
+
+        if (fee > 0) {
+            IERC20(token).transfer(feeReceiver, fee);
+        }
         IERC20(token).transfer(account, amount);
     }
 
@@ -600,7 +605,10 @@ abstract contract YieldStreamerPrimary is
             //     console.log("_calculateYield | - lastDayPartialYield: %s", result[0].lastDayPartialYield);
             // }
 
-            currentBalance += results[0].firstDayPartialYield + results[0].fullDaysYield + results[0].lastDayPartialYield;
+            currentBalance +=
+                results[0].firstDayPartialYield +
+                results[0].fullDaysYield +
+                results[0].lastDayPartialYield;
 
             // Calculate yield for the intermediate periods
 
