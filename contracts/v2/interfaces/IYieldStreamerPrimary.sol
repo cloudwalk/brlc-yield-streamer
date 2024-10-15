@@ -58,6 +58,7 @@ interface IYieldStreamerPrimary_Events {
         address indexed account, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 accruedYield,
         uint256 streamYield
+        // ez-review-v1: Should the fee information be here?
     );
 }
 
