@@ -3,25 +3,28 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title IYieldStreamerTypes interface
+ * @dev IYieldStreamerTypes Interface
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev Defines the types used in the yield streamer contracts.
+ * @dev Defines the data structures and enumerations for the yield streamer contract.
  */
 interface IYieldStreamerTypes {
     /**
-     * @dev Enum to represent the possible flag indices of the yield state.
+     * @dev Enumeration of possible flag indices for the yield state.
+     * Used to manage boolean flags within the `YieldState` structure using bitwise operations.
      *
      * Values:
-     *  - Initialized: -- The yield state has been initialized.
+     * - `Initialized`: Indicates whether the yield state has been initialized.
      */
     enum YieldStateFlagIndex {
         Initialized
     }
+
     /**
-     * @dev Structure to store the group information.
+     * @dev Structure representing a group to which accounts can be assigned.
+     * Used to identify the group of accounts that share the same yield rate.
      *
      * Fields:
-     *  - id: -- The group id.
+     * - `id`: The unique identifier of the group.
      */
     struct Group {
         uint32 id;
@@ -29,11 +32,12 @@ interface IYieldStreamerTypes {
     }
 
     /**
-     * @dev Structure to store the yield rate for a specific day.
+     * @dev Structure representing a yield rate that becomes effective from a specific day.
+     * Used to determine the yield accrual for accounts based on their assigned group.
      *
      * Fields:
-     *  - effectiveDay: -- The effective day.
-     *  - value: --------- The rate value.
+     * - `effectiveDay`: The day index (since Unix epoch) from which this yield rate becomes effective.
+     * - `value`: The yield rate value (scaled by RATE_FACTOR).
      */
     struct YieldRate {
         uint16 effectiveDay;
@@ -42,14 +46,15 @@ interface IYieldStreamerTypes {
     }
 
     /**
-     * @dev Structure to store the yield state of an account.
+     * @dev Structure representing the yield state of an account.
+     * Used to store information about the account's yield accrual and balances.
      *
      * Fields:
-     *  - flags: ---------------- The flags of the yield state.
-     *  - streamYield: ---------- The stream yield.
-     *  - accruedYield: --------- The accrued yield.
-     *  - lastUpdateTimestamp: -- The timestamp of the last update.
-     *  - lastUpdateBalance: ---- The balance at the last update.
+     * - `flags`: A byte used to store boolean flags using bitwise operations (e.g., initialization status).
+     * - `streamYield`: The amount of yield accrued during the current day (not yet finalized).
+     * - `accruedYield`: The total amount of yield accrued and finalized up to the last update.
+     * - `lastUpdateTimestamp`: The timestamp of the last yield accrual or balance update.
+     * - `lastUpdateBalance`: The account's token balance at the time of the last update.
      */
     struct YieldState {
         uint8 flags;
@@ -61,14 +66,15 @@ interface IYieldStreamerTypes {
     }
 
     /**
-     * @dev Structure to store the claim preview information.
+     * @dev Structure representing a preview of the claimable yield for an account.
+     * Used to estimate the yield that can be claimed without modifying the contract state.
      *
      * Fields:
-     *  - yield: ------ The yield amount available that can be claimed.
-     *  - fee: -------- The fee amount that will be charged during the claim.
-     *  - timestamp: -- The timestamp of the claim (current timestamp).
-     *  - balance: ---- The principal balance after the claim.
-     *  - rate: ------- The current yield rate.
+     * - `yield`: The total claimable yield amount (rounded down) available for the account.
+     * - `fee`: The fee amount that would be deducted during the claim.
+     * - `timestamp`: The timestamp at which the preview was calculated.
+     * - `balance`: The account's token balance used in the calculation.
+     * - `rate`: The current yield rate applicable to the account.
      */
     struct ClaimPreview {
         uint256 yield;
@@ -79,18 +85,19 @@ interface IYieldStreamerTypes {
     }
 
     /**
-     * @dev Structure to store the accrue preview information for a specific period.
+     * @dev Structure representing a preview of the yield accrual over a period for an account.
+     * Provides detailed information about how the yield would accrue without modifying the state.
      *
      * Fields:
-     *  - fromTimestamp: ------- The timestamp of the start of the period to preview.
-     *  - toTimestamp: --------- The timestamp of the end of the period to preview.
-     *  - balance: ------------- The balance at the beginning of the period.
-     *  - accruedYieldBefore: -- The accrued yield before the operation.
-     *  - streamYieldBefore: --- The stream yield before the operation.
-     *  - accruedYieldAfter: --- The accrued yield after the operation.
-     *  - streamYieldAfter: ---- The stream yield after the operation.
-     *  - rates: --------------- The yield rates used to for each sub-period.
-     *  - results: ------------- The yield calculation results for each sub-period.
+     * - `fromTimestamp`: The starting timestamp of the accrual period.
+     * - `toTimestamp`: The ending timestamp of the accrual period.
+     * - `balance`: The account's token balance at the beginning of the period.
+     * - `accruedYieldBefore`: The accrued yield before the accrual period.
+     * - `streamYieldBefore`: The stream yield before the accrual period.
+     * - `accruedYieldAfter`: The accrued yield after the accrual period.
+     * - `streamYieldAfter`: The stream yield after the accrual period.
+     * - `rates`: An array of `YieldRate` structs used during the accrual period.
+     * - `results`: An array of `YieldResult` structs detailing yield calculations for sub-periods.
      */
     struct AccruePreview {
         uint256 fromTimestamp;
@@ -105,12 +112,13 @@ interface IYieldStreamerTypes {
     }
 
     /**
-     * @dev Structure to store the yield calculation result for a specific period.
+     * @dev Structure representing the result of a yield calculation for a specific period.
+     * Details the yield accrued during different parts of the period (partial days and full days).
      *
      * Fields:
-     *  - firstDayPartialYield: -- The (partial) yield for the first day of the period.
-     *  - fullDaysYield: --------- The yield for the full days of the period.
-     *  - lastDayPartialYield: --- The (partial) yield for the last day of the period.
+     * - `firstDayPartialYield`: Yield accrued during the partial first day of the period.
+     * - `fullDaysYield`: Total yield accrued during the full days within the period.
+     * - `lastDayPartialYield`: Yield accrued during the partial last day of the period.
      */
     struct YieldResult {
         uint256 firstDayPartialYield;

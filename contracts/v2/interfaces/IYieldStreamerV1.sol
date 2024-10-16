@@ -2,21 +2,28 @@
 
 pragma solidity ^0.8.0;
 
+/**
+ * @title IYieldStreamerV1 interface
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
+ * @dev Interface for the version 1 of the yield streamer contract.
+ * Provides functions to interact with and retrieve information from the version 1 contract.
+ */
 interface IYieldStreamerV1 {
     /**
-     * @dev A structure that describes the result details of a claim operation.
+     * @dev Structure containing details of a yield claim operation.
+     * Provides all necessary information about the yield accrued and any fees or shortfalls.
      *
      * Fields:
-     *  - nextClaimDay: ---- The index of the day from which the subsequent yield will be calculated next time.
-     *  - nextClaimDebit: -- The amount of yield that will already be considered claimed for the next claim day.
-     *  - firstYieldDay: --- The index of the first day from which the current yield was calculated for this claim.
-     *  - prevClaimDebit: -- The amount of yield that was already claimed previously for the first yield day.
-     *  - primaryYield: ---- The yield primary amount based on the number of whole days passed since the previous claim.
-     *  - streamYield: ----- The yield stream amount based on the time passed since the beginning of the current day.
-     *  - lastDayPartialYield: ---- The whole-day yield for the last day in the time range of this claim.
-     *  - shortfall: ------- The amount of yield that is not enough to cover this claim.
-     *  - fee: ------------- The amount of fee for this claim, rounded upward.
-     *  - yield: ----------- The amount of final yield for this claim before applying the fee, rounded down.
+     * - `nextClaimDay`: The index of the day from which yield calculation will continue after this claim.
+     * - `nextClaimDebit`: The amount of yield that will be considered already claimed on `nextClaimDay`.
+     * - `firstYieldDay`: The index of the first day included in this yield calculation.
+     * - `prevClaimDebit`: The amount of yield already claimed on `firstYieldDay` before this claim.
+     * - `primaryYield`: The total yield accrued over full days since the previous claim.
+     * - `streamYield`: The yield accrued based on the time elapsed in the current day since the last claim.
+     * - `lastDayPartialYield`: The yield for the partial last day in the claim period.
+     * - `shortfall`: The amount by which the available yield is insufficient to cover the claim (if any).
+     * - `fee`: The fee amount applied to this claim (rounded upward).
+     * - `yield`: The net yield amount for this claim after fees (rounded down).
      */
     struct ClaimResult {
         uint256 nextClaimDay;
@@ -32,29 +39,37 @@ interface IYieldStreamerV1 {
     }
 
     /**
-     * @dev Previews the result of claiming all accrued yield.
-     * @param account The address to preview the claim for.
-     * @return The result of the claim preview.
+     * @dev Provides a preview of the result of claiming all accrued yield for an account.
+     * Calculates the yield that would be claimed without modifying the contract state.
+     *
+     * @param account The address of the account for which to preview the claim.
+     * @return A `ClaimResult` struct containing detailed information about the potential claim.
      */
     function claimAllPreview(address account) external view returns (ClaimResult memory);
 
     /**
-     * @notice Adds an account to the blocklist.
-     * @param account The address to add to the blocklist.
+     * @dev Adds an account to the blocklist, preventing it from interacting with certain functions.
+     * Used to restrict accounts from participating in yield accrual or claims.
+     *
+     * @param account The address of the account to add to the blocklist.
      */
     function blocklist(address account) external;
 
     /**
-     * @notice Checks if the account is configured as a blocklister.
-     * @param account The address to check.
-     * @return True if the account is a blocklister, False otherwise.
+     * @dev Checks whether an account is configured as a blocklister.
+     * Blocklisters have permissions to manage the blocklist of the yield streamer.
+     *
+     * @param account The address of the account to check.
+     * @return True if the account has blocklister permissions, false otherwise.
      */
     function isBlocklister(address account) external view returns (bool);
 
     /**
-     * @dev Gets the group key for a given account.
-     * @param account The address to get the group key for.
-     * @return The group key for the given account.
+     * @dev Retrieves the group key associated with a specific account.
+     * Group keys are used to assign accounts to groups with different yield rates or configurations.
+     *
+     * @param account The address of the account for which to retrieve the group key.
+     * @return The group key (`bytes32`) associated with the given account.
      */
     function getAccountGroup(address account) external view returns (bytes32);
 }

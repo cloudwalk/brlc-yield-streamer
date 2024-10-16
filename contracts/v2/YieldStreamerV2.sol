@@ -23,7 +23,8 @@ import { YieldStreamerInitialization } from "./YieldStreamerInitialization.sol";
 /**
  * @title YieldStreamerV2 contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev The contract that combines the primary, configuration and initialization contracts.
+ * @dev This contract is the main entry point for the yield streamer v2
+ * and combines the primary, configuration, and initialization functionalities.
  */
 contract YieldStreamerV2 is
     UUPSUpgradeable,
@@ -39,35 +40,34 @@ contract YieldStreamerV2 is
 {
     // ------------------ Constants ------------------------------- //
 
-    /// @dev The role of this contract owner.
+    /// @dev Role identifier for the contract owner.
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
-    /// @dev The role of this contract admin.
+    /// @dev Role identifier for the contract administrator.
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     // ------------------ Errors ---------------------------------- //
 
+    /// @dev Error thrown when the underlying token address is zero.
     error YieldStreamer_TokenAddressZero();
 
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev Initializer of the upgradable contract.
+     * @dev Initializes the upgradable contract with the specified underlying token.
+     * This function should be called only once during deployment.
      *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
-     *
-     * @param underlyingToken The address of the token to set as the underlying one.
+     * @param underlyingToken The address of the underlying ERC20 token contract.
      */
     function initialize(address underlyingToken) external initializer {
         __YieldStreamer_init(underlyingToken);
     }
 
     /**
-     * @dev Internal initializer of the upgradable contract.
+     * @dev Internal initializer function for the upgradable contract.
+     * Calls the initializers of all parent contracts.
      *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
-     *
-     * @param underlyingToken The address of the token to set as the underlying one.
+     * @param underlyingToken The address of the underlying ERC20 token contract.
      */
     function __YieldStreamer_init(address underlyingToken) internal onlyInitializing {
         __Context_init_unchained();
@@ -83,15 +83,10 @@ contract YieldStreamerV2 is
     }
 
     /**
-     * @dev Unchained internal initializer of the upgradable contract.
+     * @dev Unchained internal initializer function for setting up the underlying token.
+     * Assigns roles and sets the underlying token address.
      *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
-     *
-     * Requirements:
-     *
-     * - The passed address of the underlying token must not be zero.
-     *
-     * @param underlyingToken The address of the token to set as the underlying one.
+     * @param underlyingToken The address of the underlying ERC20 token contract.
      */
     function __YieldStreamer_init_init_unchained(address underlyingToken) internal onlyInitializing {
         if (underlyingToken == address(0)) {
@@ -253,14 +248,22 @@ contract YieldStreamerV2 is
     // ------------------ Overrides ------------------------------- //
 
     /**
-     * @inheritdoc YieldStreamerPrimary
+     * @dev See {YieldStreamerPrimary-_accrueYield} for further details.
+     *
+     * Overrides the `_accrueYield` function to resolve inheritance conflicts.
+     *
+     * @param account The account to accrue yield for.
      */
     function _accrueYield(address account) internal override(YieldStreamerPrimary, YieldStreamerConfiguration) {
         YieldStreamerPrimary._accrueYield(account);
     }
 
     /**
-     * @inheritdoc YieldStreamerPrimary
+     * @dev See {YieldStreamerPrimary-_blockTimestamp} for further details.
+     *
+     * Overrides the `_blockTimestamp` function to resolve inheritance conflicts.
+     *
+     * @return The current block timestamp used by the contract.
      */
     function _blockTimestamp()
         internal
@@ -273,7 +276,11 @@ contract YieldStreamerV2 is
     }
 
     /**
-     * @inheritdoc YieldStreamerInitialization
+     * @dev See {YieldStreamerInitialization-_initializeSingleAccount} for further details.
+     *
+     * Overrides the `_initializeSingleAccount` function to resolve inheritance conflicts.
+     *
+     * @param account The account to initialize.
      */
     function _initializeSingleAccount(
         address account
@@ -282,7 +289,12 @@ contract YieldStreamerV2 is
     }
 
     /**
-     * @inheritdoc YieldStreamerConfiguration
+     * @dev See {YieldStreamerConfiguration-_assignSingleAccountToGroup} for further details.
+     *
+     * Overrides the `_assignSingleAccountToGroup` function to resolve inheritance conflicts.
+     *
+     * @param groupId The group ID to assign the account to.
+     * @param account The account address to assign to the group.
      */
     function _assignSingleAccountToGroup(
         uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
@@ -294,8 +306,10 @@ contract YieldStreamerV2 is
     // ------------------ Upgrade Authorization ------------------ //
 
     /**
-     * @dev The upgrade authorization function for UUPSProxy.
-     * @param newImplementation The address of the new implementation.
+     * @dev Authorizes the contract upgrade when using UUPS proxy pattern.
+     * Ensures that only an account with the `OWNER_ROLE` can authorize an upgrade.
+     *
+     * @param newImplementation The address of the new contract implementation.
      */
     function _authorizeUpgrade(address newImplementation) internal view override onlyRole(OWNER_ROLE) {
         newImplementation; // Suppresses a compiler warning about the unused variable.

@@ -24,7 +24,7 @@ abstract contract YieldStreamerPrimary is
     IYieldStreamerPrimary_Events,
     IERC20Hook
 {
-    // -------------------- Libs ---------------------------------- //
+    // -------------------- Libraries ----------------------------- //
 
     using SafeCast for uint256;
     using Bitwise for uint8;
@@ -32,14 +32,14 @@ abstract contract YieldStreamerPrimary is
     // -------------------- Structs ------------------------------- //
 
     /**
-     * @dev Structure that contains the parameters for calculating the yield.
+     * @dev Structure representing the parameters for calculating the compound yield over a period.
      *
-     * Fields:
-     *  - fromTimestamp: -- The timestamp of the period start.
-     *  - toTimestamp: ---- The timestamp of the period end.
-     *  - yieldRate: ------ The yield rate.
-     *  - balance: -------- The balance.
-     *  - streamYield: ---- The stream yield.
+     * Attributes:
+     * - `fromTimestamp`: The starting timestamp of the calculation period.
+     * - `toTimestamp`: The ending timestamp of the calculation period.
+     * - `yieldRate`: The yield rate to apply during the calculation period (scaled by RATE_FACTOR).
+     * - `balance`: The balance amount to calculate the yield on.
+     * - `streamYield`: The prior stream yield amount before this calculation.
      */
     struct CompoundYieldParams {
         uint256 fromTimestamp;
@@ -50,16 +50,16 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Structure that contains the parameters for calculating the yield.
+     * @dev Structure representing the parameters for calculating yield over a period with multiple rates.
      *
-     * Fields:
-     *  - fromTimestamp: -------- The timestamp of the period start.
-     *  - toTimestamp: ---------- The timestamp of the period end.
-     *  - rateStartIndex: ------- The start index of the yield rates.
-     *  - rateEndIndex: --------- The end index of the yield rates.
-     *  - initialBalance: ------- The initial balance at the period start.
-     *  - initialStreamYield: --- The initial stream yield at the period start.
-     *  - initialAccruedYield: -- The initial accrued yield at the period start.
+     * Attributes:
+     * - `fromTimestamp`: The starting timestamp of the calculation period.
+     * - `toTimestamp`: The ending timestamp of the calculation period.
+     * - `rateStartIndex`: The starting index of the yield rates array for the period.
+     * - `rateEndIndex`: The ending index of the yield rates array for the period.
+     * - `initialBalance`: The balance at the beginning of the calculation period.
+     * - `initialStreamYield`: The stream yield amount at the beginning of the calculation period.
+     * - `initialAccruedYield`: The accrued yield amount at the beginning of the calculation period.
      */
     struct CalculateYieldParams {
         uint256 fromTimestamp;
@@ -74,7 +74,7 @@ abstract contract YieldStreamerPrimary is
     // -------------------- Modifiers ----------------------------- //
 
     /**
-     * @dev Modifier to ensure the caller is the underlying token.
+     * @dev Modifier to ensure the caller is the underlying token contract.
      */
     modifier onlyToken() {
         if (msg.sender != _yieldStreamerStorage().underlyingToken) {
@@ -89,7 +89,7 @@ abstract contract YieldStreamerPrimary is
      * @inheritdoc IERC20Hook
      */
     function beforeTokenTransfer(address from, address to, uint256 amount) external {
-        // Do nothing
+        // No action required before the token transfer.
     }
 
     /**
@@ -97,11 +97,9 @@ abstract contract YieldStreamerPrimary is
      */
     function afterTokenTransfer(address from, address to, uint256 amount) external onlyToken {
         if (from != address(0)) {
-            // Saves gas during minting
             _decreaseTokenBalance(from, amount);
         }
         if (to != address(0)) {
-            // Saves gas during burning
             _increaseTokenBalance(to, amount);
         }
     }
@@ -109,8 +107,10 @@ abstract contract YieldStreamerPrimary is
     // -------------------- Functions ------------------------------ //
 
     /**
-     * @dev Claims the yield for a given account.
-     * @param account The account to claim the yield for.
+     * @dev Claims a specified amount of accrued yield for an account.
+     * Transfers the specified amount of yield (after deducting any applicable fees) to the account.
+     *
+     * @param account The address of the account for which to claim yield.
      * @param amount The amount of yield to claim.
      */
     function _claimAmountFor(address account, uint256 amount) internal {
@@ -135,9 +135,10 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Increases the token balance for a given account.
-     * @param account The account to increase the token balance for.
-     * @param amount The amount of token to increase.
+     * @dev Increases the token balance of a given account after a token transfer.
+     *
+     * @param account The account whose token balance will be increased.
+     * @param amount The amount by which to increase the token balance.
      */
     function _increaseTokenBalance(address account, uint256 amount) private {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
@@ -153,9 +154,10 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Decreases the token balance for a given account.
-     * @param account The account to decrease the token balance for.
-     * @param amount The amount of token to decrease.
+     * @dev Decreases the token balance of a given account after a token transfer.
+     *
+     * @param account The account whose token balance will be decreased.
+     * @param amount The amount by which to decrease the token balance.
      */
     function _decreaseTokenBalance(address account, uint256 amount) private {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
@@ -171,9 +173,12 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Tries to initialize a yield state for a given account.
-     * @param account The account to try to initialize.
-     * @return True if the account was initialized, false otherwise.
+     * @dev Attempts to initialize the yield state for an account if auto-initialization is enabled.
+     * If the account is not initialized and auto-initialization is enabled, initializes the account.
+     *
+     * @param account The account to attempt initialization for.
+     * @param state The yield state storage reference for the account.
+     * @return True if the account was initialized by this function call; false otherwise.
      */
     function _tryInitializeAccount(address account, YieldState storage state) private returns (bool) {
         if (ENABLE_YIELD_STATE_AUTO_INITIALIZATION) {
@@ -186,11 +191,12 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Transfers the yield for a given account.
-     * @param account The account to transfer the yield for.
-     * @param amount The amount of yield to transfer.
-     * @param state The current state of the yield.
-     * @param feeReceiver The address to receive the fee.
+     * @dev Transfers the specified amount of yield to the account, after deducting any applicable fees.
+     *
+     * @param account The account receiving the yield.
+     * @param amount The amount of yield to transfer before fees.
+     * @param state The yield state storage reference for the account.
+     * @param feeReceiver The address that will receive the fee.
      * @param token The address of the underlying token.
      */
     function _transferYield(
@@ -231,18 +237,21 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Gets the yield state for a given account.
-     * @param account The account to get the yield state for.
-     * @return The yield state.
+     * @dev Retrieves the yield state for a given account.
+     *
+     * @param account The account to retrieve the yield state for.
+     * @return The yield state of the account.
      */
     function _getYieldState(address account) internal view returns (YieldState memory) {
         return _yieldStreamerStorage().yieldStates[account];
     }
 
     /**
-     * @dev Gets the claim preview for a given account.
+     * @dev Provides a preview of the claimable yield for a given account at the current time.
+     * Calculates the yield that can be claimed without modifying the state.
+     *
      * @param account The account to get the claim preview for.
-     * @return The claim preview.
+     * @return A `ClaimPreview` struct containing details of the claimable yield.
      */
     function _getClaimPreview(address account) internal view returns (ClaimPreview memory) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
@@ -254,9 +263,11 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Gets the accrue preview for a given account.
-     * @param account The account to get the accrue preview for.
-     * @return The accrue preview.
+     * @dev Provides a preview of the yield accrual for a given account.
+     * Calculates how the yield will accrue over time without modifying the state.
+     *
+     * @param account The account to get the accrual preview for.
+     * @return An `AccruePreview` struct containing details of the accrued yield.
      */
     function _getAccruePreview(address account) internal view returns (AccruePreview memory) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
@@ -266,10 +277,12 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Gets the accrue preview for a given account.
-     * @param state The current state of the yield.
+     * @dev Generates an accrue preview for a given account based on its current yield state and yield rates.
+     * Provides detailed information about the yield accrual without modifying the state.
+     *
+     * @param state The current yield state of the account.
      * @param rates The yield rates to use for the calculation.
-     * @return The accrue preview.
+     * @return An `AccruePreview` struct containing details of the accrued yield.
      */
     function _getAccruePreview(
         YieldState storage state,
@@ -310,32 +323,38 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Returns an array of yield rates for a given account group.
+     * @dev Returns an array of yield rates associated with a specific group ID.
+     *
      * @param groupId The ID of the group to get the yield rates for.
-     * @return The array of yield rates
+     * @return An array of `YieldRate` structs representing the yield rates.
      */
     function _getGroupYieldRates(uint256 groupId) internal view returns (YieldRate[] memory) {
         return _yieldStreamerStorage().yieldRates[groupId.toUint32()];
     }
 
     /**
-     * @dev Returns the group ID for a given account.
+     * @dev Returns the group ID that the specified account belongs to.
+     *
      * @param account The account to get the group ID for.
-     * @return The group ID.
+     * @return The group ID of the account.
      */
     function _getAccountGroup(address account) internal view returns (uint256) {
         return _yieldStreamerStorage().groups[account].id;
     }
 
     /**
-     * @dev Returns the underlying token contract address.
+     * @dev Returns the address of the underlying token used by the yield streamer.
+     *
+     * @return The address of the underlying token contract.
      */
     function _underlyingToken() internal view returns (address) {
         return _yieldStreamerStorage().underlyingToken;
     }
 
     /**
-     * @dev Returns the fee receiver address.
+     * @dev Returns the address of the fee receiver for the yield streamer.
+     *
+     * @return The address of the fee receiver.
      */
     function _feeReceiver() internal view returns (address) {
         return _yieldStreamerStorage().feeReceiver;
@@ -345,8 +364,23 @@ abstract contract YieldStreamerPrimary is
 
     /**
      * @dev Accrues the yield for a given account.
+     * Updates the accrued yield and stream yield based on the elapsed time and yield rates.
+     *
+     * @param account The account to accrue yield for.
+     */
+    function _accrueYield(address account) internal virtual {
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        YieldState storage state = $.yieldStates[account];
+        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        _accrueYield(account, state, rates);
+    }
+
+    /**
+     * @dev Accrues the yield for a given account and period.
+     * Calculates the new accrued yield and stream yield based on the time elapsed and updates the yield state.
+     *
      * @param account The account to accrue the yield for.
-     * @param state The current state of the yield.
+     * @param state The current yield state of the account.
      * @param rates The yield rates to use for the calculation.
      */
     function _accrueYield(
@@ -370,21 +404,12 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Accrues the yield for a given account and period.
-     * @param account The account to accrue the yield for.
-     */
-    function _accrueYield(address account) internal virtual {
-        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldState storage state = $.yieldStates[account];
-        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        _accrueYield(account, state, rates);
-    }
-
-    /**
-     * @dev Calculates the yield for a given period.
-     * @param params The parameters for the yield calculation.
+     * @dev Calculates the yield for a given period using provided yield rates.
+     * Handles multiple yield rate periods that may occur within the time range.
+     *
+     * @param params The parameters for the yield calculation, including timestamps and initial values.
      * @param rates The array of yield rates to use for the calculation.
-     * @return The yield results for the given period.
+     * @return An array of `YieldResult` structs containing yield calculations for sub-periods.
      */
     function _calculateYield(
         CalculateYieldParams memory params,
@@ -760,9 +785,11 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Compounds the yield for a given period.
-     * @param params The parameters for the yield calculation.
-     * @return The yield result for the given period.
+     * @dev Calculates compounded yield over a specified time range using a single yield rate.
+     * Handles partial and full days within the period, calculating yield accordingly.
+     *
+     * @param params The parameters for the yield calculation, including timestamps, yield rate, and balance.
+     * @return A `YieldResult` struct containing the yield for first partial day, full days, and last partial day.
      */
     function _compoundYield(CompoundYieldParams memory params) private pure returns (YieldResult memory) {
         // bool _debug = false;
@@ -924,10 +951,11 @@ abstract contract YieldStreamerPrimary is
 
     /**
      * @dev Calculates the yield for a partial day.
+     *
      * @param amount The amount to calculate the yield for.
-     * @param yieldRate The yield rate.
-     * @param elapsedSeconds The elapsed seconds.
-     * @return The yield for the partial day.
+     * @param yieldRate The yield rate (scaled by RATE_FACTOR).
+     * @param elapsedSeconds The elapsed seconds within the day.
+     * @return The yield accrued during the partial day.
      */
     function _calculatePartDayYield(
         uint256 amount,
@@ -939,9 +967,10 @@ abstract contract YieldStreamerPrimary is
 
     /**
      * @dev Calculates the yield for a full day.
+     *
      * @param amount The amount to calculate the yield for.
-     * @param yieldRate The yield rate.
-     * @return The yield for the full day.
+     * @param yieldRate The yield rate (scaled by RATE_FACTOR).
+     * @return The yield accrued during the full day.
      */
     function _calculateFullDayYield(
         uint256 amount, // Tools: this comment prevents Prettier from formatting into a single line.
@@ -952,6 +981,7 @@ abstract contract YieldStreamerPrimary is
 
     /**
      * @dev Finds the yield rates within a given timestamp range.
+     *
      * @param rates The array of yield rates to search.
      * @param fromTimestamp The start timestamp.
      * @param toTimestamp The end timestamp.
@@ -1046,9 +1076,10 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Aggregates the yield results.
-     * @param yieldResults The yield results to aggregate.
-     * @return The final accrued yield and stream yield.
+     * @dev Aggregates the yield results from multiple periods.
+     *
+     * @param yieldResults The array of yield results to aggregate.
+     * @return The final/updated accrued yield and stream yield.
      */
     function _aggregateYield(YieldResult[] memory yieldResults) private pure returns (uint256, uint256) {
         // bool _debug = false;
@@ -1088,6 +1119,7 @@ abstract contract YieldStreamerPrimary is
 
     /**
      * @dev Calculates a timestamp for the beginning of the next day.
+     *
      * @param timestamp The timestamp to calculate from.
      * @return The timestamp of the next day.
      */
@@ -1097,6 +1129,7 @@ abstract contract YieldStreamerPrimary is
 
     /**
      * @dev Calculates the number of the effective day from a timestamp.
+     *
      * @param timestamp The timestamp to calculate from.
      * @return The number of the effective day.
      */
@@ -1106,6 +1139,7 @@ abstract contract YieldStreamerPrimary is
 
     /**
      * @dev Calculates the remaining seconds before the next day.
+     *
      * @param timestamp The timestamp to calculate from.
      * @return The remaining seconds.
      */
@@ -1115,6 +1149,7 @@ abstract contract YieldStreamerPrimary is
 
     /**
      * @dev Calculates the timestamp of the beginning of the day.
+     *
      * @param timestamp The timestamp to calculate from.
      * @return The timestamp of the day.
      */
@@ -1123,8 +1158,10 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Calculates the block timestamp including the negative time shift.
-     * @return The block timestamp.
+     * @dev Returns the current block timestamp, adjusted by the negative time shift.
+     * The negative time shift is applied to align the yield calculation periods.
+     *
+     * @return The adjusted current block timestamp.
      */
     function _blockTimestamp() internal view virtual returns (uint256) {
         return block.timestamp - NEGATIVE_TIME_SHIFT;
@@ -1133,11 +1170,12 @@ abstract contract YieldStreamerPrimary is
     // ------------------ Utility --------------------------------- //
 
     /**
-     * @dev Truncates an array of yield rates.
+     * @dev Truncates a portion of the yield rates array based on start and end indices.
+     *
      * @param startIndex The start index of the truncation.
      * @param endIndex The end index of the truncation.
-     * @param rates The array to truncate.
-     * @return The truncated array.
+     * @param rates The array of yield rates.
+     * @return The truncated array of yield rates.
      */
     function _truncateArray(
         uint256 startIndex,
@@ -1152,16 +1190,18 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Calculates the fee for a given amount.
+     * @dev Calculates the fee for a given amount based on the fee rate.
+     *
      * @param amount The amount to calculate the fee for.
-     * @return The fee amount.
+     * @return The calculated fee amount.
      */
     function _calculateFee(uint256 amount) private pure returns (uint256) {
         return (amount * FEE_RATE) / RATE_FACTOR;
     }
 
     /**
-     * @dev Rounds down an amount.
+     * @dev Rounds down an amount to the nearest multiple of `ROUND_FACTOR`.
+     *
      * @param amount The amount to round down.
      * @return The rounded down amount.
      */
@@ -1170,7 +1210,8 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Rounds up an amount.
+     * @dev Rounds up an amount to the nearest multiple of `ROUND_FACTOR`.
+     *
      * @param amount The amount to round up.
      * @return The rounded up amount.
      */
@@ -1185,9 +1226,10 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Maps the accrue preview to a claim preview.
-     * @param accrue The accrue preview.
-     * @return The claim preview.
+     * @dev Maps an `AccruePreview` to a `ClaimPreview`.
+     *
+     * @param accrue The accrue preview to map from.
+     * @return The resulting claim preview.
      */
     function _map(AccruePreview memory accrue) private pure returns (ClaimPreview memory) {
         ClaimPreview memory claim;
@@ -1203,6 +1245,8 @@ abstract contract YieldStreamerPrimary is
 
     /**
      * @dev Initializes a single account.
+     * This function should be overridden by inheriting contracts to provide specific initialization logic.
+     *
      * @param account The account to initialize.
      */
     function _initializeSingleAccount(address account) internal virtual;

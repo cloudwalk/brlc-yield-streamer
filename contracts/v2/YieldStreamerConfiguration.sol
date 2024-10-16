@@ -18,21 +18,20 @@ abstract contract YieldStreamerConfiguration is
     IYieldStreamerConfiguration_Errors,
     IYieldStreamerConfiguration_Events
 {
-    // ------------------ Libs ------------------------------------ //
+    // ------------------ Libraries ------------------------------- //
 
     using SafeCast for uint256;
 
     // ------------------ Functions ------------------------------- //
 
     /**
-     *  @dev Adds a new yield rate to the yield streamer.
-     *
-     * Emits:
-     *  - {YieldStreamer_YieldRateAdded}
+     * @dev Adds a new yield rate entry for a specific group.
+     * The yield rate becomes effective starting from the specified effective day.
+     * The `effectiveDay` represents the day index since the Unix epoch (i.e., number of days since timestamp zero).
      *
      * @param groupId The ID of the group to add the yield rate to.
-     * @param effectiveDay The effective day of the yield rate.
-     * @param rateValue The value of the yield rate.
+     * @param effectiveDay The day number from which the yield rate becomes effective for the group.
+     * @param rateValue The yield rate value (scaled by RATE_FACTOR).
      */
     function _addYieldRate(
         uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
@@ -63,15 +62,13 @@ abstract contract YieldStreamerConfiguration is
     }
 
     /**
-     * @dev Updates a yield rate in the yield streamer.
+     * @dev Updates an existing yield rate entry for a specific group.
+     * Allows modifying the `effectiveDay` and `rateValue` of a yield rate at a given index.
      *
-     * Emits:
-     *  - {YieldStreamer_YieldRateUpdated}
-     *
-     * @param groupId The ID of the group to update the yield rate for.
-     * @param itemIndex The index of the yield rate to update.
-     * @param effectiveDay The effective day of the yield rate.
-     * @param rateValue The value of the yield rate.
+     * @param groupId The ID of the group whose yield rate is being updated.
+     * @param itemIndex The index of the yield rate in the group's rates array to update.
+     * @param effectiveDay The new effective day for the yield rate.
+     * @param rateValue The new yield rate value (scaled by RATE_FACTOR).
      */
     function _updateYieldRate(
         uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
@@ -116,15 +113,12 @@ abstract contract YieldStreamerConfiguration is
     }
 
     /**
-     * @dev Assigns multiple accounts to a group in a hard mode (reverts if any account is already
-     *      assigned to the group).
-     *
-     * Emits:
-     *  - {YieldStreamer_GroupAssigned}
+     * @dev Assigns multiple accounts to a group.
+     * Attempts to assign each account to the specified group and accrues yield if specified.
      *
      * @param groupId The ID of the group to assign the accounts to.
-     * @param accounts The accounts to assign to the group.
-     * @param forceYieldAccrue Whether to accrue yield for the accounts.
+     * @param accounts The array of account addresses to assign to the group.
+     * @param forceYieldAccrue If true, accrues yield for the accounts before assignment.
      */
     function _assignMultipleAccountsToGroup(
         uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
@@ -133,7 +127,6 @@ abstract contract YieldStreamerConfiguration is
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         uint32 localGroupId = groupId.toUint32();
-
 
         for (uint256 i = 0; i < accounts.length; i++) {
             Group storage group = $.groups[accounts[i]];
@@ -153,11 +146,8 @@ abstract contract YieldStreamerConfiguration is
     }
 
     /**
-     * @dev Assigns a single account to a group in a soft mode (does nothing if the account is already
-     *      assigned to the group).
-     *
-     * Emits:
-     *  - {YieldStreamer_GroupAssigned}
+     * @dev Assigns a single account to a group in soft mode.
+     * Assigns the account to the specified group if it is not already assigned.
      *
      * @param groupId The ID of the group to assign the account to.
      * @param account The account to assign to the group.
@@ -176,12 +166,10 @@ abstract contract YieldStreamerConfiguration is
     }
 
     /**
-     * @dev Sets the fee receiver for the yield streamer.
+     * @dev Sets the fee receiver address for the yield streamer.
+     * The fee receiver is the address that will receive any fees deducted during yield claims.
      *
-     * Emits:
-     *  - {YieldStreamer_FeeReceiverChanged}
-     *
-     * @param newFeeReceiver The new fee receiver.
+     * @param newFeeReceiver The new fee receiver address.
      */
     function _setFeeReceiver(address newFeeReceiver) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
@@ -198,13 +186,18 @@ abstract contract YieldStreamerConfiguration is
     // ------------------ Overrides ------------------ //
 
     /**
-     * @dev Accrues yield for the account.
+     * @dev Accrues yield for the specified account.
+     * Should be overridden by inheriting contracts to implement the actual accrue logic.
+     *
      * @param account The account to accrue yield for.
      */
     function _accrueYield(address account) internal virtual;
 
     /**
      * @dev Returns the current block timestamp.
+     * Should be overridden by inheriting contracts if custom timekeeping is needed.
+     *
+     * @return The current block timestamp (Unix timestamp).
      */
     function _blockTimestamp() internal view virtual returns (uint256);
 }

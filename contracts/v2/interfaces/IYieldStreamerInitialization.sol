@@ -5,10 +5,10 @@ pragma solidity ^0.8.0;
 /**
  * @title IYieldStreamerInitialization_Errors interface
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev Defines the errors used in the yield streamer initialization contract.
+ * @dev Defines the custom errors used by the yield streamer initialization contract.
  */
 interface IYieldStreamerInitialization_Errors {
-    /// @dev Thrown when the array is empty.
+    /// @dev Thrown when passed array is empty.
     error YieldStreamer_EmptyArray();
 
     /// @dev Thrown when an account is already initialized.
@@ -33,7 +33,7 @@ interface IYieldStreamerInitialization_Errors {
 /**
  * @title IYieldStreamerInitialization_Events interface
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev Defines the events used in the yield streamer initialization contract.
+ * @dev Defines the events emitted by the yield streamer initialization contract.
  */
 interface IYieldStreamerInitialization_Events {
     /**
@@ -85,17 +85,19 @@ interface IYieldStreamerInitialization_Events {
 /**
  * @title IYieldStreamerInitialization_Functions interface
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev Defines the functions used in the yield streamer initialization contract.
+ * @dev Defines the function signatures for the yield streamer initialization contract.
  */
 interface IYieldStreamerInitialization_Functions {
     /**
      * @dev Initializes multiple accounts.
+     *
      * @param accounts The accounts to initialize.
      */
     function initializeAccounts(address[] calldata accounts) external;
 
     /**
      * @dev Sets the initialized state for an account.
+     *
      * @param account The account to set the initialized state for.
      * @param isInitialized The initialized state to set.
      */
@@ -116,6 +118,8 @@ interface IYieldStreamerInitialization_Functions {
 
     /**
      * @dev Returns the source yield streamer address.
+     *
+     * @return The address of the source yield streamer contract.
      */
     function sourceYieldStreamer() external view returns (address);
 }
@@ -124,12 +128,12 @@ interface IYieldStreamerInitialization_Functions {
  * @title IYieldStreamerInitialization interface
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev Defines the interface for the yield streamer initialization contract
- *      by combining the types, errors, events and functions interfaces.
+ * by combining the types, errors, events and functions interfaces.
  */
 interface IYieldStreamerInitialization is
     IYieldStreamerInitialization_Errors,
     IYieldStreamerInitialization_Events,
     IYieldStreamerInitialization_Functions
 {
-
+    // Empty interface to combine errors, events, and functions
 }
