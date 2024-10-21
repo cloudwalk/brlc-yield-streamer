@@ -637,6 +637,15 @@ contract YieldStreamer is
     }
 
     /**
+     * @notice Returns the group ID for a given account
+     * @param account The address of the account
+     * @return The group ID
+     */
+    function getAccountGroup(address account) external view returns (bytes32) {
+        return _groups[account];
+    }
+
+    /**
      * @notice Returns an array of yield rates for a given account
      * @param account The address of the account
      * @return The array of yield rates
