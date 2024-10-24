@@ -1278,11 +1278,12 @@ abstract contract YieldStreamerPrimary is
      * @param accrue The accrue preview to map from.
      * @return The resulting claim preview.
      */
-    function _map(AccruePreview memory accrue) private pure returns (ClaimPreview memory) {
+    function _map(AccruePreview memory accrue) internal pure returns (ClaimPreview memory) {
         ClaimPreview memory claim;
         uint256 totalYield = accrue.accruedYieldAfter + accrue.streamYieldAfter;
         claim.yield = _roundDown(totalYield);
         claim.fee = 0;
+        claim.timestamp = 0;
         claim.balance = accrue.balance;
         claim.rate = accrue.rates[accrue.rates.length - 1].tiers[0].rate;
         return claim;
