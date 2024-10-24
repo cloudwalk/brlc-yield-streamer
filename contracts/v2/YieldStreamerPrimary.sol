@@ -1237,6 +1237,27 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
+     * @dev Overloaded function to truncate a memory array of yield rates that accepts a memory array.
+     * This function is needed to test the `_truncateArray` function and must fully replicate its behavior.
+     *
+     * @param startIndex The start index of the truncation.
+     * @param endIndex The end index of the truncation.
+     * @param rates The array of yield rates (memory).
+     * @return The truncated array of yield rates.
+     */
+    function _truncateArray_memory(
+        uint256 startIndex,
+        uint256 endIndex,
+        YieldRate[] memory rates
+    ) internal pure returns (YieldRate[] memory) {
+        YieldRate[] memory result = new YieldRate[](endIndex - startIndex + 1);
+        for (uint256 i = startIndex; i <= endIndex; i++) {
+            result[i - startIndex] = rates[i];
+        }
+        return result;
+    }
+
+    /**
      * @dev Calculates the fee for a given amount based on the fee rate.
      *
      * @param amount The amount to calculate the fee for.
