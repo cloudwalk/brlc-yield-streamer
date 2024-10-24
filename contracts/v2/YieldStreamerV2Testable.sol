@@ -22,4 +22,8 @@ contract YieldStreamerV2Testable is YieldStreamerV2Harness {
     function roundUp(uint256 amount) external pure returns (uint256) {
         return _roundUp(amount);
     }
+
+    function map(AccruePreview memory accrue) external pure returns (ClaimPreview memory) {
+        return _map(accrue);
+    }    
 }
