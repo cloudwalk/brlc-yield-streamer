@@ -1252,7 +1252,7 @@ abstract contract YieldStreamerPrimary is
      * @param amount The amount to round down.
      * @return The rounded down amount.
      */
-    function _roundDown(uint256 amount) private pure returns (uint256) {
+    function _roundDown(uint256 amount) internal pure returns (uint256) {
         return (amount / ROUND_FACTOR) * ROUND_FACTOR;
     }
 
@@ -1262,7 +1262,7 @@ abstract contract YieldStreamerPrimary is
      * @param amount The amount to round up.
      * @return The rounded up amount.
      */
-    function _roundUp(uint256 amount) private pure returns (uint256) {
+    function _roundUp(uint256 amount) internal pure returns (uint256) {
         uint256 roundedAmount = _roundDown(amount);
 
         if (roundedAmount < amount) {
