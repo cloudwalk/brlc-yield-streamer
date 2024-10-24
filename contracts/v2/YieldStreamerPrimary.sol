@@ -1170,7 +1170,7 @@ abstract contract YieldStreamerPrimary is
      * @param timestamp The timestamp to calculate from.
      * @return The timestamp of the next day.
      */
-    function _nextDay(uint256 timestamp) private pure returns (uint256) {
+    function _nextDay(uint256 timestamp) internal pure returns (uint256) {
         return timestamp - (timestamp % 1 days) + 1 days;
     }
 
@@ -1180,7 +1180,7 @@ abstract contract YieldStreamerPrimary is
      * @param timestamp The timestamp to calculate from.
      * @return The number of the effective day.
      */
-    function _effectiveDay(uint256 timestamp) private pure returns (uint256) {
+    function _effectiveDay(uint256 timestamp) internal pure returns (uint256) {
         return timestamp / 1 days;
     }
 
@@ -1190,7 +1190,7 @@ abstract contract YieldStreamerPrimary is
      * @param timestamp The timestamp to calculate from.
      * @return The remaining seconds.
      */
-    function _remainingSeconds(uint256 timestamp) private pure returns (uint256) {
+    function _remainingSeconds(uint256 timestamp) internal pure returns (uint256) {
         return timestamp % 1 days;
     }
 
@@ -1200,7 +1200,7 @@ abstract contract YieldStreamerPrimary is
      * @param timestamp The timestamp to calculate from.
      * @return The timestamp of the day.
      */
-    function _effectiveTimestamp(uint256 timestamp) private pure returns (uint256) {
+    function _effectiveTimestamp(uint256 timestamp) internal pure returns (uint256) {
         return (timestamp / 1 days) * 1 days;
     }
 

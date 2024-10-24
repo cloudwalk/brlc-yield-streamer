@@ -97,6 +97,96 @@ describe("YieldStreamerV2Testable", function () {
     }));
   }
 
+  describe.only("Function to work with timestamps", function () {
+    it("Should return the next day as expected", async function () {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      const timestamps = [
+        BigInt(0),
+        BigInt(1),
+        BigInt(50),
+        BigInt(86399),
+        BigInt(86400),
+        BigInt(86401),
+        BigInt(2 * 86400),
+        BigInt(3 * 86400 + 12345),
+        BigInt(1660135722n),
+      ];
+
+      for (const ts of timestamps) {
+        const nextDay = await yieldStreamerTestable.nextDay(ts);
+        const expectedNextDay = ts - (ts % BigInt(86400)) + BigInt(86400);
+        expect(nextDay).to.equal(expectedNextDay);
+      }
+    });
+
+    it("Should return the effective day as expected", async function () {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      const timestamps = [
+        BigInt(0),
+        BigInt(1),
+        BigInt(50),
+        BigInt(86399),
+        BigInt(86400),
+        BigInt(86401),
+        BigInt(2 * 86400),
+        BigInt(3 * 86400 + 12345),
+        BigInt(1660135722n),
+      ];
+
+      for (const ts of timestamps) {
+        const effectiveDay = await yieldStreamerTestable.effectiveDay(ts);
+        const expectedDay = ts / BigInt(86400);
+        expect(effectiveDay).to.equal(expectedDay);
+      }
+    });
+
+    it("Should return the remaining seconds as expected", async function () {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      const timestamps = [
+        BigInt(0),
+        BigInt(1),
+        BigInt(50),
+        BigInt(86399),
+        BigInt(86400),
+        BigInt(86401),
+        BigInt(2 * 86400),
+        BigInt(3 * 86400 + 12345),
+        BigInt(1660135722n),
+      ];
+
+      for (const ts of timestamps) {
+        const remainingSeconds = await yieldStreamerTestable.remainingSeconds(ts);
+        const expectedRemainingSeconds = ts % BigInt(86400);
+        expect(remainingSeconds).to.equal(expectedRemainingSeconds);
+      }
+    });
+
+    it("Should return the effective timestamp as expected", async function () {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      const timestamps = [
+        BigInt(0),
+        BigInt(1),
+        BigInt(50),
+        BigInt(86399),
+        BigInt(86400),
+        BigInt(86401),
+        BigInt(2 * 86400),
+        BigInt(3 * 86400 + 12345),
+        BigInt(1660135722n),
+      ];
+
+      for (const ts of timestamps) {
+        const effectiveTimestamp = await yieldStreamerTestable.effectiveTimestamp(ts);
+        const expectedEffectiveTimestamp = (ts / BigInt(86400)) * BigInt(86400);
+        expect(effectiveTimestamp).to.equal(expectedEffectiveTimestamp);
+      }
+    });
+  });
+
   describe("Function 'truncateArray()'", function () {
     it("Should return the full array when startIndex is 0 and endIndex is rates.length - 1", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
