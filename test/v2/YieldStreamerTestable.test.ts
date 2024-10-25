@@ -79,14 +79,21 @@ describe("YieldStreamerV2Testable", function () {
     return roundedAmount;
   }
 
-  function generateSampleYieldRates(count: number): YieldRate[] {
+  async function addSampleYieldRates(
+    yieldStreamerTestable: Contract,
+    groupId: number,
+    count: number
+  ): Promise<YieldRate[]> {
     const rates: YieldRate[] = [];
+
     for (let i = 0; i < count; i++) {
       rates.push({
-        effectiveDay: BigInt(i + 1),
-        value: BigInt(100 + i * 10)
+        effectiveDay: BigInt(i),
+        value: BigInt(i)
       });
+      await yieldStreamerTestable.addYieldRate(groupId, rates[i].effectiveDay, rates[i].value);
     }
+
     return rates;
   }
 
@@ -97,7 +104,7 @@ describe("YieldStreamerV2Testable", function () {
     }));
   }
 
-  describe.only("Function to work with timestamps", function () {
+  describe("Function to work with timestamps", function () {
     it("Should return the next day as expected", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
@@ -110,7 +117,7 @@ describe("YieldStreamerV2Testable", function () {
         BigInt(86401),
         BigInt(2 * 86400),
         BigInt(3 * 86400 + 12345),
-        BigInt(1660135722n),
+        BigInt(1660135722n)
       ];
 
       for (const ts of timestamps) {
@@ -132,7 +139,7 @@ describe("YieldStreamerV2Testable", function () {
         BigInt(86401),
         BigInt(2 * 86400),
         BigInt(3 * 86400 + 12345),
-        BigInt(1660135722n),
+        BigInt(1660135722n)
       ];
 
       for (const ts of timestamps) {
@@ -154,7 +161,7 @@ describe("YieldStreamerV2Testable", function () {
         BigInt(86401),
         BigInt(2 * 86400),
         BigInt(3 * 86400 + 12345),
-        BigInt(1660135722n),
+        BigInt(1660135722n)
       ];
 
       for (const ts of timestamps) {
@@ -176,7 +183,7 @@ describe("YieldStreamerV2Testable", function () {
         BigInt(86401),
         BigInt(2 * 86400),
         BigInt(3 * 86400 + 12345),
-        BigInt(1660135722n),
+        BigInt(1660135722n)
       ];
 
       for (const ts of timestamps) {
@@ -190,64 +197,67 @@ describe("YieldStreamerV2Testable", function () {
   describe("Function 'truncateArray()'", function () {
     it("Should return the full array when startIndex is 0 and endIndex is rates.length - 1", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-      const rates = generateSampleYieldRates(5);
-      const truncatedRatesRaw = await yieldStreamerTestable.truncateArray(0, rates.length - 1, rates);
+      const groupId = 0;
+      const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      const truncatedRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 0, rates.length - 1);
       const truncatedRates = normalizeYieldRates(truncatedRatesRaw);
       expect(truncatedRates).to.deep.equal(rates);
     });
 
     it("Should return a truncated array when startIndex and endIndex are different", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-      const rates = generateSampleYieldRates(5);
-      const truncatedRatesRaw = await yieldStreamerTestable.truncateArray(1, 3, rates);
+      const groupId = 0;
+      const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      const truncatedRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 1, 3);
       const truncatedRates = normalizeYieldRates(truncatedRatesRaw);
       expect(truncatedRates).to.deep.equal(rates.slice(1, 4));
     });
 
     it("Should return a single element when startIndex and endIndex are the same (multiple rates in array)", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-      const rates = generateSampleYieldRates(5);
-      const index = 2;
-      const truncatedRatesRaw = await yieldStreamerTestable.truncateArray(index, index, rates);
+      const groupId = 0;
+      const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      const truncatedRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 2, 2);
       const truncatedRates = normalizeYieldRates(truncatedRatesRaw);
       expect(truncatedRates.length).to.equal(1);
-      expect(truncatedRates[0]).to.deep.equal(rates[index]);
+      expect(truncatedRates[0]).to.deep.equal(rates[2]);
     });
 
     it("Should return a single element when startIndex and endIndex are the same (single rate in array)", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-      const rates = generateSampleYieldRates(1);
-      const index = 0;
-      const truncatedRatesRaw = await yieldStreamerTestable.truncateArray(index, index, rates);
+      const groupId = 0;
+      const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 1);
+      const truncatedRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 0, 0);
       const truncatedRates = normalizeYieldRates(truncatedRatesRaw);
       expect(truncatedRates.length).to.equal(1);
-      expect(truncatedRates[0]).to.deep.equal(rates[index]);
+      expect(truncatedRates[0]).to.deep.equal(rates[0]);
     });
 
     it("Should revert when startIndex is greater than endIndex", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-      const rates = generateSampleYieldRates(5);
-      await expect(yieldStreamerTestable.truncateArray(3, 2, rates)).to.be.revertedWithPanic(0x11); // Arithmetic operation overflowed outside of an unchecked block
+      const groupId = 0;
+      await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      await expect(yieldStreamerTestable.truncateArray(groupId, 3, 2)).to.be.revertedWithPanic(0x11); // Arithmetic operation overflowed outside of an unchecked block
     });
 
     it("Should revert when startIndex is out of bounds", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-      const rates = generateSampleYieldRates(5);
-      await expect(yieldStreamerTestable.truncateArray(rates.length, rates.length, rates)).to.be.revertedWithPanic(
-        0x32
-      ); // Array accessed at an out-of-bounds or negative index
+      const groupId = 0;
+      await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      await expect(yieldStreamerTestable.truncateArray(groupId, 5, 5)).to.be.revertedWithPanic(0x32); // Array accessed at an out-of-bounds or negative index
     });
 
     it("Should revert when endIndex is out of bounds", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-      const rates = generateSampleYieldRates(5);
-      await expect(yieldStreamerTestable.truncateArray(0, rates.length, rates)).to.be.revertedWithPanic(0x32); // Array accessed at an out-of-bounds or negative index
+      const groupId = 0;
+      await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      await expect(yieldStreamerTestable.truncateArray(groupId, 5, 5)).to.be.revertedWithPanic(0x32); // Array accessed at an out-of-bounds or negative index
     });
 
     it("Should revert when rates array is empty", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-      const rates: YieldRate[] = [];
-      await expect(yieldStreamerTestable.truncateArray(0, 0, rates)).to.be.revertedWithPanic(0x32); // Array accessed at an out-of-bounds or negative index
+      const groupId = 0;
+      await expect(yieldStreamerTestable.truncateArray(groupId, 0, 0)).to.be.revertedWithPanic(0x32); // Array accessed at an out-of-bounds or negative index
     });
   });
 

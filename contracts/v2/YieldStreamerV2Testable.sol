@@ -33,11 +33,12 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
     // ------------------ Utility --------------------------------- //
 
     function truncateArray(
+        uint32 groupId,
         uint256 startIndex,
-        uint256 endIndex,
-        YieldRate[] memory rates
-    ) external pure returns (YieldRate[] memory) {
-        return _truncateArray_memory(startIndex, endIndex, rates);
+        uint256 endIndex
+    ) external view returns (YieldRate[] memory) {
+        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
+        return _truncateArray(startIndex, endIndex, $.yieldRates[groupId]);
     }
 
     function roundDown(uint256 amount) external pure returns (uint256) {

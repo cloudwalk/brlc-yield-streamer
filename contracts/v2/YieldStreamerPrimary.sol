@@ -1248,9 +1248,9 @@ abstract contract YieldStreamerPrimary is
     function _truncateArray_memory(
         uint256 startIndex,
         uint256 endIndex,
-        YieldRate[] memory rates
-    ) internal pure returns (YieldRate[] memory) {
-        YieldRate[] memory result = new YieldRate[](endIndex - startIndex + 1);
+        YieldTieredRate[] memory rates
+    ) internal view returns (YieldTieredRate[] memory) {
+        YieldTieredRate[] memory result = new YieldTieredRate[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
             result[i - startIndex] = rates[i];
         }
