@@ -128,7 +128,7 @@ abstract contract YieldStreamerPrimary is
             revert YieldStreamer_AccountNotInitialized();
         }
 
-        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        YieldTieredRate[] storage rates = $.yieldRates[$.groups[account].id];
 
         _accrueYield(account, state, rates);
         _transferYield(account, amount, state, $.feeReceiver, $.underlyingToken);
@@ -146,7 +146,7 @@ abstract contract YieldStreamerPrimary is
 
         if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account, state)) {
             if (state.lastUpdateTimestamp != _blockTimestamp()) {
-                YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+                YieldTieredRate[] storage rates = $.yieldRates[$.groups[account].id];
                 _accrueYield(account, state, rates);
             }
             state.lastUpdateBalance += amount.toUint64();
@@ -165,7 +165,7 @@ abstract contract YieldStreamerPrimary is
 
         if (state.flags.isBitSet(uint256(YieldStateFlagIndex.Initialized)) || _tryInitializeAccount(account, state)) {
             if (state.lastUpdateTimestamp != _blockTimestamp()) {
-                YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+                YieldTieredRate[] storage rates = $.yieldRates[$.groups[account].id];
                 _accrueYield(account, state, rates);
             }
             state.lastUpdateBalance -= amount.toUint64();
@@ -256,7 +256,7 @@ abstract contract YieldStreamerPrimary is
     function _getClaimPreview(address account) internal view returns (ClaimPreview memory) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
-        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        YieldTieredRate[] storage rates = $.yieldRates[$.groups[account].id];
         ClaimPreview memory preview = _map(_getAccruePreview(state, rates));
         preview.timestamp = _blockTimestamp();
         return preview;
@@ -272,7 +272,7 @@ abstract contract YieldStreamerPrimary is
     function _getAccruePreview(address account) internal view returns (AccruePreview memory) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
-        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        YieldTieredRate[] storage rates = $.yieldRates[$.groups[account].id];
         return _getAccruePreview(state, rates);
     }
 
@@ -286,7 +286,7 @@ abstract contract YieldStreamerPrimary is
      */
     function _getAccruePreview(
         YieldState storage state,
-        YieldRate[] storage rates
+        YieldTieredRate[] storage rates
     ) private view returns (AccruePreview memory) {
         AccruePreview memory preview;
 
@@ -328,7 +328,7 @@ abstract contract YieldStreamerPrimary is
      * @param groupId The ID of the group to get the yield rates for.
      * @return An array of `YieldRate` structs representing the yield rates.
      */
-    function _getGroupYieldRates(uint256 groupId) internal view returns (YieldRate[] memory) {
+    function _getGroupYieldRates(uint256 groupId) internal view returns (YieldTieredRate[] memory) {
         return _yieldStreamerStorage().yieldRates[groupId.toUint32()];
     }
 
@@ -371,7 +371,7 @@ abstract contract YieldStreamerPrimary is
     function _accrueYield(address account) internal virtual {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
-        YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
+        YieldTieredRate[] storage rates = $.yieldRates[$.groups[account].id];
         _accrueYield(account, state, rates);
     }
 
@@ -386,7 +386,7 @@ abstract contract YieldStreamerPrimary is
     function _accrueYield(
         address account, // Tools: this comment prevents Prettier from formatting into a single line.
         YieldState storage state,
-        YieldRate[] storage rates
+        YieldTieredRate[] storage rates
     ) private {
         AccruePreview memory preview = _getAccruePreview(state, rates);
 
@@ -413,7 +413,7 @@ abstract contract YieldStreamerPrimary is
      */
     function _calculateYield(
         CalculateYieldParams memory params,
-        YieldRate[] storage rates // Format: prevent collapse
+        YieldTieredRate[] storage rates // Tools: this comment prevents Prettier from formatting into a single line.
     ) private view returns (YieldResult[] memory) {
         YieldResult[] memory results;
         uint256 ratePeriods = params.rateEndIndex - params.rateStartIndex + 1;
@@ -501,7 +501,7 @@ abstract contract YieldStreamerPrimary is
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex].value,
+                    rates[params.rateStartIndex].tiers[0].rate,
                     params.initialBalance + params.initialAccruedYield,
                     params.initialStreamYield
                 )
@@ -553,7 +553,7 @@ abstract contract YieldStreamerPrimary is
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex].value,
+                    rates[params.rateStartIndex].tiers[0].rate,
                     params.initialBalance + params.initialAccruedYield,
                     params.initialStreamYield
                 )
@@ -595,7 +595,7 @@ abstract contract YieldStreamerPrimary is
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex + 1].value,
+                    rates[params.rateStartIndex + 1].tiers[0].rate,
                     params.initialBalance +
                         params.initialAccruedYield +
                         results[0].firstDayPartialYield +
@@ -656,7 +656,7 @@ abstract contract YieldStreamerPrimary is
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex].value,
+                    rates[params.rateStartIndex].tiers[0].rate,
                     currentBalance,
                     params.initialStreamYield
                 )
@@ -705,7 +705,7 @@ abstract contract YieldStreamerPrimary is
                 // }
 
                 results[i - params.rateStartIndex] = _compoundYield(
-                    CompoundYieldParams(localFromTimestamp, localToTimestamp, rates[i].value, currentBalance, 0)
+                    CompoundYieldParams(localFromTimestamp, localToTimestamp, rates[i].tiers[0].rate, currentBalance, 0)
                 );
 
                 // if (_debug) {
@@ -761,7 +761,7 @@ abstract contract YieldStreamerPrimary is
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex + ratePeriods - 1].value,
+                    rates[params.rateStartIndex + ratePeriods - 1].tiers[0].rate,
                     currentBalance,
                     0
                 )
@@ -988,7 +988,7 @@ abstract contract YieldStreamerPrimary is
      * @return The start and end index of the yield rates.
      */
     function _inRangeYieldRates(
-        YieldRate[] storage rates,
+        YieldTieredRate[] storage rates,
         uint256 fromTimestamp,
         uint256 toTimestamp
     ) private view returns (uint256, uint256) {
@@ -1180,9 +1180,9 @@ abstract contract YieldStreamerPrimary is
     function _truncateArray(
         uint256 startIndex,
         uint256 endIndex,
-        YieldRate[] storage rates
-    ) private view returns (YieldRate[] memory) {
-        YieldRate[] memory result = new YieldRate[](endIndex - startIndex + 1);
+        YieldTieredRate[] storage rates
+    ) private view returns (YieldTieredRate[] memory) {
+        YieldTieredRate[] memory result = new YieldTieredRate[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
             result[i - startIndex] = rates[i];
         }
@@ -1237,7 +1237,7 @@ abstract contract YieldStreamerPrimary is
         claim.yield = _roundDown(totalYield);
         claim.fee = 0;
         claim.balance = accrue.balance;
-        claim.rate = accrue.rates[accrue.rates.length - 1].value;
+        claim.rate = accrue.rates[accrue.rates.length - 1].tiers[0].rate;
         return claim;
     }
 

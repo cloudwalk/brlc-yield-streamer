@@ -25,21 +25,23 @@ abstract contract YieldStreamerConfiguration is
     // ------------------ Functions ------------------------------- //
 
     /**
-     * @dev Adds a new yield rate entry for a specific group.
-     * The yield rate becomes effective starting from the specified effective day.
-     * The `effectiveDay` represents the day index since the Unix epoch (i.e., number of days since timestamp zero).
-     *
-     * @param groupId The ID of the group to add the yield rate to.
-     * @param effectiveDay The day number from which the yield rate becomes effective for the group.
-     * @param rateValue The yield rate value (scaled by RATE_FACTOR).
-     */
+    //  * @dev Adds a new yield rate entry for a specific group.
+    //  * The yield rate becomes effective starting from the specified effective day.
+    //  * The `effectiveDay` represents the day index since the Unix epoch (i.e., number of days since timestamp zero).
+    //  *
+    //  * @param groupId The ID of the group to add the yield rate to.
+    //  * @param effectiveDay The day number from which the yield rate becomes effective for the group.
+    //  * @param tierRates The yield rate value for each tier (scaled by RATE_FACTOR).
+    //  * @param tierCaps The balance cap for each tier.
+    //  */
     function _addYieldRate(
         uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 effectiveDay,
-        uint256 rateValue
+        uint256[] memory tierRates,
+        uint256[] memory tierCaps
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldRate[] storage rates = $.yieldRates[groupId.toUint32()];
+        YieldTieredRate[] storage rates = $.yieldRates[groupId.toUint32()];
 
         // Ensure first item in the array always starts with effectiveDay 0
         if (rates.length == 0 && effectiveDay != 0) {
@@ -51,14 +53,19 @@ abstract contract YieldStreamerConfiguration is
             revert YieldStreamer_YieldRateInvalidEffectiveDay();
         }
 
-        // Ensure that rates are not duplicated
-        if (rates.length > 0 && rates[rates.length - 1].value == rateValue) {
-            revert YieldStreamer_YieldRateAlreadyConfigured();
+        // Initialize a new `YieldTieredRate` struct in storage
+        rates.push();
+        YieldTieredRate storage newYieldRate = rates[rates.length - 1];
+
+        // Set the effective day of the new yield tiered rate
+        newYieldRate.effectiveDay = effectiveDay.toUint16();
+
+        // Add the tiers to the new yield tiered rate
+        for (uint256 i = 0; i < tierRates.length; i++) {
+            newYieldRate.tiers.push(YieldRateTier({ rate: tierRates[i].toUint32(), cap: tierCaps[i].toUint64() }));
         }
 
-        rates.push(YieldRate({ effectiveDay: effectiveDay.toUint16(), value: rateValue.toUint32() }));
-
-        emit YieldStreamer_YieldRateAdded(groupId, effectiveDay, rateValue);
+        emit YieldStreamer_YieldTieredRateAdded(groupId, effectiveDay, tierRates, tierCaps);
     }
 
     /**
@@ -68,16 +75,18 @@ abstract contract YieldStreamerConfiguration is
      * @param groupId The ID of the group whose yield rate is being updated.
      * @param itemIndex The index of the yield rate in the group's rates array to update.
      * @param effectiveDay The new effective day for the yield rate.
-     * @param rateValue The new yield rate value (scaled by RATE_FACTOR).
+     * @param tierRates The new yield rate value for each tier (scaled by RATE_FACTOR).
+     * @param tierCaps The new balance cap for each tier.
      */
     function _updateYieldRate(
         uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 itemIndex,
         uint256 effectiveDay,
-        uint256 rateValue
+        uint256[] memory tierRates,
+        uint256[] memory tierCaps
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldRate[] storage rates = $.yieldRates[groupId.toUint32()];
+        YieldTieredRate[] storage rates = $.yieldRates[groupId.toUint32()];
 
         // Ensure first item in the array always starts with effectiveDay = 0
         if (itemIndex == 0 && effectiveDay != 0) {
@@ -104,12 +113,18 @@ abstract contract YieldStreamerConfiguration is
             }
         }
 
-        YieldRate storage yieldRate = rates[itemIndex];
+        YieldTieredRate storage rate = rates[itemIndex];
 
-        emit YieldStreamer_YieldRateUpdated(groupId, itemIndex, effectiveDay, rateValue);
+        // Update the effective day of the yield tiered rate
+        rate.effectiveDay = effectiveDay.toUint16();
 
-        yieldRate.effectiveDay = effectiveDay.toUint16();
-        yieldRate.value = rateValue.toUint32();
+        // Update the tiers of the yield tiered rate
+        delete rate.tiers;
+        for (uint256 i = 0; i < tierRates.length; i++) {
+            rate.tiers.push(YieldRateTier({ rate: tierRates[i].toUint32(), cap: tierCaps[i].toUint64() }));
+        }
+
+        emit YieldStreamer_YieldTieredRateUpdated(groupId, itemIndex, effectiveDay, tierRates, tierCaps);
     }
 
     /**
