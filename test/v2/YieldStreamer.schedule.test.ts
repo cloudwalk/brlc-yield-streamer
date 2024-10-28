@@ -5,7 +5,7 @@ import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 // Constants for rate calculations and time units
-const RATE_FACTOR = BigInt(1000000000); // Factor used in yield rate calculations (10^9)
+const RATE_FACTOR = BigInt(1000000000000); // Factor used in yield rate calculations (10^12)
 const DAY = 24 * 60 * 60; // Number of seconds in a day
 const HOUR = 60 * 60; // Number of seconds in an hour
 const NEGATIVE_TIME_SHIFT = 3 * HOUR; // Negative time shift in seconds (3 hours)
@@ -301,7 +301,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
         // 40% yield rate
         {
           effectiveDay: 0,
-          tierRates: [(RATE_FACTOR * BigInt(40)) / BigInt(100), (RATE_FACTOR * BigInt(40)) / BigInt(100)],
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
           tierCaps: [BigInt(100), BigInt(0)]
         }
       ];
@@ -428,19 +428,19 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
         // 40% yield rate
         {
           effectiveDay: 0,
-          tierRates: [(RATE_FACTOR * BigInt(40)) / BigInt(100), (RATE_FACTOR * BigInt(40)) / BigInt(100)],
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
           tierCaps: [BigInt(100), BigInt(0)]
         },
         // 80% yield rate
         {
           effectiveDay: calculateEffectiveDay(adjustedBlockTime, 3),
-          tierRates: [(RATE_FACTOR * BigInt(80)) / BigInt(100), (RATE_FACTOR * BigInt(80)) / BigInt(100)],
+          tierRates: [(RATE_FACTOR * BigInt(80000)) / BigInt(100000), (RATE_FACTOR * BigInt(80000)) / BigInt(100000)],
           tierCaps: [BigInt(100), BigInt(0)]
         },
         // 40% yield rate
         {
           effectiveDay: calculateEffectiveDay(adjustedBlockTime, 5),
-          tierRates: [(RATE_FACTOR * BigInt(40)) / BigInt(100), (RATE_FACTOR * BigInt(40)) / BigInt(100)],
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
           tierCaps: [BigInt(100), BigInt(0)]
         }
       ];
@@ -569,7 +569,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
         // 40% yield rate
         {
           effectiveDay: 0,
-          tierRates: [(RATE_FACTOR * BigInt(40)) / BigInt(100), (RATE_FACTOR * BigInt(40)) / BigInt(100)],
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
           tierCaps: [BigInt(100), BigInt(0)]
         }
       ];
@@ -696,19 +696,19 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
         // 40% yield rate
         {
           effectiveDay: 0,
-          tierRates: [(RATE_FACTOR * BigInt(40)) / BigInt(100), (RATE_FACTOR * BigInt(40)) / BigInt(100)],
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
           tierCaps: [BigInt(100), BigInt(0)]
         },
         // 80% yield rate
         {
           effectiveDay: calculateEffectiveDay(adjustedBlockTime, 3),
-          tierRates: [(RATE_FACTOR * BigInt(80)) / BigInt(100), (RATE_FACTOR * BigInt(80)) / BigInt(100)],
+          tierRates: [(RATE_FACTOR * BigInt(80000)) / BigInt(100000), (RATE_FACTOR * BigInt(80000)) / BigInt(100000)],
           tierCaps: [BigInt(100), BigInt(0)]
         },
         // 40% yield rate
         {
           effectiveDay: calculateEffectiveDay(adjustedBlockTime, 5),
-          tierRates: [(RATE_FACTOR * BigInt(40)) / BigInt(100), (RATE_FACTOR * BigInt(40)) / BigInt(100)],
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
           tierCaps: [BigInt(100), BigInt(0)]
         }
       ];

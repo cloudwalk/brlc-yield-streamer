@@ -54,7 +54,7 @@ interface IYieldStreamerTypes {
      * - `cap`: The maximum balance amount for which this rate applies.
      */
     struct YieldRateTier {
-        uint32 rate;
+        uint48 rate;
         uint64 cap;
     }
 
