@@ -37,14 +37,14 @@ abstract contract YieldStreamerPrimary is
      * Attributes:
      * - `fromTimestamp`: The starting timestamp of the calculation period.
      * - `toTimestamp`: The ending timestamp of the calculation period.
-     * - `yieldRate`: The yield rate to apply during the calculation period (scaled by RATE_FACTOR).
+     * - `tiers`: The yield tiers to apply during the calculation period.
      * - `balance`: The balance amount to calculate the yield on.
      * - `streamYield`: The prior stream yield amount before this calculation.
      */
     struct CompoundYieldParams {
         uint256 fromTimestamp;
         uint256 toTimestamp;
-        uint256 yieldRate;
+        YieldRateTier[] tiers;
         uint256 balance;
         uint256 streamYield;
     }
@@ -501,7 +501,7 @@ abstract contract YieldStreamerPrimary is
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex].tiers[0].rate,
+                    rates[params.rateStartIndex].tiers,
                     params.initialBalance + params.initialAccruedYield,
                     params.initialStreamYield
                 )
@@ -553,7 +553,7 @@ abstract contract YieldStreamerPrimary is
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex].tiers[0].rate,
+                    rates[params.rateStartIndex].tiers,
                     params.initialBalance + params.initialAccruedYield,
                     params.initialStreamYield
                 )
@@ -595,7 +595,7 @@ abstract contract YieldStreamerPrimary is
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex + 1].tiers[0].rate,
+                    rates[params.rateStartIndex + 1].tiers,
                     params.initialBalance +
                         params.initialAccruedYield +
                         results[0].firstDayPartialYield +
@@ -656,7 +656,7 @@ abstract contract YieldStreamerPrimary is
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex].tiers[0].rate,
+                    rates[params.rateStartIndex].tiers,
                     currentBalance,
                     params.initialStreamYield
                 )
@@ -705,7 +705,13 @@ abstract contract YieldStreamerPrimary is
                 // }
 
                 results[i - params.rateStartIndex] = _compoundYield(
-                    CompoundYieldParams(localFromTimestamp, localToTimestamp, rates[i].tiers[0].rate, currentBalance, 0)
+                    CompoundYieldParams(
+                        localFromTimestamp, // Tools: this comment prevents Prettier from formatting into a single line.
+                        localToTimestamp,
+                        rates[i].tiers,
+                        currentBalance,
+                        0
+                    )
                 );
 
                 // if (_debug) {
@@ -761,7 +767,7 @@ abstract contract YieldStreamerPrimary is
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex + ratePeriods - 1].tiers[0].rate,
+                    rates[params.rateStartIndex + ratePeriods - 1].tiers,
                     currentBalance,
                     0
                 )
@@ -834,7 +840,7 @@ abstract contract YieldStreamerPrimary is
 
             partDayYield = _calculatePartDayYield(
                 totalBalance,
-                params.yieldRate,
+                params.tiers,
                 params.toTimestamp - params.fromTimestamp
             );
             result.lastDayPartialYield = params.streamYield + partDayYield;
@@ -869,7 +875,7 @@ abstract contract YieldStreamerPrimary is
             uint256 firstDaySeconds = nextDayStart - params.fromTimestamp;
 
             if (firstDaySeconds != 1 days) {
-                partDayYield = _calculatePartDayYield(totalBalance, params.yieldRate, firstDaySeconds);
+                partDayYield = _calculatePartDayYield(totalBalance, params.tiers, firstDaySeconds);
                 result.firstDayPartialYield = params.streamYield + partDayYield;
 
                 // if (_debug) {
@@ -903,7 +909,7 @@ abstract contract YieldStreamerPrimary is
                 // }
 
                 for (uint256 i = 0; i < fullDaysCount; i++) {
-                    uint256 dailyYield = _calculateFullDayYield(totalBalance + result.fullDaysYield, params.yieldRate);
+                    uint256 dailyYield = _calculateFullDayYield(totalBalance + result.fullDaysYield, params.tiers);
                     result.fullDaysYield += dailyYield;
 
                     // if (_debug) {
@@ -926,7 +932,7 @@ abstract contract YieldStreamerPrimary is
                 // }
 
                 uint256 lastDaySeconds = params.toTimestamp - params.fromTimestamp;
-                result.lastDayPartialYield = _calculatePartDayYield(totalBalance, params.yieldRate, lastDaySeconds);
+                result.lastDayPartialYield = _calculatePartDayYield(totalBalance, params.tiers, lastDaySeconds);
 
                 // if (_debug) {
                 //     console.log("_compoundYield | - last day remaining seconds: %s", lastDaySeconds);
@@ -953,30 +959,69 @@ abstract contract YieldStreamerPrimary is
      * @dev Calculates the yield for a partial day.
      *
      * @param amount The amount to calculate the yield for.
-     * @param yieldRate The yield rate (scaled by RATE_FACTOR).
+     * @param tiers The yield tiers to apply during the calculation period.
      * @param elapsedSeconds The elapsed seconds within the day.
      * @return The yield accrued during the partial day.
      */
     function _calculatePartDayYield(
         uint256 amount,
-        uint256 yieldRate,
+        YieldRateTier[] memory tiers,
         uint256 elapsedSeconds
     ) private pure returns (uint256) {
-        return (amount * yieldRate * elapsedSeconds) / (1 days * RATE_FACTOR);
+        uint256 remainingAmount = amount;
+        uint256 totalYield = 0;
+        uint256 i = 0;
+        YieldRateTier memory tier;
+
+        do {
+            if (remainingAmount == 0) {
+                break;
+            }
+
+            tier = tiers[i];
+
+            uint256 cappedAmount = tier.cap == 0 ? remainingAmount : remainingAmount > tier.cap
+                ? tier.cap
+                : remainingAmount;
+
+            totalYield += (cappedAmount * tier.rate * elapsedSeconds) / (1 days * RATE_FACTOR);
+            remainingAmount -= cappedAmount;
+            i++;
+        } while (i < tiers.length);
+
+        return totalYield;
     }
 
     /**
      * @dev Calculates the yield for a full day.
      *
      * @param amount The amount to calculate the yield for.
-     * @param yieldRate The yield rate (scaled by RATE_FACTOR).
+     * @param tiers The yield tiers to apply during the calculation period.
      * @return The yield accrued during the full day.
      */
-    function _calculateFullDayYield(
-        uint256 amount, // Tools: this comment prevents Prettier from formatting into a single line.
-        uint256 yieldRate
-    ) private pure returns (uint256) {
-        return (amount * yieldRate) / RATE_FACTOR;
+    function _calculateFullDayYield(uint256 amount, YieldRateTier[] memory tiers) private pure returns (uint256) {
+        uint256 remainingAmount = amount;
+        uint256 totalYield = 0;
+        uint256 i = 0;
+        YieldRateTier memory tier;
+
+        do {
+            if (remainingAmount == 0) {
+                break;
+            }
+
+            tier = tiers[i];
+
+            uint256 cappedAmount = tier.cap == 0 ? remainingAmount : remainingAmount > tier.cap
+                ? tier.cap
+                : remainingAmount;
+
+            totalYield += (cappedAmount * tier.rate) / RATE_FACTOR;
+            remainingAmount -= cappedAmount;
+            i++;
+        } while (i < tiers.length);
+
+        return totalYield;
     }
 
     /**
