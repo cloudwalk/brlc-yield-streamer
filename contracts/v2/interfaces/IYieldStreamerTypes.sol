@@ -37,10 +37,10 @@ interface IYieldStreamerTypes {
      *
      * Fields:
      * - `effectiveDay`: The day index from which this yield rate schedule becomes effective.
-     * - `tiers`: An array of `YieldRateTier` structs defining the rate tiers.
+     * - `tiers`: An array of `RateTier` structs defining the rate tiers.
      */
     struct YieldTieredRate {
-        YieldRateTier[] tiers;
+        RateTier[] tiers;
         uint16 effectiveDay;
         // uint240 __reserved; // Reserved for future use until the end of the storage slot.
     }
@@ -53,9 +53,10 @@ interface IYieldStreamerTypes {
      * - `rate`: The yield rate value (scaled by RATE_FACTOR).
      * - `cap`: The maximum balance amount for which this rate applies.
      */
-    struct YieldRateTier {
+    struct RateTier {
         uint48 rate;
         uint64 cap;
+        // uint144 __reserved; // Reserved for future use until the end of the storage slot.
     }
 
     /**

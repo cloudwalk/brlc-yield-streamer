@@ -62,7 +62,7 @@ abstract contract YieldStreamerConfiguration is
 
         // Add the tiers to the new yield tiered rate
         for (uint256 i = 0; i < tierRates.length; i++) {
-            newYieldRate.tiers.push(YieldRateTier({ rate: tierRates[i].toUint48(), cap: tierCaps[i].toUint64() }));
+            newYieldRate.tiers.push(RateTier({ rate: tierRates[i].toUint48(), cap: tierCaps[i].toUint64() }));
         }
 
         emit YieldStreamer_YieldTieredRateAdded(groupId, effectiveDay, tierRates, tierCaps);
@@ -121,7 +121,7 @@ abstract contract YieldStreamerConfiguration is
         // Update the tiers of the yield tiered rate
         delete rate.tiers;
         for (uint256 i = 0; i < tierRates.length; i++) {
-            rate.tiers.push(YieldRateTier({ rate: tierRates[i].toUint48(), cap: tierCaps[i].toUint64() }));
+            rate.tiers.push(RateTier({ rate: tierRates[i].toUint48(), cap: tierCaps[i].toUint64() }));
         }
 
         emit YieldStreamer_YieldTieredRateUpdated(groupId, itemIndex, effectiveDay, tierRates, tierCaps);

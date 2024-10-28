@@ -44,7 +44,7 @@ abstract contract YieldStreamerPrimary is
     struct CompoundYieldParams {
         uint256 fromTimestamp;
         uint256 toTimestamp;
-        YieldRateTier[] tiers;
+        RateTier[] tiers;
         uint256 balance;
         uint256 streamYield;
     }
@@ -965,13 +965,13 @@ abstract contract YieldStreamerPrimary is
      */
     function _calculatePartDayYield(
         uint256 amount,
-        YieldRateTier[] memory tiers,
+        RateTier[] memory tiers,
         uint256 elapsedSeconds
     ) private pure returns (uint256) {
         uint256 remainingAmount = amount;
         uint256 totalYield = 0;
         uint256 i = 0;
-        YieldRateTier memory tier;
+        RateTier memory tier;
 
         do {
             if (remainingAmount == 0) {
@@ -999,11 +999,11 @@ abstract contract YieldStreamerPrimary is
      * @param tiers The yield tiers to apply during the calculation period.
      * @return The yield accrued during the full day.
      */
-    function _calculateFullDayYield(uint256 amount, YieldRateTier[] memory tiers) private pure returns (uint256) {
+    function _calculateFullDayYield(uint256 amount, RateTier[] memory tiers) private pure returns (uint256) {
         uint256 remainingAmount = amount;
         uint256 totalYield = 0;
         uint256 i = 0;
-        YieldRateTier memory tier;
+        RateTier memory tier;
 
         do {
             if (remainingAmount == 0) {
