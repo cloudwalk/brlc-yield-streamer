@@ -1228,27 +1228,6 @@ abstract contract YieldStreamerPrimary is
         uint256 startIndex,
         uint256 endIndex,
         YieldTieredRate[] storage rates
-    ) private view returns (YieldTieredRate[] memory) {
-        YieldTieredRate[] memory result = new YieldTieredRate[](endIndex - startIndex + 1);
-        for (uint256 i = startIndex; i <= endIndex; i++) {
-            result[i - startIndex] = rates[i];
-        }
-        return result;
-    }
-
-    /**
-     * @dev Overloaded function to truncate a memory array of yield rates that accepts a memory array.
-     * This function is needed to test the `_truncateArray` function and must fully replicate its behavior.
-     *
-     * @param startIndex The start index of the truncation.
-     * @param endIndex The end index of the truncation.
-     * @param rates The array of yield rates (memory).
-     * @return The truncated array of yield rates.
-     */
-    function _truncateArray_memory(
-        uint256 startIndex,
-        uint256 endIndex,
-        YieldTieredRate[] memory rates
     ) internal view returns (YieldTieredRate[] memory) {
         YieldTieredRate[] memory result = new YieldTieredRate[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
@@ -1301,12 +1280,24 @@ abstract contract YieldStreamerPrimary is
      */
     function _map(AccruePreview memory accrue) internal pure returns (ClaimPreview memory) {
         ClaimPreview memory claim;
+
         uint256 totalYield = accrue.accruedYieldAfter + accrue.streamYieldAfter;
         claim.yield = _roundDown(totalYield);
         claim.fee = 0;
         claim.timestamp = 0;
         claim.balance = accrue.balance;
-        claim.rate = accrue.rates[accrue.rates.length - 1].tiers[0].rate;
+
+        uint256 lastRateIndex = accrue.rates.length - 1;
+        uint256 lastRateLength = accrue.rates[lastRateIndex].tiers.length;
+        uint256[] memory rates = new uint256[](lastRateLength);
+        uint256[] memory caps = new uint256[](lastRateLength);
+        for (uint256 i = 0; i < lastRateLength; i++) {
+            rates[i] = accrue.rates[lastRateIndex].tiers[i].rate;
+            caps[i] = accrue.rates[lastRateIndex].tiers[i].cap;
+        }
+        claim.rates = rates;
+        claim.caps = caps;
+
         return claim;
     }
 

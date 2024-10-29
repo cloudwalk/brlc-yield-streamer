@@ -29,7 +29,6 @@ interface AccruePreview {
   accruedYieldBefore: bigint;
   streamYieldAfter: bigint;
   accruedYieldAfter: bigint;
-  rates: YieldRate[];
   rates: YieldTieredRate[];
   results: YieldResult[];
 }
@@ -39,7 +38,8 @@ interface ClaimPreview {
   fee: bigint;
   timestamp: bigint;
   balance: bigint;
-  rate: bigint;
+  rates: bigint[];
+  caps: bigint[];
 }
 
 async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
@@ -89,8 +89,6 @@ describe("YieldStreamerV2Testable", function () {
     yieldStreamerTestable: Contract,
     groupId: number,
     count: number
-  ): Promise<YieldRate[]> {
-    const rates: YieldRate[] = [];
   ): Promise<YieldTieredRate[]> {
     const rates: YieldTieredRate[] = [];
 
@@ -327,12 +325,30 @@ describe("YieldStreamerV2Testable", function () {
         accruedYieldAfter: BigInt("399999"),
         rates: [
           {
-            effectiveDay: BigInt("1"),
-            value: BigInt("100")
+            tiers: [
+              {
+                rate: BigInt("100"),
+                cap: BigInt("100")
+              },
+              {
+                rate: BigInt("200"),
+                cap: BigInt("200")
+              }
+            ],
+            effectiveDay: BigInt("1")
           },
           {
-            effectiveDay: BigInt("9"),
-            value: BigInt("200")
+            tiers: [
+              {
+                rate: BigInt("300"),
+                cap: BigInt("300")
+              },
+              {
+                rate: BigInt("400"),
+                cap: BigInt("400")
+              }
+            ],
+            effectiveDay: BigInt("9")
           }
         ],
         results: [
@@ -358,7 +374,8 @@ describe("YieldStreamerV2Testable", function () {
         fee: BigInt("0"),
         timestamp: BigInt("0"),
         balance: accruePreview.balance,
-        rate: accruePreview.rates[accruePreview.rates.length - 1].value
+        rates: accruePreview.rates[accruePreview.rates.length - 1].tiers.map(tier => tier.rate),
+        caps: accruePreview.rates[accruePreview.rates.length - 1].tiers.map(tier => tier.cap)
       };
 
       // Verify the return values.
@@ -366,7 +383,8 @@ describe("YieldStreamerV2Testable", function () {
       expect(expectedClaimPreview.fee).to.equal(claimPreviewRaw.fee);
       expect(expectedClaimPreview.timestamp).to.equal(claimPreviewRaw.timestamp);
       expect(expectedClaimPreview.balance).to.equal(claimPreviewRaw.balance);
-      expect(expectedClaimPreview.rate).to.equal(claimPreviewRaw.rate);
+      expect(expectedClaimPreview.rates).to.deep.equal(claimPreviewRaw.rates);
+      expect(expectedClaimPreview.caps).to.deep.equal(claimPreviewRaw.caps);
     });
   });
 });

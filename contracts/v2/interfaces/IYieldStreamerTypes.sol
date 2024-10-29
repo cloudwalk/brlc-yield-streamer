@@ -88,14 +88,16 @@ interface IYieldStreamerTypes {
      * - `fee`: The fee amount that would be deducted during the claim.
      * - `timestamp`: The timestamp at which the preview was calculated.
      * - `balance`: The account's token balance used in the calculation.
-     * - `rate`: The current yield rate applicable to the account.
+     * - `rates`: The current yield rates applicable to the account.
+     * - `caps`: The current rate caps applicable to the account.
      */
     struct ClaimPreview {
         uint256 yield;
         uint256 fee;
         uint256 timestamp;
         uint256 balance;
-        uint256 rate;
+        uint256[] rates;
+        uint256[] caps;
     }
 
     /**
