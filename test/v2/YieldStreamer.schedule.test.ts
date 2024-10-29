@@ -28,7 +28,7 @@ interface YieldState {
 }
 
 // Interface representing a yield rate change in the contract
-interface YieldTieredRate {
+interface YieldRate {
   effectiveDay: number; // Day when the yield rate becomes effective
   tierRates: bigint[]; // Array of yield rate value for each tier (expressed in RATE_FACTOR units)
   tierCaps: bigint[]; // Array of balance cap for each tier
@@ -136,7 +136,7 @@ async function testActionSchedule(
  * @param yieldStreamer The YieldStreamer contract instance.
  * @param yieldRates The list of yield rates to add.
  */
-async function addYieldRates(yieldStreamer: Contract, yieldRates: YieldTieredRate[]): Promise<void> {
+async function addYieldRates(yieldStreamer: Contract, yieldRates: YieldRate[]): Promise<void> {
   const zeroBytes32 = ethers.ZeroHash; // Placeholder for the yield rate ID
   for (const yieldRate of yieldRates) {
     await yieldStreamer.addYieldRate(zeroBytes32, yieldRate.effectiveDay, yieldRate.tierRates, yieldRate.tierCaps);
@@ -311,7 +311,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Yield rates to be added to the contract
-      const yieldRates: YieldTieredRate[] = [
+      const yieldRates: YieldRate[] = [
         // 40% yield rate
         {
           effectiveDay: 0,
@@ -438,7 +438,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Yield rates to be added to the contract
-      const yieldRates: YieldTieredRate[] = [
+      const yieldRates: YieldRate[] = [
         // 40% yield rate
         {
           effectiveDay: 0,
@@ -579,7 +579,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Yield rates to be added to the contract
-      const yieldRates: YieldTieredRate[] = [
+      const yieldRates: YieldRate[] = [
         // 40% yield rate
         {
           effectiveDay: 0,
@@ -706,7 +706,7 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Yield rates to be added to the contract
-      const yieldRates: YieldTieredRate[] = [
+      const yieldRates: YieldRate[] = [
         // 40% yield rate
         {
           effectiveDay: 0,

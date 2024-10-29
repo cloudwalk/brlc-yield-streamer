@@ -32,21 +32,21 @@ interface IYieldStreamerTypes {
     }
 
     /**
-     * @dev Structure representing a yield rate schedule that becomes effective from a specific day.
+     * @dev Structure representing a yield rate that becomes effective from a specific day.
      * Contains multiple tiers, each applying a specific rate up to a balance cap.
      *
      * Fields:
-     * - `effectiveDay`: The day index from which this yield rate schedule becomes effective.
+     * - `effectiveDay`: The day index from which this yield rate becomes effective.
      * - `tiers`: An array of `RateTier` structs defining the rate tiers.
      */
-    struct YieldTieredRate {
+    struct YieldRate {
         RateTier[] tiers;
         uint16 effectiveDay;
         // uint240 __reserved; // Reserved for future use until the end of the storage slot.
     }
 
     /**
-     * @dev Structure representing a yield rate tier within a schedule.
+     * @dev Structure representing a rate tier within a yield rate.
      * Applies a specific rate to a portion of the balance up to a specified cap.
      *
      * Fields:
@@ -112,7 +112,7 @@ interface IYieldStreamerTypes {
      * - `streamYieldBefore`: The stream yield before the accrual period.
      * - `accruedYieldAfter`: The accrued yield after the accrual period.
      * - `streamYieldAfter`: The stream yield after the accrual period.
-     * - `rates`: An array of `YieldTieredRate` structs used during the accrual period.
+     * - `rates`: An array of `YieldRate` structs used during the accrual period.
      * - `results`: An array of `YieldResult` structs detailing yield calculations for sub-periods.
      */
     struct AccruePreview {
@@ -123,7 +123,7 @@ interface IYieldStreamerTypes {
         uint256 accruedYieldBefore;
         uint256 streamYieldAfter;
         uint256 accruedYieldAfter;
-        YieldTieredRate[] rates;
+        YieldRate[] rates;
         YieldResult[] results;
     }
 

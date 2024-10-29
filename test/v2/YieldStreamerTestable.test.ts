@@ -10,7 +10,7 @@ interface RateTier {
   cap: bigint;
 }
 
-interface YieldTieredRate {
+interface YieldRate {
   tiers: RateTier[];
   effectiveDay: bigint;
 }
@@ -29,7 +29,7 @@ interface AccruePreview {
   accruedYieldBefore: bigint;
   streamYieldAfter: bigint;
   accruedYieldAfter: bigint;
-  rates: YieldTieredRate[];
+  rates: YieldRate[];
   results: YieldResult[];
 }
 
@@ -89,10 +89,10 @@ describe("YieldStreamerV2Testable", function () {
     yieldStreamerTestable: Contract,
     groupId: number,
     count: number
-  ): Promise<YieldTieredRate[]> {
-    const rates: YieldTieredRate[] = [];
+  ): Promise<YieldRate[]> {
+    const rates: YieldRate[] = [];
 
-    // Build the yield tiered rates array.
+    // Build the yield rates array.
     for (let i = 0; i < count; i++) {
       rates.push({
         tiers: [
@@ -105,7 +105,7 @@ describe("YieldStreamerV2Testable", function () {
       });
     }
 
-    // Add the rates to the contract.
+    // Add yield rates to the contract.
     for (const rate of rates) {
       const ratesArray = rate.tiers.map(tier => tier.rate);
       const capsArray = rate.tiers.map(tier => tier.cap);
@@ -115,7 +115,7 @@ describe("YieldStreamerV2Testable", function () {
     return rates;
   }
 
-  function normalizeYieldRates(rates: any[]): YieldTieredRate[] {
+  function normalizeYieldRates(rates: any[]): YieldRate[] {
     return rates.map((rate: any) => ({
       effectiveDay: BigInt(rate[1]),
       tiers: rate[0].map((tier: any) => ({

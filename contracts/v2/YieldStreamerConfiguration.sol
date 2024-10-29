@@ -41,7 +41,7 @@ abstract contract YieldStreamerConfiguration is
         uint256[] memory tierCaps
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldTieredRate[] storage rates = $.yieldRates[groupId.toUint32()];
+        YieldRate[] storage rates = $.yieldRates[groupId.toUint32()];
 
         // Ensure first item in the array always starts with effectiveDay 0
         if (rates.length == 0 && effectiveDay != 0) {
@@ -53,19 +53,19 @@ abstract contract YieldStreamerConfiguration is
             revert YieldStreamer_YieldRateInvalidEffectiveDay();
         }
 
-        // Initialize a new `YieldTieredRate` struct in storage
+        // Initialize a new `YieldRate` struct in storage
         rates.push();
-        YieldTieredRate storage newYieldRate = rates[rates.length - 1];
+        YieldRate storage newYieldRate = rates[rates.length - 1];
 
-        // Set the effective day of the new yield tiered rate
+        // Set the effective day of the new yield rate
         newYieldRate.effectiveDay = effectiveDay.toUint16();
 
-        // Add the tiers to the new yield tiered rate
+        // Add the tiers to the new yield rate
         for (uint256 i = 0; i < tierRates.length; i++) {
             newYieldRate.tiers.push(RateTier({ rate: tierRates[i].toUint48(), cap: tierCaps[i].toUint64() }));
         }
 
-        emit YieldStreamer_YieldTieredRateAdded(groupId, effectiveDay, tierRates, tierCaps);
+        emit YieldStreamer_YieldRateAdded(groupId, effectiveDay, tierRates, tierCaps);
     }
 
     /**
@@ -86,7 +86,7 @@ abstract contract YieldStreamerConfiguration is
         uint256[] memory tierCaps
     ) internal {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        YieldTieredRate[] storage rates = $.yieldRates[groupId.toUint32()];
+        YieldRate[] storage rates = $.yieldRates[groupId.toUint32()];
 
         // Ensure first item in the array always starts with effectiveDay = 0
         if (itemIndex == 0 && effectiveDay != 0) {
@@ -113,18 +113,18 @@ abstract contract YieldStreamerConfiguration is
             }
         }
 
-        YieldTieredRate storage rate = rates[itemIndex];
+        YieldRate storage rate = rates[itemIndex];
 
-        // Update the effective day of the yield tiered rate
+        // Update the effective day of the yield rate
         rate.effectiveDay = effectiveDay.toUint16();
 
-        // Update the tiers of the yield tiered rate
+        // Update the tiers of the yield rate
         delete rate.tiers;
         for (uint256 i = 0; i < tierRates.length; i++) {
             rate.tiers.push(RateTier({ rate: tierRates[i].toUint48(), cap: tierCaps[i].toUint64() }));
         }
 
-        emit YieldStreamer_YieldTieredRateUpdated(groupId, itemIndex, effectiveDay, tierRates, tierCaps);
+        emit YieldStreamer_YieldRateUpdated(groupId, itemIndex, effectiveDay, tierRates, tierCaps);
     }
 
     /**

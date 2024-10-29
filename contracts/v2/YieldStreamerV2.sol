@@ -133,7 +133,7 @@ contract YieldStreamerV2 is
     /**
      * @inheritdoc IYieldStreamerPrimary_Functions
      */
-    function getGroupYieldRates(uint256 groupId) external view returns (YieldTieredRate[] memory) {
+    function getGroupYieldRates(uint256 groupId) external view returns (YieldRate[] memory) {
         return _getGroupYieldRates(groupId);
     }
 

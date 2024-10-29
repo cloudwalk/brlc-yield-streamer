@@ -121,7 +121,7 @@ contract YieldStreamerStorage_Primary is IYieldStreamerTypes {
         address feeReceiver;
         mapping(address => Group) groups;
         mapping(address => YieldState) yieldStates;
-        mapping(uint32 => YieldTieredRate[]) yieldRates;
+        mapping(uint32 => YieldRate[]) yieldRates;
     }
 
     /**

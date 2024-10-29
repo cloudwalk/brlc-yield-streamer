@@ -51,7 +51,7 @@ interface IYieldStreamerConfiguration_Events {
      * @param tierRates The yield rate value for each tier (scaled by RATE_FACTOR).
      * @param tierCaps The balance cap for each tier.
      */
-    event YieldStreamer_YieldTieredRateAdded(
+    event YieldStreamer_YieldRateAdded(
         uint256 indexed groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 effectiveDay,
         uint256[] tierRates,
@@ -67,7 +67,7 @@ interface IYieldStreamerConfiguration_Events {
      * @param tierRates The new yield rate value for each tier (scaled by RATE_FACTOR).
      * @param tierCaps The new balance cap for each tier.
      */
-    event YieldStreamer_YieldTieredRateUpdated(
+    event YieldStreamer_YieldRateUpdated(
         uint256 indexed groupId,
         uint256 itemIndex,
         uint256 effectiveDay,
