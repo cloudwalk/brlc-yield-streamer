@@ -5,9 +5,14 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 const ROUND_FACTOR = 10000;
 
-interface YieldRate {
+interface RateTier {
+  rate: bigint;
+  cap: bigint;
+}
+
+interface YieldTieredRate {
+  tiers: RateTier[];
   effectiveDay: bigint;
-  value: bigint;
 }
 
 interface YieldResult {
@@ -25,6 +30,7 @@ interface AccruePreview {
   streamYieldAfter: bigint;
   accruedYieldAfter: bigint;
   rates: YieldRate[];
+  rates: YieldTieredRate[];
   results: YieldResult[];
 }
 
@@ -85,22 +91,39 @@ describe("YieldStreamerV2Testable", function () {
     count: number
   ): Promise<YieldRate[]> {
     const rates: YieldRate[] = [];
+  ): Promise<YieldTieredRate[]> {
+    const rates: YieldTieredRate[] = [];
 
+    // Build the yield tiered rates array.
     for (let i = 0; i < count; i++) {
       rates.push({
-        effectiveDay: BigInt(i),
-        value: BigInt(i)
+        tiers: [
+          {
+            rate: BigInt(i),
+            cap: BigInt(i)
+          }
+        ],
+        effectiveDay: BigInt(i)
       });
-      await yieldStreamerTestable.addYieldRate(groupId, rates[i].effectiveDay, rates[i].value);
+    }
+
+    // Add the rates to the contract.
+    for (const rate of rates) {
+      const ratesArray = rate.tiers.map(tier => tier.rate);
+      const capsArray = rate.tiers.map(tier => tier.cap);
+      await yieldStreamerTestable.addYieldRate(groupId, rate.effectiveDay, ratesArray, capsArray);
     }
 
     return rates;
   }
 
-  function normalizeYieldRates(rates: any[]): YieldRate[] {
+  function normalizeYieldRates(rates: any[]): YieldTieredRate[] {
     return rates.map((rate: any) => ({
-      effectiveDay: BigInt(rate[0]),
-      value: BigInt(rate[1])
+      effectiveDay: BigInt(rate[1]),
+      tiers: rate[0].map((tier: any) => ({
+        rate: BigInt(tier[0]),
+        cap: BigInt(tier[1])
+      }))
     }));
   }
 

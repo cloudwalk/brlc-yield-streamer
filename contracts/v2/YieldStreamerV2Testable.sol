@@ -36,7 +36,7 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
         uint32 groupId,
         uint256 startIndex,
         uint256 endIndex
-    ) external view returns (YieldRate[] memory) {
+    ) external view returns (YieldTieredRate[] memory) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         return _truncateArray(startIndex, endIndex, $.yieldRates[groupId]);
     }
