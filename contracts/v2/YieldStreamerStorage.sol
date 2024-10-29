@@ -14,13 +14,13 @@ contract YieldStreamerStorage_Constants {
      * @dev The factor used to scale yield rates for precision.
      * For example, a 0.1% rate should be represented as 0.001 * RATE_FACTOR.
      */
-    uint240 public constant RATE_FACTOR = 10 ** 9;
+    uint240 public constant RATE_FACTOR = 10 ** 12;
 
     /**
      * @dev The factor used for rounding yield, fees, and other related values.
      * For example, a value of `12345678` will be rounded up to `12350000` and down to `12340000`.
      */
-    uint256 public constant ROUND_FACTOR = 10000;
+    uint256 public constant ROUND_FACTOR = 10 ** 4;
 
     /**
      * @dev The fee rate used to calculate fee amounts during yield claims.
@@ -121,7 +121,7 @@ contract YieldStreamerStorage_Primary is IYieldStreamerTypes {
         address feeReceiver;
         mapping(address => Group) groups;
         mapping(address => YieldState) yieldStates;
-        mapping(uint32 => YieldRate[]) yieldRates;
+        mapping(uint32 => YieldTieredRate[]) yieldRates;
     }
 
     /**

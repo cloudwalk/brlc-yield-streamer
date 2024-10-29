@@ -48,12 +48,14 @@ interface IYieldStreamerConfiguration_Events {
      *
      * @param groupId The ID of the group the yield rate is added to.
      * @param effectiveDay The day index from which the yield rate becomes effective.
-     * @param rateValue The yield rate value added (scaled by RATE_FACTOR).
+     * @param tierRates The yield rate value for each tier (scaled by RATE_FACTOR).
+     * @param tierCaps The balance cap for each tier.
      */
-    event YieldStreamer_YieldRateAdded(
+    event YieldStreamer_YieldTieredRateAdded(
         uint256 indexed groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 effectiveDay,
-        uint256 rateValue
+        uint256[] tierRates,
+        uint256[] tierCaps
     );
 
     /**
@@ -62,13 +64,15 @@ interface IYieldStreamerConfiguration_Events {
      * @param groupId The ID of the group the yield rate is updated for.
      * @param itemIndex The index of the yield rate in the group's rate array.
      * @param effectiveDay The new effective day for the yield rate.
-     * @param rateValue The new yield rate value (scaled by RATE_FACTOR).
+     * @param tierRates The new yield rate value for each tier (scaled by RATE_FACTOR).
+     * @param tierCaps The new balance cap for each tier.
      */
-    event YieldStreamer_YieldRateUpdated(
+    event YieldStreamer_YieldTieredRateUpdated(
         uint256 indexed groupId,
         uint256 itemIndex,
         uint256 effectiveDay,
-        uint256 rateValue
+        uint256[] tierRates,
+        uint256[] tierCaps
     );
 
     /**
@@ -95,9 +99,15 @@ interface IYieldStreamerConfiguration_Functions {
      *
      * @param groupId The ID of the group to which the yield rate is added.
      * @param effectiveDay The day index from which the yield rate becomes effective.
-     * @param rateValue The yield rate value to add (scaled by RATE_FACTOR).
+     * @param tierRates The yield rate value for each tier (scaled by RATE_FACTOR).
+     * @param tierCaps The balance cap for each tier.
      */
-    function addYieldRate(uint256 groupId, uint256 effectiveDay, uint256 rateValue) external;
+    function addYieldRate(
+        uint256 groupId,
+        uint256 effectiveDay,
+        uint256[] memory tierRates,
+        uint256[] memory tierCaps
+    ) external;
 
     /**
      * @dev Updates an existing yield rate for a specific group at a given index.
@@ -105,9 +115,16 @@ interface IYieldStreamerConfiguration_Functions {
      * @param groupId The ID of the group whose yield rate is being updated.
      * @param itemIndex The index of the yield rate to update within the group's rate array.
      * @param effectiveDay The new effective day for the yield rate.
-     * @param rateValue The new yield rate value (scaled by RATE_FACTOR).
+     * @param tierRates The new yield rate value for each tier (scaled by RATE_FACTOR).
+     * @param tierCaps The new balance cap for each tier.
      */
-    function updateYieldRate(uint256 groupId, uint256 itemIndex, uint256 effectiveDay, uint256 rateValue) external;
+    function updateYieldRate(
+        uint256 groupId,
+        uint256 itemIndex,
+        uint256 effectiveDay,
+        uint256[] memory tierRates,
+        uint256[] memory tierCaps
+    ) external;
 
     /**
      * @dev Assigns a group to multiple accounts.

@@ -32,17 +32,31 @@ interface IYieldStreamerTypes {
     }
 
     /**
-     * @dev Structure representing a yield rate that becomes effective from a specific day.
-     * Used to determine the yield accrual for accounts based on their assigned group.
+     * @dev Structure representing a yield rate schedule that becomes effective from a specific day.
+     * Contains multiple tiers, each applying a specific rate up to a balance cap.
      *
      * Fields:
-     * - `effectiveDay`: The day index (since Unix epoch) from which this yield rate becomes effective.
-     * - `value`: The yield rate value (scaled by RATE_FACTOR).
+     * - `effectiveDay`: The day index from which this yield rate schedule becomes effective.
+     * - `tiers`: An array of `RateTier` structs defining the rate tiers.
      */
-    struct YieldRate {
+    struct YieldTieredRate {
+        RateTier[] tiers;
         uint16 effectiveDay;
-        uint32 value;
-        // uint208 __reserved; // Reserved for future use until the end of the storage slot.
+        // uint240 __reserved; // Reserved for future use until the end of the storage slot.
+    }
+
+    /**
+     * @dev Structure representing a yield rate tier within a schedule.
+     * Applies a specific rate to a portion of the balance up to a specified cap.
+     *
+     * Fields:
+     * - `rate`: The yield rate value (scaled by RATE_FACTOR).
+     * - `cap`: The maximum balance amount for which this rate applies.
+     */
+    struct RateTier {
+        uint48 rate;
+        uint64 cap;
+        // uint144 __reserved; // Reserved for future use until the end of the storage slot.
     }
 
     /**
@@ -96,7 +110,7 @@ interface IYieldStreamerTypes {
      * - `streamYieldBefore`: The stream yield before the accrual period.
      * - `accruedYieldAfter`: The accrued yield after the accrual period.
      * - `streamYieldAfter`: The stream yield after the accrual period.
-     * - `rates`: An array of `YieldRate` structs used during the accrual period.
+     * - `rates`: An array of `YieldTieredRate` structs used during the accrual period.
      * - `results`: An array of `YieldResult` structs detailing yield calculations for sub-periods.
      */
     struct AccruePreview {
@@ -107,7 +121,7 @@ interface IYieldStreamerTypes {
         uint256 accruedYieldBefore;
         uint256 streamYieldAfter;
         uint256 accruedYieldAfter;
-        YieldRate[] rates;
+        YieldTieredRate[] rates;
         YieldResult[] results;
     }
 

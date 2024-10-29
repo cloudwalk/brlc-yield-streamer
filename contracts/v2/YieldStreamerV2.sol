@@ -133,7 +133,7 @@ contract YieldStreamerV2 is
     /**
      * @inheritdoc IYieldStreamerPrimary_Functions
      */
-    function getGroupYieldRates(uint256 groupId) external view returns (YieldRate[] memory) {
+    function getGroupYieldRates(uint256 groupId) external view returns (YieldTieredRate[] memory) {
         return _getGroupYieldRates(groupId);
     }
 
@@ -184,9 +184,10 @@ contract YieldStreamerV2 is
     function addYieldRate(
         uint256 groupId, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 effectiveDay,
-        uint256 rateValue
+        uint256[] memory tierRates,
+        uint256[] memory tierCaps
     ) external onlyRole(OWNER_ROLE) {
-        _addYieldRate(groupId, effectiveDay, rateValue);
+        _addYieldRate(groupId, effectiveDay, tierRates, tierCaps);
     }
 
     /**
@@ -196,9 +197,10 @@ contract YieldStreamerV2 is
         uint256 groupId,
         uint256 itemIndex,
         uint256 effectiveDay,
-        uint256 rateValue
+        uint256[] memory tierRates,
+        uint256[] memory tierCaps
     ) external onlyRole(OWNER_ROLE) {
-        _updateYieldRate(groupId, itemIndex, effectiveDay, rateValue);
+        _updateYieldRate(groupId, itemIndex, effectiveDay, tierRates, tierCaps);
     }
 
     /**

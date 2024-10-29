@@ -115,9 +115,9 @@ interface IYieldStreamerPrimary_Functions {
      * @dev Retrieves the array of yield rates associated with a specific group ID.
      *
      * @param groupId The ID of the group to query.
-     * @return An array of `YieldRate` structs representing the group's yield rates.
+     * @return An array of `YieldTieredRate` structs representing the group's yield rates.
      */
-    function getGroupYieldRates(uint256 groupId) external view returns (IYieldStreamerTypes.YieldRate[] memory);
+    function getGroupYieldRates(uint256 groupId) external view returns (IYieldStreamerTypes.YieldTieredRate[] memory);
 
     /**
      * @dev Retrieves the group ID to which a specific account is assigned.

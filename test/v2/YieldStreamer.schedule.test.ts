@@ -5,7 +5,7 @@ import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 // Constants for rate calculations and time units
-const RATE_FACTOR = BigInt(1000000000); // Factor used in yield rate calculations (10^9)
+const RATE_FACTOR = BigInt(1000000000000); // Factor used in yield rate calculations (10^12)
 const DAY = 24 * 60 * 60; // Number of seconds in a day
 const HOUR = 60 * 60; // Number of seconds in an hour
 const NEGATIVE_TIME_SHIFT = 3 * HOUR; // Negative time shift in seconds (3 hours)
@@ -27,9 +27,10 @@ interface YieldState {
 }
 
 // Interface representing a yield rate change in the contract
-interface YieldRate {
+interface YieldTieredRate {
   effectiveDay: number; // Day when the yield rate becomes effective
-  rateValue: bigint; // Value of the new yield rate (expressed in RATE_FACTOR units)
+  tierRates: bigint[]; // Array of yield rate value for each tier (expressed in RATE_FACTOR units)
+  tierCaps: bigint[]; // Array of balance cap for each tier
 }
 
 /**
@@ -85,16 +86,14 @@ async function testActionSchedule(
   // Iterate over each action in the schedule
   for (const [index, actionItem] of actionItems.entries()) {
     // Calculate the desired internal timestamp for the action based on day and hour offsets
-    const desiredInternalTimestamp =
-      adjustedBlockTime + (actionItem.day - 1) * DAY + actionItem.hour * HOUR;
+    const desiredInternalTimestamp = adjustedBlockTime + (actionItem.day - 1) * DAY + actionItem.hour * HOUR;
 
     // Adjust for NEGATIVE_TIME_SHIFT to set the block.timestamp
     const adjustedTimestamp = desiredInternalTimestamp + NEGATIVE_TIME_SHIFT;
 
     // Ensure the timestamp is strictly greater than the current block timestamp
     const currentBlockTimestamp = Number(await time.latest());
-    const timestampToSet =
-      adjustedTimestamp <= currentBlockTimestamp ? currentBlockTimestamp + 1 : adjustedTimestamp;
+    const timestampToSet = adjustedTimestamp <= currentBlockTimestamp ? currentBlockTimestamp + 1 : adjustedTimestamp;
 
     // Increase the blockchain time to the desired adjusted timestamp
     await time.increaseTo(timestampToSet);
@@ -116,12 +115,8 @@ async function testActionSchedule(
     expectedYieldStates[index].lastUpdateTimestamp = blockTimestamp - NEGATIVE_TIME_SHIFT;
 
     // Assert that the actual yield state matches the expected state
-    expect(contractYieldState.lastUpdateTimestamp).to.equal(
-      expectedYieldStates[index].lastUpdateTimestamp
-    );
-    expect(contractYieldState.lastUpdateBalance).to.equal(
-      expectedYieldStates[index].lastUpdateBalance
-    );
+    expect(contractYieldState.lastUpdateTimestamp).to.equal(expectedYieldStates[index].lastUpdateTimestamp);
+    expect(contractYieldState.lastUpdateBalance).to.equal(expectedYieldStates[index].lastUpdateBalance);
     expect(contractYieldState.accruedYield).to.equal(expectedYieldStates[index].accruedYield);
     expect(contractYieldState.streamYield).to.equal(expectedYieldStates[index].streamYield);
   }
@@ -132,10 +127,10 @@ async function testActionSchedule(
  * @param yieldStreamer The YieldStreamer contract instance.
  * @param yieldRates The list of yield rates to add.
  */
-async function addYieldRates(yieldStreamer: Contract, yieldRates: YieldRate[]): Promise<void> {
+async function addYieldRates(yieldStreamer: Contract, yieldRates: YieldTieredRate[]): Promise<void> {
   const zeroBytes32 = ethers.ZeroHash; // Placeholder for the yield rate ID
   for (const yieldRate of yieldRates) {
-    await yieldStreamer.addYieldRate(zeroBytes32, yieldRate.effectiveDay, yieldRate.rateValue);
+    await yieldStreamer.addYieldRate(zeroBytes32, yieldRate.effectiveDay, yieldRate.tierRates, yieldRate.tierCaps);
   }
 }
 
@@ -302,8 +297,13 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Yield rates to be added to the contract
-      const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) } // 40% yield rate
+      const yieldRates: YieldTieredRate[] = [
+        // 40% yield rate
+        {
+          effectiveDay: 0,
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
+          tierCaps: [BigInt(100), BigInt(0)]
+        }
       ];
 
       // Set the initialized state for the user
@@ -424,16 +424,25 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Yield rates to be added to the contract
-      const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) }, // 40% yield rate
+      const yieldRates: YieldTieredRate[] = [
+        // 40% yield rate
+        {
+          effectiveDay: 0,
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
+          tierCaps: [BigInt(100), BigInt(0)]
+        },
+        // 80% yield rate
         {
           effectiveDay: calculateEffectiveDay(adjustedBlockTime, 3),
-          rateValue: (RATE_FACTOR * BigInt(80)) / BigInt(100)
-        }, // 80% yield rate
+          tierRates: [(RATE_FACTOR * BigInt(80000)) / BigInt(100000), (RATE_FACTOR * BigInt(80000)) / BigInt(100000)],
+          tierCaps: [BigInt(100), BigInt(0)]
+        },
+        // 40% yield rate
         {
           effectiveDay: calculateEffectiveDay(adjustedBlockTime, 5),
-          rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100)
-        } // 40% yield rate
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
+          tierCaps: [BigInt(100), BigInt(0)]
+        }
       ];
 
       // Set the initialized state for the user
@@ -556,8 +565,13 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Yield rates to be added to the contract
-      const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) } // 40% yield rate
+      const yieldRates: YieldTieredRate[] = [
+        // 40% yield rate
+        {
+          effectiveDay: 0,
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
+          tierCaps: [BigInt(100), BigInt(0)]
+        }
       ];
 
       // Set the initialized state for the user
@@ -678,16 +692,25 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
       ];
 
       // Yield rates to be added to the contract
-      const yieldRates: YieldRate[] = [
-        { effectiveDay: 0, rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100) }, // 40% yield rate
+      const yieldRates: YieldTieredRate[] = [
+        // 40% yield rate
+        {
+          effectiveDay: 0,
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
+          tierCaps: [BigInt(100), BigInt(0)]
+        },
+        // 80% yield rate
         {
           effectiveDay: calculateEffectiveDay(adjustedBlockTime, 3),
-          rateValue: (RATE_FACTOR * BigInt(80)) / BigInt(100)
-        }, // 80% yield rate
+          tierRates: [(RATE_FACTOR * BigInt(80000)) / BigInt(100000), (RATE_FACTOR * BigInt(80000)) / BigInt(100000)],
+          tierCaps: [BigInt(100), BigInt(0)]
+        },
+        // 40% yield rate
         {
           effectiveDay: calculateEffectiveDay(adjustedBlockTime, 5),
-          rateValue: (RATE_FACTOR * BigInt(40)) / BigInt(100)
-        } // 40% yield rate
+          tierRates: [(RATE_FACTOR * BigInt(40000)) / BigInt(100000), (RATE_FACTOR * BigInt(40000)) / BigInt(100000)],
+          tierCaps: [BigInt(100), BigInt(0)]
+        }
       ];
 
       // Set the initialized state for the user
