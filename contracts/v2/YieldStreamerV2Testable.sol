@@ -12,6 +12,11 @@ import { YieldStreamerV2 } from "./YieldStreamerV2.sol";
  * @dev Implements additional functions to test private and internal functions of base contracts.
  */
 contract YieldStreamerV2Testable is YieldStreamerV2 {
+
+    function aggregateYield(YieldResult[] memory yieldResults) external pure returns (uint256, uint256) {
+        return _aggregateYield(yieldResults);
+    }
+
     // ------------------ Timestamp ------------------------------- //
 
     function nextDay(uint256 timestamp) external pure returns (uint256) {
