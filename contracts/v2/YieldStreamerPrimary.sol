@@ -842,7 +842,7 @@ abstract contract YieldStreamerPrimary is
              * We are within the same day as the `fromTimestamp`.
              */
 
-            partDayYield = _calculatePartDayYield(
+            partDayYield = _calculateTieredPartDayYield(
                 totalBalance,
                 params.tiers,
                 params.toTimestamp - params.fromTimestamp
@@ -879,7 +879,7 @@ abstract contract YieldStreamerPrimary is
             uint256 firstDaySeconds = nextDayStart - params.fromTimestamp;
 
             if (firstDaySeconds != 1 days) {
-                partDayYield = _calculatePartDayYield(totalBalance, params.tiers, firstDaySeconds);
+                partDayYield = _calculateTieredPartDayYield(totalBalance, params.tiers, firstDaySeconds);
                 result.firstDayPartialYield = params.streamYield + partDayYield;
 
                 // if (_debug) {
@@ -913,7 +913,10 @@ abstract contract YieldStreamerPrimary is
                 // }
 
                 for (uint256 i = 0; i < fullDaysCount; i++) {
-                    uint256 dailyYield = _calculateFullDayYield(totalBalance + result.fullDaysYield, params.tiers);
+                    uint256 dailyYield = _calculateTieredFullDayYield(
+                        totalBalance + result.fullDaysYield,
+                        params.tiers
+                    );
                     result.fullDaysYield += dailyYield;
 
                     // if (_debug) {
@@ -936,7 +939,7 @@ abstract contract YieldStreamerPrimary is
                 // }
 
                 uint256 lastDaySeconds = params.toTimestamp - params.fromTimestamp;
-                result.lastDayPartialYield = _calculatePartDayYield(totalBalance, params.tiers, lastDaySeconds);
+                result.lastDayPartialYield = _calculateTieredPartDayYield(totalBalance, params.tiers, lastDaySeconds);
 
                 // if (_debug) {
                 //     console.log("_compoundYield | - last day remaining seconds: %s", lastDaySeconds);
@@ -967,7 +970,7 @@ abstract contract YieldStreamerPrimary is
      * @param elapsedSeconds The elapsed seconds within the day.
      * @return The yield accrued during the partial day.
      */
-    function _calculatePartDayYield(
+    function _calculateTieredPartDayYield(
         uint256 amount,
         RateTier[] memory tiers,
         uint256 elapsedSeconds
@@ -988,7 +991,7 @@ abstract contract YieldStreamerPrimary is
                 ? tier.cap
                 : remainingAmount;
 
-            totalYield += (cappedAmount * tier.rate * elapsedSeconds) / (1 days * RATE_FACTOR);
+            totalYield += _calculateSimplePartDayYield(cappedAmount, tier.rate, elapsedSeconds);
             remainingAmount -= cappedAmount;
             i++;
         } while (i < tiers.length);
@@ -1003,7 +1006,7 @@ abstract contract YieldStreamerPrimary is
      * @param tiers The yield tiers to apply during the calculation period.
      * @return The yield accrued during the full day.
      */
-    function _calculateFullDayYield(uint256 amount, RateTier[] memory tiers) private pure returns (uint256) {
+    function _calculateTieredFullDayYield(uint256 amount, RateTier[] memory tiers) private pure returns (uint256) {
         uint256 remainingAmount = amount;
         uint256 totalYield = 0;
         uint256 i = 0;
@@ -1020,12 +1023,24 @@ abstract contract YieldStreamerPrimary is
                 ? tier.cap
                 : remainingAmount;
 
-            totalYield += (cappedAmount * tier.rate) / RATE_FACTOR;
+            totalYield += _calculateSimpleFullDayYield(cappedAmount, tier.rate);
             remainingAmount -= cappedAmount;
             i++;
         } while (i < tiers.length);
 
         return totalYield;
+    }
+
+    function _calculateSimplePartDayYield(
+        uint256 amount,
+        uint256 rate,
+        uint256 elapsedSeconds
+    ) internal pure returns (uint256) {
+        return (amount * rate * elapsedSeconds) / (1 days * RATE_FACTOR);
+    }
+
+    function _calculateSimpleFullDayYield(uint256 amount, uint256 rate) internal pure returns (uint256) {
+        return (amount * rate) / RATE_FACTOR;
     }
 
     /**

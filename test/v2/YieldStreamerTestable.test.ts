@@ -5,6 +5,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 const ROUND_FACTOR = 10000;
 const DAY_IN_SECONDS = 86400n;
+const RATE_FACTOR = BigInt(1e12);
 
 const REVERT_ERROR_IF_YIELD_RATE_ARRAY_IS_EMPTY = "YieldStreamer_YieldRateArrayIsEmpty";
 const REVERT_ERROR_IF_TIME_RANGE_IS_INVALID = "YieldStreamer_TimeRangeIsInvalid";
@@ -137,7 +138,100 @@ describe("YieldStreamerV2Testable", function () {
     }));
   }
 
-  describe.only("Function 'inRangeYieldRates()'", function () {
+  describe("Function 'calculateSimpleFullDayYield()'", function () {
+    let yieldStreamerTestable: Contract;
+
+    beforeEach(async function () {
+      const contracts = await setUpFixture(deployContracts);
+      yieldStreamerTestable = contracts.yieldStreamerTestable;
+    });
+
+    it("Should return zero when amount is zero", async function () {
+      const amount = BigInt(0); // zero amount
+      const rate = BigInt(1000); // arbitrary non-zero rate
+      const yieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
+      expect(yieldResult).to.equal(0);
+    });
+
+    it("Should return zero when rate is zero", async function () {
+      const amount = BigInt(100); // arbitrary non-zero amount
+      const rate = BigInt(0); // zero rate
+      const yieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
+      expect(yieldResult).to.equal(0);
+    });
+
+    it("Should calculate yield correctly for typical values", async function () {
+      const amount = BigInt(123456789);
+      const rate = BigInt(123456789);
+      const expectedYield = (amount * rate) / RATE_FACTOR;
+
+      const yieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
+      expect(yieldResult).to.equal(expectedYield);
+    });
+  });
+
+  describe("Function 'calculateSimplePartDayYield()'", function () {
+    let yieldStreamerTestable: Contract;
+
+    beforeEach(async function () {
+      const contracts = await setUpFixture(deployContracts);
+      yieldStreamerTestable = contracts.yieldStreamerTestable;
+    });
+
+    it("Should return zero when amount is zero", async function () {
+      const amount = BigInt(0); // zero amount
+      const rate = BigInt(1000); // arbitrary non-zero rate
+      const elapsedSeconds = BigInt(3600); // arbitrary non-zero elapsed seconds
+      const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
+      expect(yieldResult).to.equal(0);
+    });
+
+    it("Should return zero when rate is zero", async function () {
+      const amount = BigInt(1000); // arbitrary non-zero amount
+      const rate = BigInt(0); // zero rate
+      const elapsedSeconds = BigInt(3600); // arbitrary non-zero elapsed seconds
+      const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
+      expect(yieldResult).to.equal(0);
+    });
+
+    it("Should return zero when elapsedSeconds is zero", async function () {
+      const amount = BigInt(1000); // arbitrary non-zero amount
+      const rate = BigInt(1000); // arbitrary non-zero rate
+      const elapsedSeconds = BigInt(0); // zero elapsed seconds
+      const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
+      expect(yieldResult).to.equal(0);
+    });
+
+    it("Should calculate partial day yield correctly", async function () {
+      const amount = BigInt(123456789); // arbitrary non-zero amount
+      const rate = BigInt(123456789); // arbitrary non-zero rate
+      const elapsedSeconds = BigInt(12345); // arbitrary non-zero elapsed seconds
+      const expectedYield = (amount * rate * elapsedSeconds) / (BigInt(86400) * RATE_FACTOR);
+
+      const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
+      expect(yieldResult).to.equal(expectedYield);
+    });
+
+    it("Should calculate full day yield when elapsedSeconds equals 1 day", async function () {
+      const amount = BigInt(123456789); // arbitrary non-zero amount
+      const rate = BigInt(123456789); // arbitrary non-zero rate
+      const elapsedSeconds = BigInt(86400); // 1 day
+
+      const expectedYield = (amount * rate * elapsedSeconds) / (BigInt(86400) * RATE_FACTOR);
+
+      const partialDayYieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(
+        amount,
+        rate,
+        elapsedSeconds
+      );
+      const fullDayYieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
+
+      expect(partialDayYieldResult).to.equal(expectedYield);
+      expect(fullDayYieldResult).to.equal(expectedYield);
+    });
+  });
+
+  describe("Function 'inRangeYieldRates()'", function () {
     let yieldStreamerTestable: Contract;
 
     beforeEach(async function () {

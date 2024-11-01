@@ -12,6 +12,19 @@ import { YieldStreamerV2 } from "./YieldStreamerV2.sol";
  * @dev Implements additional functions to test private and internal functions of base contracts.
  */
 contract YieldStreamerV2Testable is YieldStreamerV2 {
+    // ------------------ Yield Rates ------------------------------ //
+
+    function calculateSimplePartDayYield(
+        uint256 amount,
+        uint256 rate,
+        uint256 elapsedSeconds
+    ) external pure returns (uint256) {
+        return _calculateSimplePartDayYield(amount, rate, elapsedSeconds);
+    }
+
+    function calculateSimpleFullDayYield(uint256 amount, uint256 rate) external pure returns (uint256) {
+        return _calculateSimpleFullDayYield(amount, rate);
+    }
 
     function inRangeYieldRates(
         uint32 groupId,
