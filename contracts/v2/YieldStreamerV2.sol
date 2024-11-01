@@ -120,14 +120,14 @@ contract YieldStreamerV2 is
      * @inheritdoc IYieldStreamerPrimary_Functions
      */
     function getClaimPreview(address account) external view returns (ClaimPreview memory) {
-        return _getClaimPreview(account);
+        return _getClaimPreview(account, _blockTimestamp());
     }
 
     /**
      * @inheritdoc IYieldStreamerPrimary_Functions
      */
     function getAccruePreview(address account) external view returns (AccruePreview memory) {
-        return _getAccruePreview(account);
+        return _getAccruePreview(account, _blockTimestamp());
     }
 
     /**

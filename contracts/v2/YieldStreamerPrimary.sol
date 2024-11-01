@@ -255,12 +255,12 @@ abstract contract YieldStreamerPrimary is
      * @param account The account to get the claim preview for.
      * @return A `ClaimPreview` struct containing details of the claimable yield.
      */
-    function _getClaimPreview(address account) internal view returns (ClaimPreview memory) {
+    function _getClaimPreview(address account, uint256 currentTimestamp) internal view returns (ClaimPreview memory) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        ClaimPreview memory preview = _map(_getAccruePreview(state, rates));
-        preview.timestamp = _blockTimestamp();
+        ClaimPreview memory preview = _map(_getAccruePreview(state, rates, currentTimestamp));
+        preview.timestamp = currentTimestamp;
         return preview;
     }
 
@@ -271,11 +271,11 @@ abstract contract YieldStreamerPrimary is
      * @param account The account to get the accrual preview for.
      * @return An `AccruePreview` struct containing details of the accrued yield.
      */
-    function _getAccruePreview(address account) internal view returns (AccruePreview memory) {
+    function _getAccruePreview(address account, uint256 currentTimestamp) internal view returns (AccruePreview memory) {
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        return _getAccruePreview(state, rates);
+        return _getAccruePreview(state, rates, currentTimestamp);
     }
 
     /**
@@ -288,7 +288,8 @@ abstract contract YieldStreamerPrimary is
      */
     function _getAccruePreview(
         YieldState storage state,
-        YieldRate[] storage rates
+        YieldRate[] storage rates,
+        uint256 currentTimestamp
     ) private view returns (AccruePreview memory) {
         AccruePreview memory preview;
 
@@ -296,7 +297,7 @@ abstract contract YieldStreamerPrimary is
         preview.streamYieldBefore = state.streamYield;
         preview.accruedYieldBefore = state.accruedYield;
         preview.fromTimestamp = state.lastUpdateTimestamp;
-        preview.toTimestamp = _blockTimestamp();
+        preview.toTimestamp = currentTimestamp;
 
         (uint256 rateStartIndex, uint256 rateEndIndex) = _inRangeYieldRates(
             rates,
@@ -390,7 +391,8 @@ abstract contract YieldStreamerPrimary is
         YieldState storage state,
         YieldRate[] storage rates
     ) private {
-        AccruePreview memory preview = _getAccruePreview(state, rates);
+        uint256 currentTimestamp = _blockTimestamp();
+        AccruePreview memory preview = _getAccruePreview(state, rates, currentTimestamp);
 
         emit YieldStreamer_YieldAccrued(
             account,
@@ -1027,97 +1029,60 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Finds the yield rates within a given timestamp range.
+     * @dev Finds the yield rates that overlap with the given timestamp range.
      *
-     * @param rates The array of yield rates to search.
-     * @param fromTimestamp The start timestamp.
-     * @param toTimestamp The end timestamp.
+     * @param rates The array of yield rates to search through.
+     * @param fromTimestamp The start timestamp (inclusive).
+     * @param toTimestamp The end timestamp (exclusive).
      * @return The start and end index of the yield rates.
      */
     function _inRangeYieldRates(
         YieldRate[] storage rates,
         uint256 fromTimestamp,
         uint256 toTimestamp
-    ) private view returns (uint256, uint256) {
-        // bool _debug = false;
+    ) internal view returns (uint256, uint256) {
+        uint256 length = rates.length;
 
-        // if (_debug) {
-        //     console.log("");
-        //     console.log("_inRangeYieldRates | START");
-        //     console.log("_inRangeYieldRates | Getting yield rates from %s to %s", fromTimestamp, toTimestamp);
+        if (length == 0) {
+            revert YieldStreamer_YieldRateArrayIsEmpty();
+        }
 
-        //     console.log("");
-        //     console.log("_inRangeYieldRates | Input yield rates:");
-        //     for (uint256 k = 0; k < rates.length; k++) {
-        //         console.log(
-        //             "_inRangeYieldRates | - [%s] effectiveDay: %s, value: %s",
-        //             k,
-        //             rates[k].effectiveDay,
-        //             rates[k].value
-        //         );
-        //     }
+        if (fromTimestamp >= toTimestamp) {
+            revert YieldStreamer_TimeRangeIsInvalid();
+        }
 
-        //     console.log("");
-        //     console.log("_inRangeYieldRates | Starting loop:");
-        // }
+        uint256 startIndex;
+        uint256 endIndex = length; // Indicates unset.
+        uint256 rateTimestamp;
+        uint256 i = length;
 
-        uint256 i = rates.length;
-        uint256 startIndex = 0;
-        uint256 endIndex = 0;
+        /**
+         * Notes:
+         * There are common rules for the rates array:
+         * 1. The first rate in the rates array must always have the effective day equal to 0.
+         * 2. The rates array is sorted by the effective day in ascending.
+         * 3. The effective day in each rate is always greater than the previous rate's effective day.
+         * The assumption that mentioned rules are followed is crucial for the logic below.
+         */
 
         do {
             i--;
 
-            // if (_debug) {
-            //     console.log("_inRangeYieldRates | - iteration: %s", i);
-            // }
+            rateTimestamp = uint256(rates[i].effectiveDay) * 1 days;
 
-            if (uint256(rates[i].effectiveDay) * 1 days >= toTimestamp) {
-                // if (_debug) {
-                //     console.log(
-                //         "-- _inRangeYieldRates | loop continue: effectiveDay >= toTimestamp: %s >= %s",
-                //         rates[i].effectiveDay,
-                //         toTimestamp
-                //     );
-                // }
+            if (rateTimestamp >= toTimestamp) {
                 continue;
             }
 
-            if (endIndex == 0) {
+            if (endIndex == length) {
                 endIndex = i;
             }
 
-            // if (_debug) {
-            //     console.log(
-            //         "--  _inRangeYieldRates | loop include: effectiveDay=%s, value=%s",
-            //         rates[i].effectiveDay,
-            //         rates[i].value
-            //     );
-            // }
-
-            if (uint256(rates[i].effectiveDay) * 1 days < fromTimestamp) {
+            if (rateTimestamp <= fromTimestamp) {
                 startIndex = i;
-                // if (_debug) {
-                //     console.log(
-                //         "--  _inRangeYieldRates | loop break: effectiveDay < fromTimestamp: %s < %s",
-                //         rates[i].effectiveDay,
-                //         fromTimestamp
-                //     );
-                // }
                 break;
             }
         } while (i > 0);
-
-        // if (_debug) {
-        //     console.log("");
-        //     console.log("_inRangeYieldRates | Result yield rates:");
-        //     for (uint256 k = startIndex; k <= endIndex; k++) {
-        //         console.log("-- [%s] effectiveDay: %s, value: %s", k, rates[k].effectiveDay, rates[k].value);
-        //     }
-
-        //     console.log("");
-        //     console.log("_inRangeYieldRates | END");
-        // }
 
         return (startIndex, endIndex);
     }
@@ -1128,9 +1093,7 @@ abstract contract YieldStreamerPrimary is
      * @param yieldResults The array of yield results to aggregate.
      * @return The final/updated accrued yield and stream yield.
      */
-    function _aggregateYield(
-        YieldResult[] memory yieldResults
-    ) internal pure returns (uint256, uint256) {
+    function _aggregateYield(YieldResult[] memory yieldResults) internal pure returns (uint256, uint256) {
         uint256 length = yieldResults.length;
         uint256 accruedYield;
         uint256 streamYield;

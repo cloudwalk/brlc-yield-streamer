@@ -33,6 +33,15 @@ interface IYieldStreamerPrimary_Errors {
 
     /// @dev Thrown when an operation is attempted on an account that has not been initialized.
     error YieldStreamer_AccountNotInitialized();
+
+    /// @dev Thrown when the provided yield rate array is empty.
+    error YieldStreamer_YieldRateArrayIsEmpty();
+
+    /// @dev Thrown when no yield rates are found within the provided time range.
+    error YieldStreamer_NoYieldRatesInRange();
+
+    /// @dev Thrown when the provided time range is invalid.
+    error YieldStreamer_TimeRangeIsInvalid();
 }
 
 /**

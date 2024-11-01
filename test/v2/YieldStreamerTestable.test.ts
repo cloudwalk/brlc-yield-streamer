@@ -4,6 +4,10 @@ import { Contract, ContractFactory } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 const ROUND_FACTOR = 10000;
+const DAY_IN_SECONDS = 86400n;
+
+const REVERT_ERROR_IF_YIELD_RATE_ARRAY_IS_EMPTY = "YieldStreamer_YieldRateArrayIsEmpty";
+const REVERT_ERROR_IF_TIME_RANGE_IS_INVALID = "YieldStreamer_TimeRangeIsInvalid";
 
 interface RateTier {
   rate: bigint;
@@ -64,10 +68,9 @@ describe("YieldStreamerV2Testable", function () {
     const tokenMock = await tokenMockFactory.deploy("Mock Token", "MTK");
     await tokenMock.waitForDeployment();
 
-    const yieldStreamerTestable: Contract = await upgrades.deployProxy(
-      yieldStreamerTestableFactory,
-      [tokenMock.target]
-    );
+    const yieldStreamerTestable: Contract = await upgrades.deployProxy(yieldStreamerTestableFactory, [
+      tokenMock.target
+    ]);
     await yieldStreamerTestable.waitForDeployment();
 
     return { yieldStreamerTestable, tokenMock };
@@ -115,6 +118,15 @@ describe("YieldStreamerV2Testable", function () {
     return rates;
   }
 
+  // Helper function to add yield rates to the contract
+  async function addYieldRatesToContract(yieldStreamerTestable: Contract, groupId: number, rates: YieldRate[]) {
+    for (const rate of rates) {
+      const ratesArray = rate.tiers.map(tier => tier.rate);
+      const capsArray = rate.tiers.map(tier => tier.cap);
+      await yieldStreamerTestable.addYieldRate(groupId, rate.effectiveDay, ratesArray, capsArray);
+    }
+  }
+
   function normalizeYieldRates(rates: any[]): YieldRate[] {
     return rates.map((rate: any) => ({
       effectiveDay: BigInt(rate[1]),
@@ -124,6 +136,225 @@ describe("YieldStreamerV2Testable", function () {
       }))
     }));
   }
+
+  describe.only("Function 'inRangeYieldRates()'", function () {
+    let yieldStreamerTestable: Contract;
+
+    beforeEach(async function () {
+      const contracts = await setUpFixture(deployContracts);
+      yieldStreamerTestable = contracts.yieldStreamerTestable;
+    });
+
+    it("Should return indices (0, 0) when rates array has only one item", async function () {
+      const groupId = 0;
+      // Add one yield rate with effectiveDay 0 (it's a rule that the first rate has to be with effectiveDay 0)
+      const rates: YieldRate[] = [
+        {
+          tiers: [{ rate: 1000n, cap: 1000n }],
+          effectiveDay: 0n
+        }
+      ];
+
+      await addYieldRatesToContract(yieldStreamerTestable, groupId, rates);
+
+      const fromTimestamp = 100n;
+      const toTimestamp = 200n;
+
+      // Call inRangeYieldRates function
+      const [startIndex, endIndex] = await yieldStreamerTestable.inRangeYieldRates(groupId, fromTimestamp, toTimestamp);
+
+      expect(startIndex).to.equal(0);
+      expect(endIndex).to.equal(0);
+    });
+
+    // Testing with varying fromTimestamp and toTimestamp values, and multiple rates
+
+    const firstRateEffectiveDay = 0n;
+    const secondRateEffectiveDay = 10n;
+    const thirdRateEffectiveDay = 20n;
+
+    const rates = [
+      {
+        tiers: [{ rate: 1000n, cap: 1000n }],
+        effectiveDay: firstRateEffectiveDay
+      },
+      {
+        tiers: [{ rate: 1000n, cap: 1000n }],
+        effectiveDay: secondRateEffectiveDay
+      },
+      {
+        tiers: [{ rate: 1000n, cap: 1000n }],
+        effectiveDay: thirdRateEffectiveDay
+      }
+    ];
+
+    const testCases = [
+      // Case 1:
+      // - fromTimestamp is 2s before the second rate effective day
+      // - toTimestamp is 1s before the second rate effective day
+      // Expected: startIndex = 0, endIndex = 0
+      {
+        fromTimestamp: -2n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: -1n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 0,
+        expectedEndIndex: 0
+      },
+      // Case 2:
+      // - fromTimestamp is 1s before the second rate effective day
+      // - toTimestamp is exactly on the second rate effective day
+      // Expected: startIndex = 0, endIndex = 0
+      {
+        fromTimestamp: -1n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: 0n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 0,
+        expectedEndIndex: 0
+      },
+      // Case 3:
+      // - fromTimestamp is 1s before the second rate effective day
+      // - toTimestamp is 1s after the second rate effective day
+      // Expected: startIndex = 0, endIndex = 1
+      {
+        fromTimestamp: -1n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: 1n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 0,
+        expectedEndIndex: 1
+      },
+      // Case 4:
+      // - fromTimestamp is 1s before the second rate effective day
+      // - toTimestamp is 1s before the third rate effective day
+      // Expected: startIndex = 0, endIndex = 1
+      {
+        fromTimestamp: -1n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: -1n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 0,
+        expectedEndIndex: 1
+      },
+      // Case 5:
+      // - fromTimestamp is 1s before the second rate effective day
+      // - toTimestamp is exactly on the third rate effective day
+      // Expected: startIndex = 0, endIndex = 1
+      {
+        fromTimestamp: -1n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: 0n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 0,
+        expectedEndIndex: 1
+      },
+      // Case 6:
+      // - fromTimestamp is 1s before the second rate effective day
+      // - toTimestamp is 1s after the third rate effective day
+      // Expected: startIndex = 0, endIndex = 2
+      {
+        fromTimestamp: -1n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: 1n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 0,
+        expectedEndIndex: 2
+      },
+      // Case 7:
+      // - fromTimestamp is exactly on the second rate effective day
+      // - toTimestamp is 1s after the third rate effective day
+      // Expected: startIndex = 1, endIndex = 2
+      {
+        fromTimestamp: 0n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: 1n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 1,
+        expectedEndIndex: 2
+      },
+      // Case 8:
+      // - fromTimestamp is 1s after the second rate effective day
+      // - toTimestamp is 1s after the third rate effective day
+      // Expected: startIndex = 1, endIndex = 2
+      {
+        fromTimestamp: 1n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: 1n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 1,
+        expectedEndIndex: 2
+      },
+      // Case 9:
+      // - fromTimestamp is 1s before the third rate effective day
+      // - toTimestamp is 1s after the third rate effective day
+      // Expected: startIndex = 1, endIndex = 2
+      {
+        fromTimestamp: -1n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: 1n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 1,
+        expectedEndIndex: 2
+      },
+      // Case 10:
+      // - fromTimestamp is exactly on the third rate effective day
+      // - toTimestamp is 1s after the third rate effective day
+      // Expected: startIndex = 2, endIndex = 2
+      {
+        fromTimestamp: 0n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: 1n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 2,
+        expectedEndIndex: 2
+      },
+      // Case 11:
+      // - fromTimestamp is 1s after the third rate effective day
+      // - toTimestamp is 2s after the third rate effective day
+      // Expected: startIndex = 2, endIndex = 2
+      {
+        fromTimestamp: 1n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: 2n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 2,
+        expectedEndIndex: 2
+      },
+      // Case 12:
+      // - fromTimestamp is exactly on the second rate effective day
+      // - toTimestamp is 1s before the third rate effective day
+      // Expected: startIndex = 1, endIndex = 1
+      {
+        fromTimestamp: 0n + secondRateEffectiveDay * DAY_IN_SECONDS,
+        toTimestamp: -1n + thirdRateEffectiveDay * DAY_IN_SECONDS,
+        expectedStartIndex: 1,
+        expectedEndIndex: 1
+      }
+    ];
+
+    testCases.forEach(({ fromTimestamp, toTimestamp, expectedStartIndex, expectedEndIndex }, index) => {
+      it(`Testing with varying fromTimestamp and toTimestamp values, and multiple rates. Test case ${index + 1}`, async function () {
+        const groupId = index; // Unique groupId for each test case
+
+        await addYieldRatesToContract(yieldStreamerTestable, groupId, rates);
+
+        // Call inRangeYieldRates function
+        const [startIndex, endIndex] = await yieldStreamerTestable.inRangeYieldRates(
+          groupId,
+          fromTimestamp,
+          toTimestamp
+        );
+
+        expect(startIndex).to.equal(expectedStartIndex);
+        expect(endIndex).to.equal(expectedEndIndex);
+      });
+    });
+
+    it("Should revert when there are no yield rates in the array", async function () {
+      const groupId = 0;
+      await expect(yieldStreamerTestable.inRangeYieldRates(groupId, 100n, 200n)).to.be.revertedWithCustomError(
+        yieldStreamerTestable,
+        REVERT_ERROR_IF_YIELD_RATE_ARRAY_IS_EMPTY
+      );
+    });
+
+    it("Should revert when the fromTimestamp is greater than the toTimestamp", async function () {
+      const groupId = 0;
+      await addSampleYieldRates(yieldStreamerTestable, groupId, 2);
+      await expect(yieldStreamerTestable.inRangeYieldRates(groupId, 101n, 100n)).to.be.revertedWithCustomError(
+        yieldStreamerTestable,
+        REVERT_ERROR_IF_TIME_RANGE_IS_INVALID
+      );
+    });
+
+    it("Should revert when the fromTimestamp is equal to the toTimestamp", async function () {
+      const groupId = 0;
+      await addSampleYieldRates(yieldStreamerTestable, groupId, 2);
+      await expect(yieldStreamerTestable.inRangeYieldRates(groupId, 100n, 100n)).to.be.revertedWithCustomError(
+        yieldStreamerTestable,
+        REVERT_ERROR_IF_TIME_RANGE_IS_INVALID
+      );
+    });
+  });
 
   describe("Function 'aggregateYield()'", function () {
     it("Should return (0, 0) when yieldResults is empty", async function () {
