@@ -12,6 +12,7 @@ import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
 import { IYieldStreamerPrimary_Errors } from "./interfaces/IYieldStreamerPrimary.sol";
 import { IYieldStreamerPrimary_Events } from "./interfaces/IYieldStreamerPrimary.sol";
 import { IERC20Hook } from "../interfaces/IERC20Hook.sol";
+import { Versionable } from "./base/Versionable.sol";
 
 /**
  * @title YieldStreamerPrimary contract
@@ -22,7 +23,8 @@ abstract contract YieldStreamerPrimary is
     YieldStreamerStorage,
     IYieldStreamerPrimary_Errors,
     IYieldStreamerPrimary_Events,
-    IERC20Hook
+    IERC20Hook,
+    Versionable
 {
     // -------------------- Libraries ----------------------------- //
 
