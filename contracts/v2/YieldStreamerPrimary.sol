@@ -830,7 +830,8 @@ abstract contract YieldStreamerPrimary is
             //     console.log("");
             //     console.log("_compoundYield | END");
             // }
-            return YieldResult(0, 0, 0);
+            uint256[] memory emptyArray = new uint256[](0);
+            return YieldResult(0, 0, 0, emptyArray, emptyArray, emptyArray);
         }
 
         uint256 totalBalance = params.balance;
@@ -842,7 +843,7 @@ abstract contract YieldStreamerPrimary is
              * We are within the same day as the `fromTimestamp`.
              */
 
-            (partDayYield, ) = _calculateTieredPartDayYield(
+            (partDayYield, result.tieredLastDayPartialYield) = _calculateTieredPartDayYield(
                 totalBalance,
                 params.tiers,
                 params.toTimestamp - params.fromTimestamp
@@ -879,7 +880,11 @@ abstract contract YieldStreamerPrimary is
             uint256 firstDaySeconds = nextDayStart - params.fromTimestamp;
 
             if (firstDaySeconds != 1 days) {
-                (partDayYield, ) = _calculateTieredPartDayYield(totalBalance, params.tiers, firstDaySeconds);
+                (partDayYield, result.tieredFirstDayPartialYield) = _calculateTieredPartDayYield(
+                    totalBalance,
+                    params.tiers,
+                    firstDaySeconds
+                );
                 result.firstDayPartialYield = params.streamYield + partDayYield;
 
                 // if (_debug) {
@@ -912,15 +917,16 @@ abstract contract YieldStreamerPrimary is
                 //     console.log("_compoundYield | Calculating yield for full days count: %s", fullDaysCount);
                 // }
 
+                uint256 fullDayYield;
                 for (uint256 i = 0; i < fullDaysCount; i++) {
-                    (uint256 dailyYield, ) = _calculateTieredFullDayYield(
+                    (fullDayYield, result.tieredFullDaysYield) = _calculateTieredFullDayYield(
                         totalBalance + result.fullDaysYield,
                         params.tiers
                     );
-                    result.fullDaysYield += dailyYield;
+                    result.fullDaysYield += fullDayYield;
 
                     // if (_debug) {
-                    //     console.log("_compoundYield | - [%s] full day yield: %s", i, dailyYield);
+                    //     console.log("_compoundYield | - [%s] full day yield: %s", i, fullDayYield);
                     // }
                 }
 
@@ -939,7 +945,7 @@ abstract contract YieldStreamerPrimary is
                 // }
 
                 uint256 lastDaySeconds = params.toTimestamp - params.fromTimestamp;
-                (result.lastDayPartialYield, ) = _calculateTieredPartDayYield(
+                (result.lastDayPartialYield, result.tieredLastDayPartialYield) = _calculateTieredPartDayYield(
                     totalBalance,
                     params.tiers,
                     lastDaySeconds

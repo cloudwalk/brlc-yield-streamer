@@ -140,5 +140,8 @@ interface IYieldStreamerTypes {
         uint256 firstDayPartialYield;
         uint256 fullDaysYield;
         uint256 lastDayPartialYield;
+        uint256[] tieredFirstDayPartialYield;
+        uint256[] tieredFullDaysYield;
+        uint256[] tieredLastDayPartialYield;
     }
 }
