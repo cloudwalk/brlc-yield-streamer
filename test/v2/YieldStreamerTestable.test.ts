@@ -24,6 +24,9 @@ interface YieldResult {
   firstDayPartialYield: bigint;
   fullDaysYield: bigint;
   lastDayPartialYield: bigint;
+  tieredFirstDayPartialYield: bigint[];
+  tieredFullDaysYield: bigint[];
+  tieredLastDayPartialYield: bigint[];
 }
 
 interface AccruePreview {
@@ -138,7 +141,11 @@ describe("YieldStreamerV2Testable", function () {
     }));
   }
 
-  describe("Function '_calculateTieredFullDayYield()'", function () {
+  function normalizeYieldResult(result: any): [bigint, bigint[]] {
+    return [result[0], result[1]];
+  }
+
+  describe("Function 'calculateTieredFullDayYield()'", function () {
     let yieldStreamerTestable: Contract;
 
     beforeEach(async function () {
@@ -151,7 +158,7 @@ describe("YieldStreamerV2Testable", function () {
         description: "Single Tier - zero cap",
         amount: 650000000n,
         tiers: [{ rate: (RATE_FACTOR / 100n) * 5n, cap: 0n }],
-        expectedYield: (5n * 650000000n) / 100n
+        expectedTieredYield: [(5n * 650000000n) / 100n]
       },
       {
         description: "Multiple Tiers - total caps are less than amount",
@@ -162,11 +169,12 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 2n, cap: 100000000n },
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
         ],
-        expectedYield:
-          (5n * 300000000n) / 100n +
-          (3n * 200000000n) / 100n +
-          (2n * 100000000n) / 100n +
+        expectedTieredYield: [
+          (5n * 300000000n) / 100n,
+          (3n * 200000000n) / 100n,
+          (2n * 100000000n) / 100n,
           (1n * 50000000n) / 100n
+        ]
       },
       {
         description: "Multiple Tiers - total caps are greater than amount",
@@ -177,7 +185,12 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 2n, cap: 100000000n },
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
         ],
-        expectedYield: (5n * 300000000n) / 100n + (3n * 150000000n) / 100n
+        expectedTieredYield: [
+          (5n * 300000000n) / 100n, // Tools: prevent Prettier from formatting this line
+          (3n * 150000000n) / 100n,
+          0n,
+          0n
+        ]
       },
       {
         description: "Multiple Tiers - zero rates present in the tiers array",
@@ -188,7 +201,12 @@ describe("YieldStreamerV2Testable", function () {
           { rate: 0n, cap: 100000000n },
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 50000000n }
         ],
-        expectedYield: 0n + (2n * 200000000n) / 100n + 0n + (1n * 50000000n) / 100n
+        expectedTieredYield: [
+          0n, // Tools: prevent Prettier from formatting this line
+          (2n * 200000000n) / 100n,
+          0n,
+          (1n * 50000000n) / 100n
+        ]
       },
       {
         description: "Multiple Tiers - zero amount",
@@ -199,19 +217,22 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 2n, cap: 100000000n },
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
         ],
-        expectedYield: 0n
+        expectedTieredYield: [0n, 0n, 0n, 0n]
       }
     ];
 
-    testCases.forEach(({ description, amount, tiers, expectedYield }, index) => {
+    testCases.forEach(({ description, amount, tiers, expectedTieredYield }, index) => {
       it(`Test case ${index + 1}: ${description}`, async function () {
         const yieldResult = await yieldStreamerTestable.calculateTieredFullDayYield(amount, tiers);
-        expect(yieldResult).to.equal(expectedYield);
+        const expectedYield = expectedTieredYield.reduce((acc, curr) => acc + curr, 0n);
+        const [fullDaysYield, tieredFullDaysYield] = normalizeYieldResult(yieldResult);
+        expect(tieredFullDaysYield).to.deep.equal(expectedTieredYield);
+        expect(fullDaysYield).to.equal(expectedYield);
       });
     });
   });
 
-  describe("Function '_calculateTieredPartDayYield()'", function () {
+  describe("Function 'calculateTieredPartDayYield()'", function () {
     let yieldStreamerTestable: Contract;
 
     beforeEach(async function () {
@@ -225,7 +246,7 @@ describe("YieldStreamerV2Testable", function () {
         amount: 650000000n,
         tiers: [{ rate: (RATE_FACTOR / 100n) * 5n, cap: 0n }],
         elapsedSeconds: 3600n,
-        expectedYield: ((RATE_FACTOR / 100n) * 5n * 650000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR)
+        expectedTieredYield: [((RATE_FACTOR / 100n) * 5n * 650000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR)]
       },
       {
         description: "Multiple Tiers - total caps are less than amount",
@@ -237,11 +258,12 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
         ],
         elapsedSeconds: 3600n,
-        expectedYield:
-          ((RATE_FACTOR / 100n) * 5n * 300000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR) +
-          ((RATE_FACTOR / 100n) * 3n * 200000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR) +
-          ((RATE_FACTOR / 100n) * 2n * 100000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR) +
+        expectedTieredYield: [
+          ((RATE_FACTOR / 100n) * 5n * 300000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR),
+          ((RATE_FACTOR / 100n) * 3n * 200000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR),
+          ((RATE_FACTOR / 100n) * 2n * 100000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR),
           ((RATE_FACTOR / 100n) * 1n * 50000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR)
+        ]
       },
       {
         description: "Multiple Tiers - total caps are greater than amount",
@@ -253,11 +275,12 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
         ],
         elapsedSeconds: 3600n,
-        expectedYield:
-          ((RATE_FACTOR / 100n) * 5n * 300000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR) +
-          ((RATE_FACTOR / 100n) * 3n * 150000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR) +
-          0n +
+        expectedTieredYield: [
+          ((RATE_FACTOR / 100n) * 5n * 300000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR),
+          ((RATE_FACTOR / 100n) * 3n * 150000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR),
+          0n,
           0n
+        ]
       },
       {
         description: "Multiple Tiers - zero rates present in the tiers array",
@@ -269,11 +292,12 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 50000000n }
         ],
         elapsedSeconds: BigInt(3600),
-        expectedYield:
-          0n +
-          ((RATE_FACTOR / 100n) * 2n * 200000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR) +
-          0n +
+        expectedTieredYield: [
+          0n,
+          ((RATE_FACTOR / 100n) * 2n * 200000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR),
+          0n,
           ((RATE_FACTOR / 100n) * 1n * 50000000n * 3600n) / (DAY_IN_SECONDS * RATE_FACTOR)
+        ]
       },
       {
         description: "Multiple Tiers - zero elapsed seconds",
@@ -285,7 +309,7 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
         ],
         elapsedSeconds: 0n,
-        expectedYield: 0n
+        expectedTieredYield: [0n, 0n, 0n, 0n]
       },
       {
         description: "Multiple Tiers - zero amount",
@@ -297,14 +321,17 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
         ],
         elapsedSeconds: 3600n,
-        expectedYield: 0n
+        expectedTieredYield: [0n, 0n, 0n, 0n]
       }
     ];
 
-    testCases.forEach(({ description, amount, tiers, elapsedSeconds, expectedYield }, index) => {
+    testCases.forEach(({ description, amount, tiers, elapsedSeconds, expectedTieredYield }, index) => {
       it(`Test case ${index + 1}: ${description}`, async function () {
         const yieldResult = await yieldStreamerTestable.calculateTieredPartDayYield(amount, tiers, elapsedSeconds);
-        expect(yieldResult).to.equal(expectedYield);
+        const expectedYield = expectedTieredYield.reduce((acc, curr) => acc + curr, 0n);
+        const [partDayYield, tieredPartDayYield] = normalizeYieldResult(yieldResult);
+        expect(tieredPartDayYield).to.deep.equal(expectedTieredYield);
+        expect(partDayYield).to.equal(expectedYield);
       });
     });
   });
@@ -395,10 +422,10 @@ describe("YieldStreamerV2Testable", function () {
         rate,
         elapsedSeconds
       );
-      const fullDayYieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
+      const fullDaysYieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
 
       expect(partialDayYieldResult).to.equal(expectedYield);
-      expect(fullDayYieldResult).to.equal(expectedYield);
+      expect(fullDaysYieldResult).to.equal(expectedYield);
     });
   });
 
@@ -640,7 +667,10 @@ describe("YieldStreamerV2Testable", function () {
       const yieldResult: YieldResult = {
         firstDayPartialYield: BigInt(100),
         fullDaysYield: BigInt(200),
-        lastDayPartialYield: BigInt(50)
+        lastDayPartialYield: BigInt(50),
+        tieredFirstDayPartialYield: [BigInt(100)],
+        tieredFullDaysYield: [BigInt(200)],
+        tieredLastDayPartialYield: [BigInt(50)]
       };
 
       const yieldResults: YieldResult[] = [yieldResult];
@@ -662,17 +692,26 @@ describe("YieldStreamerV2Testable", function () {
         {
           firstDayPartialYield: BigInt(100),
           fullDaysYield: BigInt(200),
-          lastDayPartialYield: BigInt(50)
+          lastDayPartialYield: BigInt(50),
+          tieredFirstDayPartialYield: [BigInt(100)],
+          tieredFullDaysYield: [BigInt(200)],
+          tieredLastDayPartialYield: [BigInt(50)]
         },
         {
           firstDayPartialYield: BigInt(80),
           fullDaysYield: BigInt(150),
-          lastDayPartialYield: BigInt(40)
+          lastDayPartialYield: BigInt(40),
+          tieredFirstDayPartialYield: [BigInt(80)],
+          tieredFullDaysYield: [BigInt(150)],
+          tieredLastDayPartialYield: [BigInt(40)]
         },
         {
           firstDayPartialYield: BigInt(70),
           fullDaysYield: BigInt(120),
-          lastDayPartialYield: BigInt(30)
+          lastDayPartialYield: BigInt(30),
+          tieredFirstDayPartialYield: [BigInt(70)],
+          tieredFullDaysYield: [BigInt(120)],
+          tieredLastDayPartialYield: [BigInt(30)]
         }
       ];
 
@@ -928,12 +967,18 @@ describe("YieldStreamerV2Testable", function () {
           {
             firstDayPartialYield: BigInt("10"),
             fullDaysYield: BigInt("20"),
-            lastDayPartialYield: BigInt("30")
+            lastDayPartialYield: BigInt("30"),
+            tieredFirstDayPartialYield: [BigInt("10")],
+            tieredFullDaysYield: [BigInt("20")],
+            tieredLastDayPartialYield: [BigInt("30")]
           },
           {
             firstDayPartialYield: BigInt("40"),
             fullDaysYield: BigInt("50"),
-            lastDayPartialYield: BigInt("60")
+            lastDayPartialYield: BigInt("60"),
+            tieredFirstDayPartialYield: [BigInt("40")],
+            tieredFullDaysYield: [BigInt("50")],
+            tieredLastDayPartialYield: [BigInt("60")]
           }
         ]
       };
