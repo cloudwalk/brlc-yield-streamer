@@ -842,7 +842,7 @@ abstract contract YieldStreamerPrimary is
              * We are within the same day as the `fromTimestamp`.
              */
 
-            partDayYield = _calculateTieredPartDayYield(
+            (partDayYield, ) = _calculateTieredPartDayYield(
                 totalBalance,
                 params.tiers,
                 params.toTimestamp - params.fromTimestamp
@@ -879,7 +879,7 @@ abstract contract YieldStreamerPrimary is
             uint256 firstDaySeconds = nextDayStart - params.fromTimestamp;
 
             if (firstDaySeconds != 1 days) {
-                partDayYield = _calculateTieredPartDayYield(totalBalance, params.tiers, firstDaySeconds);
+                (partDayYield, ) = _calculateTieredPartDayYield(totalBalance, params.tiers, firstDaySeconds);
                 result.firstDayPartialYield = params.streamYield + partDayYield;
 
                 // if (_debug) {
@@ -913,7 +913,7 @@ abstract contract YieldStreamerPrimary is
                 // }
 
                 for (uint256 i = 0; i < fullDaysCount; i++) {
-                    uint256 dailyYield = _calculateTieredFullDayYield(
+                    (uint256 dailyYield, ) = _calculateTieredFullDayYield(
                         totalBalance + result.fullDaysYield,
                         params.tiers
                     );
@@ -939,7 +939,11 @@ abstract contract YieldStreamerPrimary is
                 // }
 
                 uint256 lastDaySeconds = params.toTimestamp - params.fromTimestamp;
-                result.lastDayPartialYield = _calculateTieredPartDayYield(totalBalance, params.tiers, lastDaySeconds);
+                (result.lastDayPartialYield, ) = _calculateTieredPartDayYield(
+                    totalBalance,
+                    params.tiers,
+                    lastDaySeconds
+                );
 
                 // if (_debug) {
                 //     console.log("_compoundYield | - last day remaining seconds: %s", lastDaySeconds);
@@ -974,12 +978,13 @@ abstract contract YieldStreamerPrimary is
         uint256 amount,
         RateTier[] memory tiers,
         uint256 elapsedSeconds
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256, uint256[] memory) {
         uint256 remainingAmount = amount;
         uint256 totalYield = 0;
         uint256 i = 0;
         uint256 cappedAmount;
         RateTier memory tier;
+        uint256[] memory tieredYield = new uint256[](tiers.length);
 
         do {
             if (remainingAmount == 0) {
@@ -996,12 +1001,14 @@ abstract contract YieldStreamerPrimary is
                 cappedAmount = remainingAmount;
             }
 
-            totalYield += _calculateSimplePartDayYield(cappedAmount, tier.rate, elapsedSeconds);
+            uint256 yield = _calculateSimplePartDayYield(cappedAmount, tier.rate, elapsedSeconds);
+            totalYield += yield;
+            tieredYield[i] = yield;
             remainingAmount -= cappedAmount;
             i++;
         } while (i < tiers.length);
 
-        return totalYield;
+        return (totalYield, tieredYield);
     }
 
     /**
@@ -1011,12 +1018,16 @@ abstract contract YieldStreamerPrimary is
      * @param tiers The yield tiers to apply during the calculation period.
      * @return The yield accrued during the full day.
      */
-    function _calculateTieredFullDayYield(uint256 amount, RateTier[] memory tiers) internal pure returns (uint256) {
+    function _calculateTieredFullDayYield(
+        uint256 amount,
+        RateTier[] memory tiers
+    ) internal pure returns (uint256, uint256[] memory) {
         uint256 remainingAmount = amount;
         uint256 totalYield = 0;
         uint256 i = 0;
         uint256 cappedAmount;
         RateTier memory tier;
+        uint256[] memory tieredYield = new uint256[](tiers.length);
 
         do {
             if (remainingAmount == 0) {
@@ -1033,12 +1044,14 @@ abstract contract YieldStreamerPrimary is
                 cappedAmount = remainingAmount;
             }
 
-            totalYield += _calculateSimpleFullDayYield(cappedAmount, tier.rate);
+            uint256 yield = _calculateSimpleFullDayYield(cappedAmount, tier.rate);
+            totalYield += yield;
+            tieredYield[i] = yield;
             remainingAmount -= cappedAmount;
             i++;
         } while (i < tiers.length);
 
-        return totalYield;
+        return (totalYield, tieredYield);
     }
 
     function _calculateSimplePartDayYield(

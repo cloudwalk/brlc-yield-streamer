@@ -19,11 +19,13 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
         RateTier[] memory tiers,
         uint256 elapsedSeconds
     ) public pure returns (uint256) {
-        return _calculateTieredPartDayYield(amount, tiers, elapsedSeconds);
+        (uint256 totalYield, ) = _calculateTieredPartDayYield(amount, tiers, elapsedSeconds);
+        return totalYield;
     }
 
     function calculateTieredFullDayYield(uint256 amount, RateTier[] memory tiers) public pure returns (uint256) {
-        return _calculateTieredFullDayYield(amount, tiers);
+        (uint256 totalYield, ) = _calculateTieredFullDayYield(amount, tiers);
+        return totalYield;
     }
 
     function calculateSimplePartDayYield(
