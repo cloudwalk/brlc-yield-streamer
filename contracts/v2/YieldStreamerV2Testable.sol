@@ -12,7 +12,19 @@ import { YieldStreamerV2 } from "./YieldStreamerV2.sol";
  * @dev Implements additional functions to test private and internal functions of base contracts.
  */
 contract YieldStreamerV2Testable is YieldStreamerV2 {
-    // ------------------ Yield Rates ------------------------------ //
+    // ------------------ Yield Math ------------------------------- //
+
+    function calculateTieredPartDayYield(
+        uint256 amount,
+        RateTier[] memory tiers,
+        uint256 elapsedSeconds
+    ) public pure returns (uint256) {
+        return _calculateTieredPartDayYield(amount, tiers, elapsedSeconds);
+    }
+
+    function calculateTieredFullDayYield(uint256 amount, RateTier[] memory tiers) public pure returns (uint256) {
+        return _calculateTieredFullDayYield(amount, tiers);
+    }
 
     function calculateSimplePartDayYield(
         uint256 amount,

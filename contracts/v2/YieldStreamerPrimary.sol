@@ -974,10 +974,11 @@ abstract contract YieldStreamerPrimary is
         uint256 amount,
         RateTier[] memory tiers,
         uint256 elapsedSeconds
-    ) private pure returns (uint256) {
+    ) internal pure returns (uint256) {
         uint256 remainingAmount = amount;
         uint256 totalYield = 0;
         uint256 i = 0;
+        uint256 cappedAmount;
         RateTier memory tier;
 
         do {
@@ -987,9 +988,13 @@ abstract contract YieldStreamerPrimary is
 
             tier = tiers[i];
 
-            uint256 cappedAmount = tier.cap == 0 ? remainingAmount : remainingAmount > tier.cap
-                ? tier.cap
-                : remainingAmount;
+            if (tier.cap == 0) {
+                cappedAmount = remainingAmount;
+            } else if (remainingAmount > tier.cap) {
+                cappedAmount = tier.cap;
+            } else {
+                cappedAmount = remainingAmount;
+            }
 
             totalYield += _calculateSimplePartDayYield(cappedAmount, tier.rate, elapsedSeconds);
             remainingAmount -= cappedAmount;
@@ -1006,10 +1011,11 @@ abstract contract YieldStreamerPrimary is
      * @param tiers The yield tiers to apply during the calculation period.
      * @return The yield accrued during the full day.
      */
-    function _calculateTieredFullDayYield(uint256 amount, RateTier[] memory tiers) private pure returns (uint256) {
+    function _calculateTieredFullDayYield(uint256 amount, RateTier[] memory tiers) internal pure returns (uint256) {
         uint256 remainingAmount = amount;
         uint256 totalYield = 0;
         uint256 i = 0;
+        uint256 cappedAmount;
         RateTier memory tier;
 
         do {
@@ -1019,9 +1025,13 @@ abstract contract YieldStreamerPrimary is
 
             tier = tiers[i];
 
-            uint256 cappedAmount = tier.cap == 0 ? remainingAmount : remainingAmount > tier.cap
-                ? tier.cap
-                : remainingAmount;
+            if (tier.cap == 0) {
+                cappedAmount = remainingAmount;
+            } else if (remainingAmount > tier.cap) {
+                cappedAmount = tier.cap;
+            } else {
+                cappedAmount = remainingAmount;
+            }
 
             totalYield += _calculateSimpleFullDayYield(cappedAmount, tier.rate);
             remainingAmount -= cappedAmount;
@@ -1043,6 +1053,7 @@ abstract contract YieldStreamerPrimary is
         return (amount * rate) / RATE_FACTOR;
     }
 
+    // Tested
     /**
      * @dev Finds the yield rates that overlap with the given timestamp range.
      *
@@ -1102,6 +1113,7 @@ abstract contract YieldStreamerPrimary is
         return (startIndex, endIndex);
     }
 
+    // Tested
     /**
      * @dev Aggregates the yield results from multiple periods.
      *
@@ -1144,6 +1156,7 @@ abstract contract YieldStreamerPrimary is
 
     // ------------------ Timestamp ------------------------------- //
 
+    // Tested
     /**
      * @dev Calculates a timestamp for the beginning of the next day.
      *
@@ -1154,6 +1167,7 @@ abstract contract YieldStreamerPrimary is
         return timestamp - (timestamp % 1 days) + 1 days;
     }
 
+    // Tested
     /**
      * @dev Calculates the number of the effective day from a timestamp.
      *
@@ -1164,6 +1178,7 @@ abstract contract YieldStreamerPrimary is
         return timestamp / 1 days;
     }
 
+    // Tested
     /**
      * @dev Calculates the remaining seconds before the next day.
      *
@@ -1174,6 +1189,7 @@ abstract contract YieldStreamerPrimary is
         return timestamp % 1 days;
     }
 
+    // Tested
     /**
      * @dev Calculates the timestamp of the beginning of the day.
      *
@@ -1196,6 +1212,7 @@ abstract contract YieldStreamerPrimary is
 
     // ------------------ Utility --------------------------------- //
 
+    // Tested
     /**
      * @dev Truncates a portion of the yield rates array based on start and end indices.
      *
@@ -1226,6 +1243,7 @@ abstract contract YieldStreamerPrimary is
         return (amount * FEE_RATE) / RATE_FACTOR;
     }
 
+    // Tested
     /**
      * @dev Rounds down an amount to the nearest multiple of `ROUND_FACTOR`.
      *
@@ -1236,6 +1254,7 @@ abstract contract YieldStreamerPrimary is
         return (amount / ROUND_FACTOR) * ROUND_FACTOR;
     }
 
+    // Tested
     /**
      * @dev Rounds up an amount to the nearest multiple of `ROUND_FACTOR`.
      *
@@ -1252,6 +1271,7 @@ abstract contract YieldStreamerPrimary is
         return roundedAmount;
     }
 
+    // Tested
     /**
      * @dev Maps an `AccruePreview` to a `ClaimPreview`.
      *
