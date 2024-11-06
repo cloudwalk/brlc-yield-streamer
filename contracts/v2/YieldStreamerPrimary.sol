@@ -287,10 +287,10 @@ abstract contract YieldStreamerPrimary is
      * @return An `AccruePreview` struct containing details of the accrued yield.
      */
     function _getAccruePreview(
-        YieldState storage state,
-        YieldRate[] storage rates,
+        YieldState memory state,
+        YieldRate[] memory rates,
         uint256 currentTimestamp
-    ) private view returns (AccruePreview memory) {
+    ) public pure returns (AccruePreview memory) {
         AccruePreview memory preview;
 
         preview.balance = state.lastUpdateBalance;
@@ -417,8 +417,8 @@ abstract contract YieldStreamerPrimary is
      */
     function _calculateYield(
         CalculateYieldParams memory params,
-        YieldRate[] storage rates // Tools: this comment prevents Prettier from formatting into a single line.
-    ) private view returns (YieldResult[] memory) {
+        YieldRate[] memory rates // Tools: this comment prevents Prettier from formatting into a single line.
+    ) private pure returns (YieldResult[] memory) {
         YieldResult[] memory results;
         uint256 ratePeriods = params.rateEndIndex - params.rateStartIndex + 1;
         uint256 localFromTimestamp = params.fromTimestamp;
@@ -1082,10 +1082,10 @@ abstract contract YieldStreamerPrimary is
      * @return The start and end index of the yield rates.
      */
     function _inRangeYieldRates(
-        YieldRate[] storage rates,
+        YieldRate[] memory rates,
         uint256 fromTimestamp,
         uint256 toTimestamp
-    ) internal view returns (uint256, uint256) {
+    ) internal pure returns (uint256, uint256) {
         uint256 length = rates.length;
 
         if (length == 0) {
@@ -1243,8 +1243,8 @@ abstract contract YieldStreamerPrimary is
     function _truncateArray(
         uint256 startIndex,
         uint256 endIndex,
-        YieldRate[] storage rates
-    ) internal view returns (YieldRate[] memory) {
+        YieldRate[] memory rates
+    ) internal pure returns (YieldRate[] memory) {
         YieldRate[] memory result = new YieldRate[](endIndex - startIndex + 1);
         for (uint256 i = startIndex; i <= endIndex; i++) {
             result[i - startIndex] = rates[i];
