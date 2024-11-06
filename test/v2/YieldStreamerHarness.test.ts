@@ -3,7 +3,7 @@ import { ethers, network, upgrades } from "hardhat";
 import { Contract, ContractFactory } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { getAddress, getLatestBlockTimestamp, proveTx } from "../../test-utils/eth";
+import { checkEquality, getAddress, getLatestBlockTimestamp, proveTx } from "../../test-utils/eth";
 
 // Constants for rate calculations and time units
 const SECONDS_IN_DAY = 24 * 60 * 60; // Number of seconds in a day
@@ -45,6 +45,14 @@ interface YieldStreamerHarnessLayout {
   [key: string]: bigint | boolean;
 }
 
+interface Version {
+  major: number;
+  minor: number;
+  patch: number;
+
+  [key: string]: number; // Indexing signature to ensure that fields are iterated over in a key-value style
+}
+
 async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   if (network.name === "hardhat") {
     // Use Hardhat's snapshot functionality for faster test execution
@@ -53,20 +61,6 @@ async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
     // Directly execute the function if not on Hardhat network
     return func();
   }
-}
-
-function checkEquality<T extends Record<string, unknown>>(actualObject: T, expectedObject: T, index?: number) {
-  const indexString = !index ? "" : ` with index: ${index}`;
-  Object.keys(expectedObject).forEach(property => {
-    const value = actualObject[property];
-    if (typeof value === "undefined" || typeof value === "function" || typeof value === "object") {
-      throw Error(`Property "${property}" is not found in the actual object` + indexString);
-    }
-    expect(value).to.eq(
-      expectedObject[property],
-      `Mismatch in the "${property}" property between the actual object and expected one` + indexString
-    );
-  });
 }
 
 describe("YieldStreamerV2Harness", function () {
@@ -83,6 +77,11 @@ describe("YieldStreamerV2Harness", function () {
   const pauserRole: string = ethers.id("PAUSER_ROLE");
   const rescuerRole: string = ethers.id("RESCUER_ROLE");
   const harnessAdminRole: string = ethers.id("HARNESS_ADMIN_ROLE");
+  const EXPECTED_VERSION: Version = {
+    major: 2,
+    minor: 0,
+    patch: 0
+  };
 
   // Get the signer representing the test user before the tests run
   before(async function () {
@@ -169,6 +168,14 @@ describe("YieldStreamerV2Harness", function () {
         yieldStreamerHarnessFactory,
         REVERT_ERROR_IF_TOKEN_ADDRESS_IS_ZERO
       );
+    });
+  });
+
+  describe("Function '$__VERSION()'", async () => {
+    it("Returns expected values", async () => {
+      const { yieldStreamerHarness } = await setUpFixture(deployContracts);
+      const yieldStreamerHarnessVersion = await yieldStreamerHarness.$__VERSION();
+      checkEquality(yieldStreamerHarnessVersion, EXPECTED_VERSION);
     });
   });
 
