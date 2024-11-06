@@ -411,7 +411,7 @@ describe("Contract 'BalanceTracker'", async () => {
 
   describe("Function '$__VERSION()'", async () => {
     it("Returns expected values", async () => {
-      const { balanceTracker} = await setUpFixture(deployAndConfigureContracts);
+      const { balanceTracker } = await setUpFixture(deployAndConfigureContracts);
       const balanceTrackerVersion = await balanceTracker.$__VERSION();
       Object.keys(EXPECTED_VERSION).forEach(property => {
         const value = balanceTrackerVersion[property];
