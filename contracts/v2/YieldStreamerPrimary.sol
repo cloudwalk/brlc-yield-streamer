@@ -818,6 +818,9 @@ abstract contract YieldStreamerPrimary is
         // }
 
         YieldResult memory result;
+        result.tieredFirstDayPartialYield = new uint256[](params.tiers.length);
+        result.tieredFullDaysYield = new uint256[](params.tiers.length);
+        result.tieredLastDayPartialYield = new uint256[](params.tiers.length);
 
         if (params.fromTimestamp > params.toTimestamp) {
             revert YieldStreamer_TimeRangeInvalid();
@@ -830,8 +833,7 @@ abstract contract YieldStreamerPrimary is
             //     console.log("");
             //     console.log("_compoundYield | END");
             // }
-            uint256[] memory emptyArray = new uint256[](0);
-            return YieldResult(0, 0, 0, emptyArray, emptyArray, emptyArray);
+            return result;
         }
 
         uint256 totalBalance = params.balance;
