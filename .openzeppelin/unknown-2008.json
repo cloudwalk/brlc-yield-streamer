@@ -19,11 +19,11 @@
             "label": "address",
             "numberOfBytes": "20"
           },
-          "t_array(t_struct(RateTier)3190_storage)dyn_storage": {
+          "t_array(t_struct(RateTier)2939_storage)dyn_storage": {
             "label": "struct IYieldStreamerTypes.RateTier[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(YieldRate)3184_storage)dyn_storage": {
+          "t_array(t_struct(YieldRate)2933_storage)dyn_storage": {
             "label": "struct IYieldStreamerTypes.YieldRate[]",
             "numberOfBytes": "32"
           },
@@ -39,11 +39,11 @@
             "label": "mapping(address => bool)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(Group)3176_storage)": {
+          "t_mapping(t_address,t_struct(Group)2925_storage)": {
             "label": "mapping(address => struct IYieldStreamerTypes.Group)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(YieldState)3202_storage)": {
+          "t_mapping(t_address,t_struct(YieldState)2951_storage)": {
             "label": "mapping(address => struct IYieldStreamerTypes.YieldState)",
             "numberOfBytes": "32"
           },
@@ -55,7 +55,7 @@
             "label": "mapping(bytes32 => uint256)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint32,t_array(t_struct(YieldRate)3184_storage)dyn_storage)": {
+          "t_mapping(t_uint32,t_array(t_struct(YieldRate)2933_storage)dyn_storage)": {
             "label": "mapping(uint32 => struct IYieldStreamerTypes.YieldRate[])",
             "numberOfBytes": "32"
           },
@@ -71,7 +71,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(Group)3176_storage": {
+          "t_struct(Group)2925_storage": {
             "label": "struct IYieldStreamerTypes.Group",
             "members": [
               {
@@ -113,7 +113,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(RateTier)3190_storage": {
+          "t_struct(RateTier)2939_storage": {
             "label": "struct IYieldStreamerTypes.RateTier",
             "members": [
               {
@@ -149,12 +149,12 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(YieldRate)3184_storage": {
+          "t_struct(YieldRate)2933_storage": {
             "label": "struct IYieldStreamerTypes.YieldRate",
             "members": [
               {
                 "label": "tiers",
-                "type": "t_array(t_struct(RateTier)3190_storage)dyn_storage",
+                "type": "t_array(t_struct(RateTier)2939_storage)dyn_storage",
                 "offset": 0,
                 "slot": "0"
               },
@@ -167,7 +167,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(YieldState)3202_storage": {
+          "t_struct(YieldState)2951_storage": {
             "label": "struct IYieldStreamerTypes.YieldState",
             "members": [
               {
@@ -203,7 +203,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(YieldStreamerHarnessLayout)2685_storage": {
+          "t_struct(YieldStreamerHarnessLayout)2422_storage": {
             "label": "struct YieldStreamerV2Harness.YieldStreamerHarnessLayout",
             "members": [
               {
@@ -221,7 +221,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(YieldStreamerInitializationStorageLayout)2340_storage": {
+          "t_struct(YieldStreamerInitializationStorageLayout)2077_storage": {
             "label": "struct YieldStreamerStorage_Initialization.YieldStreamerInitializationStorageLayout",
             "members": [
               {
@@ -239,7 +239,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(YieldStreamerStorageLayout)2377_storage": {
+          "t_struct(YieldStreamerStorageLayout)2114_storage": {
             "label": "struct YieldStreamerStorage_Primary.YieldStreamerStorageLayout",
             "members": [
               {
@@ -256,19 +256,19 @@
               },
               {
                 "label": "groups",
-                "type": "t_mapping(t_address,t_struct(Group)3176_storage)",
+                "type": "t_mapping(t_address,t_struct(Group)2925_storage)",
                 "offset": 0,
                 "slot": "2"
               },
               {
                 "label": "yieldStates",
-                "type": "t_mapping(t_address,t_struct(YieldState)3202_storage)",
+                "type": "t_mapping(t_address,t_struct(YieldState)2951_storage)",
                 "offset": 0,
                 "slot": "3"
               },
               {
                 "label": "yieldRates",
-                "type": "t_mapping(t_uint32,t_array(t_struct(YieldRate)3184_storage)dyn_storage)",
+                "type": "t_mapping(t_uint32,t_array(t_struct(YieldRate)2933_storage)dyn_storage)",
                 "offset": 0,
                 "slot": "4"
               }
@@ -361,7 +361,7 @@
             {
               "contract": "YieldStreamerStorage_Primary",
               "label": "groups",
-              "type": "t_mapping(t_address,t_struct(Group)3176_storage)",
+              "type": "t_mapping(t_address,t_struct(Group)2925_storage)",
               "src": "contracts\\v2\\YieldStreamerStorage.sol:122",
               "offset": 0,
               "slot": "2"
@@ -369,7 +369,7 @@
             {
               "contract": "YieldStreamerStorage_Primary",
               "label": "yieldStates",
-              "type": "t_mapping(t_address,t_struct(YieldState)3202_storage)",
+              "type": "t_mapping(t_address,t_struct(YieldState)2951_storage)",
               "src": "contracts\\v2\\YieldStreamerStorage.sol:123",
               "offset": 0,
               "slot": "3"
@@ -377,7 +377,1255 @@
             {
               "contract": "YieldStreamerStorage_Primary",
               "label": "yieldRates",
-              "type": "t_mapping(t_uint32,t_array(t_struct(YieldRate)3184_storage)dyn_storage)",
+              "type": "t_mapping(t_uint32,t_array(t_struct(YieldRate)2933_storage)dyn_storage)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:124",
+              "offset": 0,
+              "slot": "4"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Pausable": [
+            {
+              "contract": "PausableUpgradeable",
+              "label": "_paused",
+              "type": "t_bool",
+              "src": "@openzeppelin\\contracts-upgradeable\\utils\\PausableUpgradeable.sol:21",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.AccessControl": [
+            {
+              "contract": "AccessControlUpgradeable",
+              "label": "_roles",
+              "type": "t_mapping(t_bytes32,t_struct(RoleData)24_storage)",
+              "src": "@openzeppelin\\contracts-upgradeable\\access\\AccessControlUpgradeable.sol:61",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "bdb13b1445ba995153959b37c370d7b8c159b782887ab030fa2b4bad840fcef8": {
+      "address": "0x497B9f7854a16c9748E4972aeb63D7593210Cbd0",
+      "txHash": "0x0b47100405b812c6067defee2074d5de04500ca515c8c4c02044410972457a8f",
+      "layout": {
+        "solcVersion": "0.8.24",
+        "storage": [],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_struct(RateTier)3043_storage)dyn_storage": {
+            "label": "struct IYieldStreamerTypes.RateTier[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(YieldRate)3037_storage)dyn_storage": {
+            "label": "struct IYieldStreamerTypes.YieldRate[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Group)3029_storage)": {
+            "label": "mapping(address => struct IYieldStreamerTypes.Group)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(YieldState)3055_storage)": {
+            "label": "mapping(address => struct IYieldStreamerTypes.YieldState)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)24_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint32,t_array(t_struct(YieldRate)3037_storage)dyn_storage)": {
+            "label": "mapping(uint32 => struct IYieldStreamerTypes.YieldRate[])",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AccessControlStorage)34_storage": {
+            "label": "struct AccessControlUpgradeable.AccessControlStorage",
+            "members": [
+              {
+                "label": "_roles",
+                "type": "t_mapping(t_bytes32,t_struct(RoleData)24_storage)",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Group)3029_storage": {
+            "label": "struct IYieldStreamerTypes.Group",
+            "members": [
+              {
+                "label": "id",
+                "type": "t_uint32",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(InitializableStorage)158_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(PausableStorage)319_storage": {
+            "label": "struct PausableUpgradeable.PausableStorage",
+            "members": [
+              {
+                "label": "_paused",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RateTier)3043_storage": {
+            "label": "struct IYieldStreamerTypes.RateTier",
+            "members": [
+              {
+                "label": "rate",
+                "type": "t_uint48",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "cap",
+                "type": "t_uint64",
+                "offset": 6,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RoleData)24_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "hasRole",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(YieldRate)3037_storage": {
+            "label": "struct IYieldStreamerTypes.YieldRate",
+            "members": [
+              {
+                "label": "tiers",
+                "type": "t_array(t_struct(RateTier)3043_storage)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "effectiveDay",
+                "type": "t_uint16",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(YieldState)3055_storage": {
+            "label": "struct IYieldStreamerTypes.YieldState",
+            "members": [
+              {
+                "label": "flags",
+                "type": "t_uint8",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "streamYield",
+                "type": "t_uint64",
+                "offset": 1,
+                "slot": "0"
+              },
+              {
+                "label": "accruedYield",
+                "type": "t_uint64",
+                "offset": 9,
+                "slot": "0"
+              },
+              {
+                "label": "lastUpdateTimestamp",
+                "type": "t_uint40",
+                "offset": 17,
+                "slot": "0"
+              },
+              {
+                "label": "lastUpdateBalance",
+                "type": "t_uint64",
+                "offset": 22,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(YieldStreamerHarnessLayout)2454_storage": {
+            "label": "struct YieldStreamerV2Harness.YieldStreamerHarnessLayout",
+            "members": [
+              {
+                "label": "currentBlockTimestamp",
+                "type": "t_uint40",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "usingSpecialBlockTimestamps",
+                "type": "t_bool",
+                "offset": 5,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(YieldStreamerInitializationStorageLayout)2109_storage": {
+            "label": "struct YieldStreamerStorage_Initialization.YieldStreamerInitializationStorageLayout",
+            "members": [
+              {
+                "label": "sourceYieldStreamer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "groupIds",
+                "type": "t_mapping(t_bytes32,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(YieldStreamerStorageLayout)2146_storage": {
+            "label": "struct YieldStreamerStorage_Primary.YieldStreamerStorageLayout",
+            "members": [
+              {
+                "label": "underlyingToken",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "feeReceiver",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "groups",
+                "type": "t_mapping(t_address,t_struct(Group)3029_storage)",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "yieldStates",
+                "type": "t_mapping(t_address,t_struct(YieldState)3055_storage)",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "yieldRates",
+                "type": "t_mapping(t_uint32,t_array(t_struct(YieldRate)3037_storage)dyn_storage)",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint40": {
+            "label": "uint40",
+            "numberOfBytes": "5"
+          },
+          "t_uint48": {
+            "label": "uint48",
+            "numberOfBytes": "6"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {
+          "erc7201:cloudwalk.yieldstreamer.harness.storage": [
+            {
+              "contract": "YieldStreamerV2Harness",
+              "label": "currentBlockTimestamp",
+              "type": "t_uint40",
+              "src": "contracts\\v2\\YieldStreamerV2Harness.sol:32",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStreamerV2Harness",
+              "label": "usingSpecialBlockTimestamps",
+              "type": "t_bool",
+              "src": "contracts\\v2\\YieldStreamerV2Harness.sol:33",
+              "offset": 5,
+              "slot": "0"
+            }
+          ],
+          "erc7201:cloudwalk.yieldstreamer.initialization.storage": [
+            {
+              "contract": "YieldStreamerStorage_Initialization",
+              "label": "sourceYieldStreamer",
+              "type": "t_address",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:72",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStreamerStorage_Initialization",
+              "label": "groupIds",
+              "type": "t_mapping(t_bytes32,t_uint256)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:73",
+              "offset": 0,
+              "slot": "1"
+            }
+          ],
+          "erc7201:cloudwalk.yieldstreamer.primary.storage": [
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "underlyingToken",
+              "type": "t_address",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:120",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "feeReceiver",
+              "type": "t_address",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:121",
+              "offset": 0,
+              "slot": "1"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "groups",
+              "type": "t_mapping(t_address,t_struct(Group)3029_storage)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:122",
+              "offset": 0,
+              "slot": "2"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "yieldStates",
+              "type": "t_mapping(t_address,t_struct(YieldState)3055_storage)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:123",
+              "offset": 0,
+              "slot": "3"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "yieldRates",
+              "type": "t_mapping(t_uint32,t_array(t_struct(YieldRate)3037_storage)dyn_storage)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:124",
+              "offset": 0,
+              "slot": "4"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Pausable": [
+            {
+              "contract": "PausableUpgradeable",
+              "label": "_paused",
+              "type": "t_bool",
+              "src": "@openzeppelin\\contracts-upgradeable\\utils\\PausableUpgradeable.sol:21",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.AccessControl": [
+            {
+              "contract": "AccessControlUpgradeable",
+              "label": "_roles",
+              "type": "t_mapping(t_bytes32,t_struct(RoleData)24_storage)",
+              "src": "@openzeppelin\\contracts-upgradeable\\access\\AccessControlUpgradeable.sol:61",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "175b4e18604ade341ba48cf6745e41dcae1fb89331ae9bd8313bf090a38d26f4": {
+      "address": "0x8eA0d4F09e2feE6648004E8e3ED5CD0C35C2a028",
+      "txHash": "0xd417f39ab629ee284a3afbf43c4f047ea9ab64cc4172e097f78137e37df010bd",
+      "layout": {
+        "solcVersion": "0.8.24",
+        "storage": [],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_struct(RateTier)3306_storage)dyn_storage": {
+            "label": "struct IYieldStreamerTypes.RateTier[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(YieldRate)3300_storage)dyn_storage": {
+            "label": "struct IYieldStreamerTypes.YieldRate[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Group)3292_storage)": {
+            "label": "mapping(address => struct IYieldStreamerTypes.Group)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(YieldState)3318_storage)": {
+            "label": "mapping(address => struct IYieldStreamerTypes.YieldState)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)24_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint32,t_array(t_struct(YieldRate)3300_storage)dyn_storage)": {
+            "label": "mapping(uint32 => struct IYieldStreamerTypes.YieldRate[])",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AccessControlStorage)34_storage": {
+            "label": "struct AccessControlUpgradeable.AccessControlStorage",
+            "members": [
+              {
+                "label": "_roles",
+                "type": "t_mapping(t_bytes32,t_struct(RoleData)24_storage)",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Group)3292_storage": {
+            "label": "struct IYieldStreamerTypes.Group",
+            "members": [
+              {
+                "label": "id",
+                "type": "t_uint32",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(InitializableStorage)158_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(PausableStorage)319_storage": {
+            "label": "struct PausableUpgradeable.PausableStorage",
+            "members": [
+              {
+                "label": "_paused",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RateTier)3306_storage": {
+            "label": "struct IYieldStreamerTypes.RateTier",
+            "members": [
+              {
+                "label": "rate",
+                "type": "t_uint48",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "cap",
+                "type": "t_uint64",
+                "offset": 6,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RoleData)24_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "hasRole",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(YieldRate)3300_storage": {
+            "label": "struct IYieldStreamerTypes.YieldRate",
+            "members": [
+              {
+                "label": "tiers",
+                "type": "t_array(t_struct(RateTier)3306_storage)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "effectiveDay",
+                "type": "t_uint16",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(YieldState)3318_storage": {
+            "label": "struct IYieldStreamerTypes.YieldState",
+            "members": [
+              {
+                "label": "flags",
+                "type": "t_uint8",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "streamYield",
+                "type": "t_uint64",
+                "offset": 1,
+                "slot": "0"
+              },
+              {
+                "label": "accruedYield",
+                "type": "t_uint64",
+                "offset": 9,
+                "slot": "0"
+              },
+              {
+                "label": "lastUpdateTimestamp",
+                "type": "t_uint40",
+                "offset": 17,
+                "slot": "0"
+              },
+              {
+                "label": "lastUpdateBalance",
+                "type": "t_uint64",
+                "offset": 22,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(YieldStreamerHarnessLayout)2717_storage": {
+            "label": "struct YieldStreamerV2Harness.YieldStreamerHarnessLayout",
+            "members": [
+              {
+                "label": "currentBlockTimestamp",
+                "type": "t_uint40",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "usingSpecialBlockTimestamps",
+                "type": "t_bool",
+                "offset": 5,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(YieldStreamerInitializationStorageLayout)2372_storage": {
+            "label": "struct YieldStreamerStorage_Initialization.YieldStreamerInitializationStorageLayout",
+            "members": [
+              {
+                "label": "sourceYieldStreamer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "groupIds",
+                "type": "t_mapping(t_bytes32,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(YieldStreamerStorageLayout)2409_storage": {
+            "label": "struct YieldStreamerStorage_Primary.YieldStreamerStorageLayout",
+            "members": [
+              {
+                "label": "underlyingToken",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "feeReceiver",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "groups",
+                "type": "t_mapping(t_address,t_struct(Group)3292_storage)",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "yieldStates",
+                "type": "t_mapping(t_address,t_struct(YieldState)3318_storage)",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "yieldRates",
+                "type": "t_mapping(t_uint32,t_array(t_struct(YieldRate)3300_storage)dyn_storage)",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint40": {
+            "label": "uint40",
+            "numberOfBytes": "5"
+          },
+          "t_uint48": {
+            "label": "uint48",
+            "numberOfBytes": "6"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {
+          "erc7201:cloudwalk.yieldstreamer.harness.storage": [
+            {
+              "contract": "YieldStreamerV2Harness",
+              "label": "currentBlockTimestamp",
+              "type": "t_uint40",
+              "src": "contracts\\v2\\YieldStreamerV2Harness.sol:32",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStreamerV2Harness",
+              "label": "usingSpecialBlockTimestamps",
+              "type": "t_bool",
+              "src": "contracts\\v2\\YieldStreamerV2Harness.sol:33",
+              "offset": 5,
+              "slot": "0"
+            }
+          ],
+          "erc7201:cloudwalk.yieldstreamer.initialization.storage": [
+            {
+              "contract": "YieldStreamerStorage_Initialization",
+              "label": "sourceYieldStreamer",
+              "type": "t_address",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:72",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStreamerStorage_Initialization",
+              "label": "groupIds",
+              "type": "t_mapping(t_bytes32,t_uint256)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:73",
+              "offset": 0,
+              "slot": "1"
+            }
+          ],
+          "erc7201:cloudwalk.yieldstreamer.primary.storage": [
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "underlyingToken",
+              "type": "t_address",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:120",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "feeReceiver",
+              "type": "t_address",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:121",
+              "offset": 0,
+              "slot": "1"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "groups",
+              "type": "t_mapping(t_address,t_struct(Group)3292_storage)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:122",
+              "offset": 0,
+              "slot": "2"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "yieldStates",
+              "type": "t_mapping(t_address,t_struct(YieldState)3318_storage)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:123",
+              "offset": 0,
+              "slot": "3"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "yieldRates",
+              "type": "t_mapping(t_uint32,t_array(t_struct(YieldRate)3300_storage)dyn_storage)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:124",
+              "offset": 0,
+              "slot": "4"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Pausable": [
+            {
+              "contract": "PausableUpgradeable",
+              "label": "_paused",
+              "type": "t_bool",
+              "src": "@openzeppelin\\contracts-upgradeable\\utils\\PausableUpgradeable.sol:21",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.AccessControl": [
+            {
+              "contract": "AccessControlUpgradeable",
+              "label": "_roles",
+              "type": "t_mapping(t_bytes32,t_struct(RoleData)24_storage)",
+              "src": "@openzeppelin\\contracts-upgradeable\\access\\AccessControlUpgradeable.sol:61",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "bba96bbf44fdee0a6ef724689c0030fba877a24f5864abab9a92d71d4a8cb700": {
+      "address": "0x0c602D8124D3BE725B810cdDC29FdA33838DCd79",
+      "txHash": "0x2c8b20b18f51a5ddfa2d50993f05699d97db98af19b5e22e0b1c2bb38df6f2f8",
+      "layout": {
+        "solcVersion": "0.8.24",
+        "storage": [],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_struct(RateTier)3043_storage)dyn_storage": {
+            "label": "struct IYieldStreamerTypes.RateTier[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(YieldRate)3037_storage)dyn_storage": {
+            "label": "struct IYieldStreamerTypes.YieldRate[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Group)3029_storage)": {
+            "label": "mapping(address => struct IYieldStreamerTypes.Group)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(YieldState)3055_storage)": {
+            "label": "mapping(address => struct IYieldStreamerTypes.YieldState)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)24_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint32,t_array(t_struct(YieldRate)3037_storage)dyn_storage)": {
+            "label": "mapping(uint32 => struct IYieldStreamerTypes.YieldRate[])",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AccessControlStorage)34_storage": {
+            "label": "struct AccessControlUpgradeable.AccessControlStorage",
+            "members": [
+              {
+                "label": "_roles",
+                "type": "t_mapping(t_bytes32,t_struct(RoleData)24_storage)",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Group)3029_storage": {
+            "label": "struct IYieldStreamerTypes.Group",
+            "members": [
+              {
+                "label": "id",
+                "type": "t_uint32",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(InitializableStorage)158_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(PausableStorage)319_storage": {
+            "label": "struct PausableUpgradeable.PausableStorage",
+            "members": [
+              {
+                "label": "_paused",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RateTier)3043_storage": {
+            "label": "struct IYieldStreamerTypes.RateTier",
+            "members": [
+              {
+                "label": "rate",
+                "type": "t_uint48",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "cap",
+                "type": "t_uint64",
+                "offset": 6,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RoleData)24_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "hasRole",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(YieldRate)3037_storage": {
+            "label": "struct IYieldStreamerTypes.YieldRate",
+            "members": [
+              {
+                "label": "tiers",
+                "type": "t_array(t_struct(RateTier)3043_storage)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "effectiveDay",
+                "type": "t_uint16",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(YieldState)3055_storage": {
+            "label": "struct IYieldStreamerTypes.YieldState",
+            "members": [
+              {
+                "label": "flags",
+                "type": "t_uint8",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "streamYield",
+                "type": "t_uint64",
+                "offset": 1,
+                "slot": "0"
+              },
+              {
+                "label": "accruedYield",
+                "type": "t_uint64",
+                "offset": 9,
+                "slot": "0"
+              },
+              {
+                "label": "lastUpdateTimestamp",
+                "type": "t_uint40",
+                "offset": 17,
+                "slot": "0"
+              },
+              {
+                "label": "lastUpdateBalance",
+                "type": "t_uint64",
+                "offset": 22,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(YieldStreamerHarnessLayout)2454_storage": {
+            "label": "struct YieldStreamerV2Harness.YieldStreamerHarnessLayout",
+            "members": [
+              {
+                "label": "currentBlockTimestamp",
+                "type": "t_uint40",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "usingSpecialBlockTimestamps",
+                "type": "t_bool",
+                "offset": 5,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(YieldStreamerInitializationStorageLayout)2109_storage": {
+            "label": "struct YieldStreamerStorage_Initialization.YieldStreamerInitializationStorageLayout",
+            "members": [
+              {
+                "label": "sourceYieldStreamer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "groupIds",
+                "type": "t_mapping(t_bytes32,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(YieldStreamerStorageLayout)2146_storage": {
+            "label": "struct YieldStreamerStorage_Primary.YieldStreamerStorageLayout",
+            "members": [
+              {
+                "label": "underlyingToken",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "feeReceiver",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "groups",
+                "type": "t_mapping(t_address,t_struct(Group)3029_storage)",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "yieldStates",
+                "type": "t_mapping(t_address,t_struct(YieldState)3055_storage)",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "yieldRates",
+                "type": "t_mapping(t_uint32,t_array(t_struct(YieldRate)3037_storage)dyn_storage)",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint40": {
+            "label": "uint40",
+            "numberOfBytes": "5"
+          },
+          "t_uint48": {
+            "label": "uint48",
+            "numberOfBytes": "6"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {
+          "erc7201:cloudwalk.yieldstreamer.harness.storage": [
+            {
+              "contract": "YieldStreamerV2Harness",
+              "label": "currentBlockTimestamp",
+              "type": "t_uint40",
+              "src": "contracts\\v2\\YieldStreamerV2Harness.sol:32",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStreamerV2Harness",
+              "label": "usingSpecialBlockTimestamps",
+              "type": "t_bool",
+              "src": "contracts\\v2\\YieldStreamerV2Harness.sol:33",
+              "offset": 5,
+              "slot": "0"
+            }
+          ],
+          "erc7201:cloudwalk.yieldstreamer.initialization.storage": [
+            {
+              "contract": "YieldStreamerStorage_Initialization",
+              "label": "sourceYieldStreamer",
+              "type": "t_address",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:72",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStreamerStorage_Initialization",
+              "label": "groupIds",
+              "type": "t_mapping(t_bytes32,t_uint256)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:73",
+              "offset": 0,
+              "slot": "1"
+            }
+          ],
+          "erc7201:cloudwalk.yieldstreamer.primary.storage": [
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "underlyingToken",
+              "type": "t_address",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:120",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "feeReceiver",
+              "type": "t_address",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:121",
+              "offset": 0,
+              "slot": "1"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "groups",
+              "type": "t_mapping(t_address,t_struct(Group)3029_storage)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:122",
+              "offset": 0,
+              "slot": "2"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "yieldStates",
+              "type": "t_mapping(t_address,t_struct(YieldState)3055_storage)",
+              "src": "contracts\\v2\\YieldStreamerStorage.sol:123",
+              "offset": 0,
+              "slot": "3"
+            },
+            {
+              "contract": "YieldStreamerStorage_Primary",
+              "label": "yieldRates",
+              "type": "t_mapping(t_uint32,t_array(t_struct(YieldRate)3037_storage)dyn_storage)",
               "src": "contracts\\v2\\YieldStreamerStorage.sol:124",
               "offset": 0,
               "slot": "4"
