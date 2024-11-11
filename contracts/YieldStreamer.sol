@@ -10,6 +10,7 @@ import { IBalanceTracker } from "./interfaces/IBalanceTracker.sol";
 import { PausableExtUpgradeable } from "./base/PausableExtUpgradeable.sol";
 import { BlocklistableUpgradeable } from "./base/BlocklistableUpgradeable.sol";
 import { RescuableUpgradeable } from "./base/RescuableUpgradeable.sol";
+import { Versionable } from "./base/Versionable.sol";
 
 /**
  * @title YieldStreamer contract
@@ -22,7 +23,8 @@ contract YieldStreamer is
     BlocklistableUpgradeable,
     RescuableUpgradeable,
     IBalanceTracker,
-    IYieldStreamer
+    IYieldStreamer,
+    Versionable
 {
     /// @notice The factor that is used together with yield rate values
     /// @dev e.g. 0.1% rate should be represented as 0.001*RATE_FACTOR

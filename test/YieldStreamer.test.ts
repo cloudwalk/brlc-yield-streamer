@@ -90,6 +90,14 @@ interface ClaimState {
   debit: BigNumber;
 }
 
+interface Version {
+  major: number;
+  minor: number;
+  patch: number;
+
+  [key: string]: number; // Indexing signature to ensure that fields are iterated over in a key-value style
+}
+
 const balanceRecordsCase1: BalanceRecord[] = [
   { day: BALANCE_TRACKER_INIT_DAY, value: BigNumber.from(0) },
   { day: BALANCE_TRACKER_INIT_DAY + 1, value: BigNumber.from(80_000_000_000) },
@@ -115,6 +123,12 @@ const yieldRateRecordCase2: YieldRateRecord = {
 const yieldRateRecordCase3: YieldRateRecord = {
   effectiveDay: YIELD_STREAMER_INIT_DAY + 6,
   value: BigNumber.from(INITIAL_YIELD_RATE * 3)
+};
+
+const EXPECTED_VERSION: Version = {
+  major: 1,
+  minor: 0,
+  patch: 0
 };
 
 function defineExpectedDailyBalances(balanceRecords: BalanceRecord[], dayFrom: number, dayTo: number): BigNumber[] {
@@ -626,6 +640,24 @@ describe("Contract 'YieldStreamer'", async () => {
       await expect(
         yieldStreamerImplementation.initialize()
       ).to.be.revertedWith(REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED);
+    });
+  });
+
+  describe("Function '$__VERSION()'", async () => {
+    it("Returns expected values", async () => {
+      const context: TestContext = await setUpFixture(deployContracts);
+      const { yieldStreamer } = context;
+      const yieldStreamerVersion = await yieldStreamer.$__VERSION();
+      Object.keys(EXPECTED_VERSION).forEach(property => {
+        const value = yieldStreamerVersion[property];
+        if (typeof value === "undefined" || typeof value === "function" || typeof value === "object") {
+          throw Error(`Property "${property}" is not found`);
+        }
+        expect(value).to.eq(
+          EXPECTED_VERSION[property],
+          `Mismatch in the "${property}" property`
+        );
+      });
     });
   });
 

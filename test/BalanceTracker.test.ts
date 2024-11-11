@@ -46,6 +46,14 @@ interface DailyBalancesRequest {
   dayTo: number;
 }
 
+interface Version {
+  major: number;
+  minor: number;
+  patch: number;
+
+  [key: string]: number; // Indexing signature to ensure that fields are iterated over in a key-value style
+}
+
 async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   if (network.name === "hardhat") {
     return loadFixture(func);
@@ -272,6 +280,11 @@ describe("Contract 'BalanceTracker'", async () => {
   const REVERT_ERROR_SAFE_CAST_OVERFLOW_UINT240 = "SafeCastOverflowUint240";
   const REVERT_ERROR_FROM_DAY_PRIOR_INIT_DAY = "FromDayPriorInitDay";
   const REVERT_ERROR_TO_DAY_PRIOR_FROM_DAY = "ToDayPriorFromDay";
+  const EXPECTED_VERSION: Version = {
+    major: 1,
+    minor: 0,
+    patch: 0
+  };
 
   let balanceTrackerFactory: ContractFactory;
   let tokenMock: Contract;
@@ -393,6 +406,23 @@ describe("Contract 'BalanceTracker'", async () => {
       await expect(
         balanceTrackerImplementation.initialize()
       ).to.be.revertedWith(REVERT_MESSAGE_INITIALIZABLE_CONTRACT_IS_ALREADY_INITIALIZED);
+    });
+  });
+
+  describe("Function '$__VERSION()'", async () => {
+    it("Returns expected values", async () => {
+      const { balanceTracker } = await setUpFixture(deployAndConfigureContracts);
+      const balanceTrackerVersion = await balanceTracker.$__VERSION();
+      Object.keys(EXPECTED_VERSION).forEach(property => {
+        const value = balanceTrackerVersion[property];
+        if (typeof value === "undefined" || typeof value === "function" || typeof value === "object") {
+          throw Error(`Property "${property}" is not found`);
+        }
+        expect(value).to.eq(
+          EXPECTED_VERSION[property],
+          `Mismatch in the "${property}" property`
+        );
+      });
     });
   });
 

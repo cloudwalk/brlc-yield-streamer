@@ -7,13 +7,14 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 
 import { IBalanceTracker } from "./interfaces/IBalanceTracker.sol";
 import { IERC20Hook } from "./interfaces/IERC20Hook.sol";
+import { Versionable } from "./base/Versionable.sol";
 
 /**
  * @title BalanceTracker contract
  * @author CloudWalk Inc.
  * @notice The contract that keeps track of the token balance for each account on a daily basis
  */
-contract BalanceTracker is OwnableUpgradeable, IBalanceTracker, IERC20Hook {
+contract BalanceTracker is OwnableUpgradeable, IBalanceTracker, IERC20Hook, Versionable {
     /// @notice The time shift of a day in seconds
     uint256 public constant NEGATIVE_TIME_SHIFT = 3 hours;
 
