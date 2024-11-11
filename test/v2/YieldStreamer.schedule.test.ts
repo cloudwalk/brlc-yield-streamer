@@ -3,6 +3,7 @@ import { ethers, network, upgrades } from "hardhat";
 import { Contract } from "ethers";
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { checkEquality } from "../../test-utils/eth";
 
 // Constants for rate calculations and time units
 const RATE_FACTOR = BigInt(1000000000000); // Factor used in yield rate calculations (10^12)
@@ -31,6 +32,14 @@ interface YieldTieredRate {
   effectiveDay: number; // Day when the yield rate becomes effective
   tierRates: bigint[]; // Array of yield rate value for each tier (expressed in RATE_FACTOR units)
   tierCaps: bigint[]; // Array of balance cap for each tier
+}
+
+interface Version {
+  major: number;
+  minor: number;
+  patch: number;
+
+  [key: string]: number; // Indexing signature to ensure that fields are iterated over in a key-value style
 }
 
 /**
@@ -162,6 +171,11 @@ async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
 describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
   let user: SignerWithAddress;
   let adjustedBlockTime: number;
+  const EXPECTED_VERSION: Version = {
+    major: 2,
+    minor: 0,
+    patch: 0
+  };
 
   // Get the signer representing the test user and adjusted block time before the tests run
   before(async function () {
@@ -721,6 +735,14 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
 
       // Run the action schedule and test the yield states
       await testActionSchedule(user, erc20Token, yieldStreamer, actionSchedule, expectedYieldStates);
+    });
+  });
+
+  describe("Function '$__VERSION()'", async () => {
+    it("Returns expected values", async () => {
+      const { yieldStreamer} = await setUpFixture(deployContracts);
+      const yieldStreamerVersion = await yieldStreamer.$__VERSION();
+      checkEquality(yieldStreamerVersion, EXPECTED_VERSION);
     });
   });
 });

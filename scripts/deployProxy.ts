@@ -13,7 +13,7 @@ async function main() {
 
   await proxy.waitForDeployment();
 
-  console.log("Proxy deployed to:", proxy.target);
+  console.log("Proxy deployed:", await proxy.getAddress());
 }
 
 main().then().catch(err => {
