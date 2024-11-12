@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 
 /**
  * @title IYieldStreamer interface
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://cloudwalk.io)
  * @notice The interface of a contract that supports yield streaming
  */
 interface IYieldStreamer {

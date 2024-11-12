@@ -6,7 +6,7 @@ import { PausableExtUpgradeable } from "../../base/PausableExtUpgradeable.sol";
 
 /**
  * @title PausableExtUpgradeableMock contract
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://cloudwalk.io)
  * @notice An implementation of the {PausableExtUpgradeable} contract for testing purposes
  */
 contract PausableExtUpgradeableMock is PausableExtUpgradeable {

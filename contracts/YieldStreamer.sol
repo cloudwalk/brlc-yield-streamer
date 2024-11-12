@@ -14,7 +14,7 @@ import { Versionable } from "./base/Versionable.sol";
 
 /**
  * @title YieldStreamer contract
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://cloudwalk.io)
  * @dev The contract that supports yield streaming based on a minimum balance over a period
  */
 contract YieldStreamer is

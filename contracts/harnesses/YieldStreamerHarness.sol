@@ -7,7 +7,7 @@ import { HarnessAdministrable } from "./HarnessAdministrable.sol";
 
 /**
  * @title YieldStreamerHarness contract
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://cloudwalk.io)
  * @dev The same as {YieldStreamer} but with the new functions of setting internal variables for testing
  */
 contract YieldStreamerHarness is YieldStreamer, HarnessAdministrable {
