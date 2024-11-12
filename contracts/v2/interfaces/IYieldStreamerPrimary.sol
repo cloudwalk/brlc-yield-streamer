@@ -153,7 +153,7 @@ interface IYieldStreamerPrimary_Functions {
     function blockTimestamp() external view returns (uint256);
 
     /**
-     * @dev Proves the contract is the balance freezer one. A marker function.
+     * @dev Proves the contract is the yield streamer one. A marker function.
      */
     function proveYieldStreamer() external pure;
 }
