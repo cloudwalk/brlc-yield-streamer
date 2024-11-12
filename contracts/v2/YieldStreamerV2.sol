@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.24;
 
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { UUPSExtUpgradeable } from "./base/UUPSExtUpgradeable.sol";
 
 import { AccessControlExtUpgradeable } from "./base/AccessControlExtUpgradeable.sol";
 import { PausableExtUpgradeable } from "./base/PausableExtUpgradeable.sol";
@@ -27,7 +27,7 @@ import { YieldStreamerInitialization } from "./YieldStreamerInitialization.sol";
  * and combines the primary, configuration, and initialization functionalities.
  */
 contract YieldStreamerV2 is
-    UUPSUpgradeable,
+    UUPSExtUpgradeable,
     AccessControlExtUpgradeable,
     PausableExtUpgradeable,
     RescuableUpgradeable,
@@ -308,12 +308,17 @@ contract YieldStreamerV2 is
     // ------------------ Upgrade Authorization ------------------ //
 
     /**
-     * @dev Authorizes the contract upgrade when using UUPS proxy pattern.
-     * Ensures that only an account with the `OWNER_ROLE` can authorize an upgrade.
-     *
-     * @param newImplementation The address of the new contract implementation.
+     * @dev The upgrade validation function for the UUPSExtUpgradeable contract.
+     * @param newImplementation The address of the new implementation.
      */
-    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(OWNER_ROLE) {
-        newImplementation; // Suppresses a compiler warning about the unused variable.
+    function _validateUpgrade(address newImplementation) internal view override onlyRole(OWNER_ROLE) {
+        try IYieldStreamerPrimary(newImplementation).proveYieldStreamer() {} catch {
+            revert YieldStreamer_ImplementationAddressInvalid();
+        }
     }
+
+    /**
+     * @dev Proves the contract is the balance freezer one. A marker function.
+     */
+    function proveYieldStreamer() external pure {}
 }

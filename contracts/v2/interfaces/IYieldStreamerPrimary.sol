@@ -28,6 +28,9 @@ interface IYieldStreamerPrimary_Errors {
     /// @dev Thrown when the fee receiver address is not configured but required for an operation.
     error YieldStreamer_FeeReceiverNotConfigured();
 
+    /// @dev Thrown if the provided new implementation address is not of a yield streamer contract.
+    error YieldStreamer_ImplementationAddressInvalid();
+
     /// @dev Thrown when an operation is attempted on an account that has not been initialized.
     error YieldStreamer_AccountNotInitialized();
 }
@@ -148,6 +151,11 @@ interface IYieldStreamerPrimary_Functions {
      * @return The current block timestamp.
      */
     function blockTimestamp() external view returns (uint256);
+
+    /**
+     * @dev Proves the contract is the balance freezer one. A marker function.
+     */
+    function proveYieldStreamer() external pure;
 }
 
 /**
