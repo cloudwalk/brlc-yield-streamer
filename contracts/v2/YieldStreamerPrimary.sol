@@ -972,25 +972,23 @@ abstract contract YieldStreamerPrimary is
 
     // ------------------ Utility --------------------------------- //
 
-    // Tested
     /**
      * @dev Truncates a portion of the yield rates array based on start and end indices.
      *
      * @param startIndex The start index of the truncation.
      * @param endIndex The end index of the truncation.
-     * @param rates The array of yield rates.
-     * @return The truncated array of yield rates.
+     * @param rates The array of yield rates to truncate.
+     * @return truncatedRates The truncated array of yield rates.
      */
     function _truncateArray(
         uint256 startIndex,
         uint256 endIndex,
         YieldRate[] memory rates
-    ) internal pure returns (YieldRate[] memory) {
-        YieldRate[] memory result = new YieldRate[](endIndex - startIndex + 1);
-        for (uint256 i = startIndex; i <= endIndex; i++) {
-            result[i - startIndex] = rates[i];
+    ) internal pure returns (YieldRate[] memory truncatedRates) {
+        truncatedRates = new YieldRate[](endIndex - startIndex + 1);
+        for (uint256 i = startIndex; i <= endIndex; ++i) {
+            truncatedRates[i - startIndex] = rates[i];
         }
-        return result;
     }
 
     /**
