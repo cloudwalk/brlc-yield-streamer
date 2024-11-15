@@ -14,6 +14,10 @@ import { YieldStreamerV2 } from "./YieldStreamerV2.sol";
 contract YieldStreamerV2Testable is YieldStreamerV2 {
     // ------------------ Yield Math ------------------------------- //
 
+    function compoundYield(CompoundYieldParams memory params) external pure returns (YieldResult memory) {
+        return _compoundYield(params);
+    }
+
     function calculateTieredPartDayYield(
         uint256 amount,
         RateTier[] memory tiers,

@@ -574,6 +574,14 @@ abstract contract YieldStreamerPrimary is
         return results;
     }
 
+    function _initYieldResult(uint256 tiersLength) internal pure returns (YieldResult memory) {
+        YieldResult memory result;
+        result.tieredFirstDayPartialYield = new uint256[](tiersLength);
+        result.tieredFullDaysYield = new uint256[](tiersLength);
+        result.tieredLastDayPartialYield = new uint256[](tiersLength);
+        return result;
+    }
+
     // Tested
     /**
      * @dev Calculates compounded yield over a specified time range using a single yield rate.
@@ -582,11 +590,9 @@ abstract contract YieldStreamerPrimary is
      * @param params The parameters for the yield calculation, including timestamps, yield rate, and balance.
      * @return A `YieldResult` struct containing the yield for first partial day, full days, and last partial day.
      */
-    function _compoundYield(CompoundYieldParams memory params) private pure returns (YieldResult memory) {
-        YieldResult memory result;
-        result.tieredFirstDayPartialYield = new uint256[](params.tiers.length);
-        result.tieredFullDaysYield = new uint256[](params.tiers.length);
-        result.tieredLastDayPartialYield = new uint256[](params.tiers.length);
+    function _compoundYield(CompoundYieldParams memory params) internal pure returns (YieldResult memory) {
+        uint256 tiersLength = params.tiers.length;
+        YieldResult memory result = _initYieldResult(tiersLength);
 
         if (params.fromTimestamp > params.toTimestamp) {
             revert YieldStreamer_TimeRangeInvalid();
@@ -595,79 +601,114 @@ abstract contract YieldStreamerPrimary is
             return result;
         }
 
-        uint256 totalBalance = params.balance;
-        uint256 nextDayStart = _nextDay(params.fromTimestamp);
-        uint256 partDayYield = 0;
+        /**
+         * 1. Handle the first partial day.
+         */
 
-        if (nextDayStart >= params.toTimestamp) {
+        uint256 fromTimestampEffective = _effectiveTimestamp(params.fromTimestamp);
+        uint256 nextDayTimestamp = fromTimestampEffective + 1 days;
+        uint256 partialYield = 0;
+
+        if (params.fromTimestamp != fromTimestampEffective) {
+            if (params.toTimestamp <= nextDayTimestamp) {
+                /**
+                 * Case 1: `toTimestamp` is within the same day as the `fromTimestamp`.
+                 * Example: D1:00:00:01+ <> D2:00:00:00-
+                 * Actions:
+                 * - calculate the yield for the partial day and set it as the last partial day yield;
+                 * - don't take into account stream yield when calculating the partial day yield;
+                 * - return the result.
+                 */
+                (partialYield, result.tieredLastDayPartialYield) = _calculateTieredPartDayYield(
+                    params.balance,
+                    params.tiers,
+                    params.toTimestamp - params.fromTimestamp
+                );
+                result.lastDayPartialYield = params.streamYield + partialYield;
+                return result;
+            } else {
+                /**
+                 * Case 2: `toTimestamp` is not within the same day as the `fromTimestamp`.
+                 * Actions:
+                 * Example: D1:00:00:01+ <> D2:00:00:01+
+                 * - calculate the yield for the partial day and set it as the first partial day yield;
+                 * - don't take into account stream yield when calculating the partial day yield;
+                 * - set the `fromTimestamp` to the start of the next day;
+                 * - continue with the next steps.
+                 */
+                (partialYield, result.tieredFirstDayPartialYield) = _calculateTieredPartDayYield(
+                    params.balance,
+                    params.tiers,
+                    nextDayTimestamp - params.fromTimestamp
+                );
+                result.firstDayPartialYield = params.streamYield + partialYield;
+                params.fromTimestamp = nextDayTimestamp;
+            }
+        } else if (params.toTimestamp < nextDayTimestamp) {
             /**
-             * We are within the same day as the `fromTimestamp`.
+             * Case 3: `toTimestamp` is within the same day as the `fromTimestamp`.
+             * Actions:
+             * Example: D1:00:00:00 <> D1:23:59:59-
+             * - calculate the yield for the partial day and set it as the last partial day yield;
+             * - take into account stream yield when calculating the partial day yield;
+             * - return the result.
              */
-
-            (partDayYield, result.tieredLastDayPartialYield) = _calculateTieredPartDayYield(
-                totalBalance,
+            (partialYield, result.tieredLastDayPartialYield) = _calculateTieredPartDayYield(
+                params.balance + params.streamYield,
                 params.tiers,
                 params.toTimestamp - params.fromTimestamp
             );
-            result.lastDayPartialYield = params.streamYield + partDayYield;
+            result.firstDayPartialYield = params.streamYield;
+            result.lastDayPartialYield = partialYield;
+            return result;
         } else {
             /**
-             * We are spanning multiple days.
+             * Case 4: TBD
              */
-
-            /**
-             * 1. Calculate yield for the first partial day.
-             */
-
-            uint256 firstDaySeconds = nextDayStart - params.fromTimestamp;
-
-            if (firstDaySeconds != 1 days) {
-                (partDayYield, result.tieredFirstDayPartialYield) = _calculateTieredPartDayYield(
-                    totalBalance,
-                    params.tiers,
-                    firstDaySeconds
-                );
-                result.firstDayPartialYield = params.streamYield + partDayYield;
-
-                totalBalance += result.firstDayPartialYield;
-                params.fromTimestamp = nextDayStart;
-            }
-
-            /**
-             * 2. Calculate yield for each full day.
-             */
-
-            uint256 fullDaysCount = (params.toTimestamp - params.fromTimestamp) / 1 days;
-
-            if (fullDaysCount > 0) {
-
-                uint256 fullDayYield;
-                for (uint256 i = 0; i < fullDaysCount; i++) {
-                    (fullDayYield, result.tieredFullDaysYield) = _calculateTieredFullDayYield(
-                        totalBalance + result.fullDaysYield,
-                        params.tiers
-                    );
-                    result.fullDaysYield += fullDayYield;
-                }
-
-                totalBalance += result.fullDaysYield;
-                params.fromTimestamp += fullDaysCount * 1 days;
-            }
-
-            /**
-             * 3. Calculate yield for the last partial day.
-             */
-
-            if (params.fromTimestamp < params.toTimestamp) {
-                uint256 lastDaySeconds = params.toTimestamp - params.fromTimestamp;
-                (result.lastDayPartialYield, result.tieredLastDayPartialYield) = _calculateTieredPartDayYield(
-                    totalBalance,
-                    params.tiers,
-                    lastDaySeconds
-                );
-            }
+            result.firstDayPartialYield = params.streamYield;
         }
 
+        /**
+         * 2. Handle full intermediate days.
+         */
+
+        uint256 toTimestampEffective = _effectiveTimestamp(params.toTimestamp);
+        uint256 fullDaysCount = (toTimestampEffective - params.fromTimestamp) / 1 days;
+        params.balance += result.firstDayPartialYield;
+
+        if (fullDaysCount > 0) {
+            uint256 fullDayYield;
+            uint256[] memory tieredFullDayYield = new uint256[](tiersLength);
+
+            for (uint256 i = 0; i < fullDaysCount; i++) {
+                (fullDayYield, tieredFullDayYield) = _calculateTieredFullDayYield(params.balance, params.tiers);
+
+                for (uint256 j = 0; j < tiersLength; j++) {
+                    result.tieredFullDaysYield[j] += tieredFullDayYield[j];
+                }
+
+                params.balance += fullDayYield;
+                result.fullDaysYield += fullDayYield;
+            }
+
+            params.fromTimestamp += fullDaysCount * 1 days;
+        }
+
+        /**
+         * 3. Handle the last partial day.
+         */
+
+        if (params.fromTimestamp < params.toTimestamp) {
+            (result.lastDayPartialYield, result.tieredLastDayPartialYield) = _calculateTieredPartDayYield(
+                params.balance,
+                params.tiers,
+                params.toTimestamp - params.fromTimestamp
+            );
+        }
+
+        /**
+         * Return the result.
+         */
         return result;
     }
 
@@ -885,7 +926,7 @@ abstract contract YieldStreamerPrimary is
      * @return The timestamp of the next day.
      */
     function _nextDay(uint256 timestamp) internal pure returns (uint256) {
-        return timestamp - (timestamp % 1 days) + 1 days;
+        return (timestamp / 1 days + 1) * 1 days;
     }
 
     // Tested
