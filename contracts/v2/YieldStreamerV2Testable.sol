@@ -14,6 +14,14 @@ import { YieldStreamerV2 } from "./YieldStreamerV2.sol";
 contract YieldStreamerV2Testable is YieldStreamerV2 {
     // ------------------ Yield Math ------------------------------- //
 
+    function getAccruePreview(
+        YieldState memory state,
+        YieldRate[] memory rates,
+        uint256 currentTimestamp
+    ) external pure returns (AccruePreview memory) {
+        return _getAccruePreview(state, rates, currentTimestamp);
+    }
+
     function calculateYield(
         CalculateYieldParams memory params,
         YieldRate[] memory rates
