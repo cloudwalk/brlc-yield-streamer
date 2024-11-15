@@ -416,20 +416,20 @@ abstract contract YieldStreamerPrimary is
     function _calculateYield(
         CalculateYieldParams memory params,
         YieldRate[] memory rates // Tools: this comment prevents Prettier from formatting into a single line.
-    ) private pure returns (YieldResult[] memory) {
+    ) internal pure returns (YieldResult[] memory) {
         YieldResult[] memory results;
         uint256 ratePeriods = params.rateEndIndex - params.rateStartIndex + 1;
         uint256 localFromTimestamp = params.fromTimestamp;
         uint256 localToTimestamp = params.toTimestamp;
 
-        if (ratePeriods == 0) {
-            /**
-             * Scenario 0
-             * If there are no yield rate periods in the range, we return an empty array.
-             */
+        /**
+         * NOTE:
+         * At this point we are sure that `rates` array contains and least one element
+         * that fully covers `fromTimestamp` to `toTimestamp` period passed to this function.
+         * Therefore, there is no need to have any checks related to rates or period validation.
+         */
 
-            results = new YieldResult[](0);
-        } else if (ratePeriods == 1) {
+        if (ratePeriods == 1) {
             /**
              * Scenario 1
              * If there is only one yield rate period in the range, we calculate the yield for the entire range
@@ -461,7 +461,7 @@ abstract contract YieldStreamerPrimary is
              */
 
             localFromTimestamp = params.fromTimestamp;
-            localToTimestamp = rates[params.rateStartIndex + 1].effectiveDay * 1 days;
+            localToTimestamp = uint256(rates[params.rateStartIndex + 1].effectiveDay) * 1 days;
 
             results[0] = _compoundYield(
                 CompoundYieldParams(
