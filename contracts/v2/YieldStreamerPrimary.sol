@@ -1003,32 +1003,27 @@ abstract contract YieldStreamerPrimary is
         return (amount * FEE_RATE) / RATE_FACTOR;
     }
 
-    // Tested
     /**
      * @dev Rounds down an amount to the nearest multiple of `ROUND_FACTOR`.
      *
-     * @param amount The amount to round down.
-     * @return The rounded down amount.
+     * @param inputAmount The amount to round down.
+     * @return roundedAmount The rounded down amount.
      */
-    function _roundDown(uint256 amount) internal pure returns (uint256) {
-        return (amount / ROUND_FACTOR) * ROUND_FACTOR;
+    function _roundDown(uint256 inputAmount) internal pure returns (uint256 roundedAmount) {
+        roundedAmount = (inputAmount / ROUND_FACTOR) * ROUND_FACTOR;
     }
 
-    // Tested
     /**
      * @dev Rounds up an amount to the nearest multiple of `ROUND_FACTOR`.
      *
-     * @param amount The amount to round up.
-     * @return The rounded up amount.
+     * @param inputAmount The amount to round up.
+     * @return roundedAmount The rounded up amount.
      */
-    function _roundUp(uint256 amount) internal pure returns (uint256) {
-        uint256 roundedAmount = _roundDown(amount);
-
-        if (roundedAmount < amount) {
+    function _roundUp(uint256 inputAmount) internal pure returns (uint256 roundedAmount) {
+        roundedAmount = _roundDown(inputAmount);
+        if (roundedAmount < inputAmount) {
             roundedAmount += ROUND_FACTOR;
         }
-
-        return roundedAmount;
     }
 
     /**

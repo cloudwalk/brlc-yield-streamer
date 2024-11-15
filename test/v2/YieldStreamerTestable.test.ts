@@ -2320,10 +2320,14 @@ describe("YieldStreamerV2Testable", function () {
   describe("Function 'roundDown()'", async () => {
     it("Should round down as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      // Verify the function works as expected with hardcoded values.
       expect(await yieldStreamerTestable.roundDown(0n)).to.equal(0n);
       expect(await yieldStreamerTestable.roundDown(10000000n)).to.equal(10000000n);
       expect(await yieldStreamerTestable.roundDown(10000001n)).to.equal(10000000n);
       expect(await yieldStreamerTestable.roundDown(10009999n)).to.equal(10000000n);
+
+      // Verify the function works as expected with the `roundDown` utility function.
       expect(await yieldStreamerTestable.roundDown(0n)).to.equal(roundDown(0n));
       expect(await yieldStreamerTestable.roundDown(10000000n)).to.equal(roundDown(10000000n));
       expect(await yieldStreamerTestable.roundDown(10000001n)).to.equal(roundDown(10000001n));
@@ -2334,10 +2338,14 @@ describe("YieldStreamerV2Testable", function () {
   describe("Function 'roundUp()'", async () => {
     it("Should round up as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      // Verify the function works as expected with hardcoded values.
       expect(await yieldStreamerTestable.roundUp(0n)).to.equal(0n);
       expect(await yieldStreamerTestable.roundUp(10000000n)).to.equal(10000000n);
       expect(await yieldStreamerTestable.roundUp(10000001n)).to.equal(10010000n);
       expect(await yieldStreamerTestable.roundUp(10009999n)).to.equal(10010000n);
+
+      // Verify the function works as expected with the `roundUp` utility function.
       expect(await yieldStreamerTestable.roundUp(0n)).to.equal(roundUp(0n));
       expect(await yieldStreamerTestable.roundUp(10000000n)).to.equal(roundUp(10000000n));
       expect(await yieldStreamerTestable.roundUp(10000001n)).to.equal(roundUp(10000001n));
@@ -2346,7 +2354,7 @@ describe("YieldStreamerV2Testable", function () {
   });
 
   describe("Function 'map()'", async () => {
-    it("Should execute as expected", async () => {
+    it("Should map as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
       // Create an `AccruePreview` struct with sample data.
