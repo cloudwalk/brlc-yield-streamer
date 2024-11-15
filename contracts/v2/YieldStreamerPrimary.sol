@@ -916,55 +916,21 @@ abstract contract YieldStreamerPrimary is
 
     // ------------------ Timestamp ------------------------------- //
 
-    // Tested
     /**
-     * @dev Calculates a timestamp for the beginning of the next day.
+     * @dev Calculates the effective timestamp of the beginning of the day.
      *
      * @param timestamp The timestamp to calculate from.
-     * @return The timestamp of the next day.
-     */
-    function _nextDay(uint256 timestamp) internal pure returns (uint256) {
-        return (timestamp / 1 days + 1) * 1 days;
-    }
-
-    // Tested
-    /**
-     * @dev Calculates the number of the effective day from a timestamp.
-     *
-     * @param timestamp The timestamp to calculate from.
-     * @return The number of the effective day.
-     */
-    function _effectiveDay(uint256 timestamp) internal pure returns (uint256) {
-        return timestamp / 1 days;
-    }
-
-    // Tested
-    /**
-     * @dev Calculates the remaining seconds before the next day.
-     *
-     * @param timestamp The timestamp to calculate from.
-     * @return The remaining seconds.
-     */
-    function _remainingSeconds(uint256 timestamp) internal pure returns (uint256) {
-        return timestamp % 1 days;
-    }
-
-    // Tested
-    /**
-     * @dev Calculates the timestamp of the beginning of the day.
-     *
-     * @param timestamp The timestamp to calculate from.
-     * @return The timestamp of the day.
+     * @return The resulting effective timestamp.
      */
     function _effectiveTimestamp(uint256 timestamp) internal pure returns (uint256) {
         return (timestamp / 1 days) * 1 days;
     }
 
     /**
-     * @dev Returns the current block timestamp, adjusted by the negative time shift.
-     * The negative time shift is applied to align the yield calculation periods.
+     * @dev Returns the current block timestamp after subtracting `NEGATIVE_TIME_SHIFT`.
+     * The block timestamp shift is applied to align the yield calculation periods.
      *
-     * @return The adjusted current block timestamp.
+     * @return The resulting adjusted timestamp.
      */
     function _blockTimestamp() internal view virtual returns (uint256) {
         return block.timestamp - NEGATIVE_TIME_SHIFT;

@@ -1,13 +1,14 @@
 import { expect } from "chai";
 import { ethers, network, upgrades } from "hardhat";
 import { Contract, ContractFactory } from "ethers";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
-const RATE_FACTOR = 1000000000000n;
-const ROUND_FACTOR = 10000n;
-const DAY = 86400n;
-const HOUR = 3600n;
-const INITIAL_DAY_INDEX = 21000n;
+const NEGATIVE_TIME_SHIFT = 10800n; // 3 hours
+const RATE_FACTOR = 1000000000000n; // 10^12
+const ROUND_FACTOR = 10000n; // 10^4
+const DAY = 86400n; // 1 day
+const HOUR = 3600n; // 1 hour
+const INITIAL_DAY_INDEX = 21000n; // 21000 days
 
 const REVERT_ERROR_IF_YIELD_RATE_ARRAY_IS_EMPTY = "YieldStreamer_YieldRateArrayIsEmpty";
 const REVERT_ERROR_IF_TIME_RANGE_IS_INVALID = "YieldStreamer_TimeRangeIsInvalid";
@@ -2160,73 +2161,19 @@ describe("YieldStreamerV2Testable", function () {
     });
   });
 
-  describe("Function to work with timestamps", function () {
-    it("Should return the next day as expected", async function () {
+  describe("Function 'blockTimestamp()'", function () {
+    it("Should return the adjusted timestamp as expected", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      const timestamps = [
-        0n,
-        1n,
-        50n,
-        86399n,
-        86400n,
-        86401n,
-        2n * 86400n,
-        3n * 86400n + 12345n,
-        1660135722n
-      ];
+      const currentTimestamp = BigInt(await time.latest());
+      const expectedBlockTimestamp = currentTimestamp - NEGATIVE_TIME_SHIFT;
+      const blockTimestamp = await yieldStreamerTestable.blockTimestamp();
 
-      for (const ts of timestamps) {
-        const nextDay = await yieldStreamerTestable.nextDay(ts);
-        const expectedNextDay = ts - (ts % 86400n) + 86400n;
-        expect(nextDay).to.equal(expectedNextDay);
-      }
+      expect(blockTimestamp).to.equal(expectedBlockTimestamp);
     });
+  });
 
-    it("Should return the effective day as expected", async function () {
-      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-
-      const timestamps = [
-        0n,
-        1n,
-        50n,
-        86399n,
-        86400n,
-        86401n,
-        2n * 86400n,
-        3n * 86400n + 12345n,
-        1660135722n
-      ];
-
-      for (const ts of timestamps) {
-        const effectiveDay = await yieldStreamerTestable.effectiveDay(ts);
-        const expectedDay = ts / 86400n;
-        expect(effectiveDay).to.equal(expectedDay);
-      }
-    });
-
-    it("Should return the remaining seconds as expected", async function () {
-      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-
-      const timestamps = [
-        0n,
-        1n,
-        50n,
-        86399n,
-        86400n,
-        86401n,
-        2n * 86400n,
-        3n * 86400n + 12345n,
-        1660135722n
-      ];
-
-      for (const ts of timestamps) {
-        const remainingSeconds = await yieldStreamerTestable.remainingSeconds(ts);
-        const expectedRemainingSeconds = ts % 86400n;
-        expect(remainingSeconds).to.equal(expectedRemainingSeconds);
-      }
-    });
-
+  describe("Function 'effectiveTimestamp()'", function () {
     it("Should return the effective timestamp as expected", async function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 

@@ -75,18 +75,6 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
 
     // ------------------ Timestamp ------------------------------- //
 
-    function nextDay(uint256 timestamp) external pure returns (uint256) {
-        return _nextDay(timestamp);
-    }
-
-    function effectiveDay(uint256 timestamp) external pure returns (uint256) {
-        return _effectiveDay(timestamp);
-    }
-
-    function remainingSeconds(uint256 timestamp) external pure returns (uint256) {
-        return _remainingSeconds(timestamp);
-    }
-
     function effectiveTimestamp(uint256 timestamp) external pure returns (uint256) {
         return _effectiveTimestamp(timestamp);
     }
