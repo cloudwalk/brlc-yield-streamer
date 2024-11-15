@@ -257,9 +257,7 @@ abstract contract YieldStreamerPrimary is
         YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
         YieldState storage state = $.yieldStates[account];
         YieldRate[] storage rates = $.yieldRates[$.groups[account].id];
-        ClaimPreview memory preview = _map(_getAccruePreview(state, rates, currentTimestamp));
-        preview.timestamp = currentTimestamp;
-        return preview;
+        return _map(_getAccruePreview(state, rates, currentTimestamp));
     }
 
     /**
@@ -1033,34 +1031,30 @@ abstract contract YieldStreamerPrimary is
         return roundedAmount;
     }
 
-    // Tested
     /**
-     * @dev Maps an `AccruePreview` to a `ClaimPreview`.
+     * @dev Maps an `AccruePreview` struct to a `ClaimPreview` struct.
      *
-     * @param accrue The accrue preview to map from.
-     * @return The resulting claim preview.
+     * @param accruePreview The `AccruePreview` struct to map from.
+     * @return claimPreview The resulting `ClaimPreview` struct.
      */
-    function _map(AccruePreview memory accrue) internal pure returns (ClaimPreview memory) {
-        ClaimPreview memory claim;
+    function _map(AccruePreview memory accruePreview) internal pure returns (ClaimPreview memory claimPreview) {
+        uint256 totalYield = accruePreview.accruedYieldAfter + accruePreview.streamYieldAfter;
+        claimPreview.yield = _roundDown(totalYield);
+        claimPreview.fee = 0; // Fees are not supported yet.
+        claimPreview.timestamp = accruePreview.toTimestamp;
+        claimPreview.balance = accruePreview.balance;
 
-        uint256 totalYield = accrue.accruedYieldAfter + accrue.streamYieldAfter;
-        claim.yield = _roundDown(totalYield);
-        claim.fee = 0;
-        claim.timestamp = 0;
-        claim.balance = accrue.balance;
-
-        uint256 lastRateIndex = accrue.rates.length - 1;
-        uint256 lastRateLength = accrue.rates[lastRateIndex].tiers.length;
+        uint256 lastRateIndex = accruePreview.rates.length - 1;
+        uint256 lastRateLength = accruePreview.rates[lastRateIndex].tiers.length;
         uint256[] memory rates = new uint256[](lastRateLength);
         uint256[] memory caps = new uint256[](lastRateLength);
-        for (uint256 i = 0; i < lastRateLength; i++) {
-            rates[i] = accrue.rates[lastRateIndex].tiers[i].rate;
-            caps[i] = accrue.rates[lastRateIndex].tiers[i].cap;
+        for (uint256 i = 0; i < lastRateLength; ++i) {
+            rates[i] = accruePreview.rates[lastRateIndex].tiers[i].rate;
+            caps[i] = accruePreview.rates[lastRateIndex].tiers[i].cap;
         }
-        claim.rates = rates;
-        claim.caps = caps;
 
-        return claim;
+        claimPreview.rates = rates;
+        claimPreview.caps = caps;
     }
 
     // ------------------ Overrides ------------------------------- //
