@@ -2317,6 +2317,17 @@ describe("YieldStreamerV2Testable", function () {
     });
   });
 
+  describe("Function 'calculateFee()'", async () => {
+    it("Should calculate fee as expected", async () => {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      // FEE_RATE is 0, so the fee should always be 0.
+      expect(await yieldStreamerTestable.calculateFee(0n)).to.equal(0n);
+      expect(await yieldStreamerTestable.calculateFee(1000000n)).to.equal(0n);
+      expect(await yieldStreamerTestable.calculateFee(1000000000000n)).to.equal(0n);
+    });
+  });
+
   describe("Function 'roundDown()'", async () => {
     it("Should round down as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);

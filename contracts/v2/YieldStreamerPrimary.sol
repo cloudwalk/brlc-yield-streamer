@@ -997,31 +997,31 @@ abstract contract YieldStreamerPrimary is
      * @dev Calculates the fee for a given amount based on the fee rate.
      *
      * @param amount The amount to calculate the fee for.
-     * @return The calculated fee amount.
+     * @return feeAmount The calculated fee amount.
      */
-    function _calculateFee(uint256 amount) private pure returns (uint256) {
-        return (amount * FEE_RATE) / RATE_FACTOR;
+    function _calculateFee(uint256 amount) internal pure returns (uint256 feeAmount) {
+        feeAmount = (amount * FEE_RATE) / RATE_FACTOR;
     }
 
     /**
      * @dev Rounds down an amount to the nearest multiple of `ROUND_FACTOR`.
      *
-     * @param inputAmount The amount to round down.
+     * @param amount The amount to round down.
      * @return roundedAmount The rounded down amount.
      */
-    function _roundDown(uint256 inputAmount) internal pure returns (uint256 roundedAmount) {
-        roundedAmount = (inputAmount / ROUND_FACTOR) * ROUND_FACTOR;
+    function _roundDown(uint256 amount) internal pure returns (uint256 roundedAmount) {
+        roundedAmount = (amount / ROUND_FACTOR) * ROUND_FACTOR;
     }
 
     /**
      * @dev Rounds up an amount to the nearest multiple of `ROUND_FACTOR`.
      *
-     * @param inputAmount The amount to round up.
+     * @param amount The amount to round up.
      * @return roundedAmount The rounded up amount.
      */
-    function _roundUp(uint256 inputAmount) internal pure returns (uint256 roundedAmount) {
-        roundedAmount = _roundDown(inputAmount);
-        if (roundedAmount < inputAmount) {
+    function _roundUp(uint256 amount) internal pure returns (uint256 roundedAmount) {
+        roundedAmount = _roundDown(amount);
+        if (roundedAmount < amount) {
             roundedAmount += ROUND_FACTOR;
         }
     }

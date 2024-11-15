@@ -102,6 +102,10 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
         return _truncateArray(startIndex, endIndex, $.yieldRates[groupId]);
     }
 
+    function calculateFee(uint256 amount) external pure returns (uint256) {
+        return _calculateFee(amount);
+    }
+
     function roundDown(uint256 amount) external pure returns (uint256) {
         return _roundDown(amount);
     }
