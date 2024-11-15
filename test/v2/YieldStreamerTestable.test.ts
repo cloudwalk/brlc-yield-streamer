@@ -3,8 +3,8 @@ import { ethers, network, upgrades } from "hardhat";
 import { Contract, ContractFactory } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
-const RATE_FACTOR = BigInt(1e12);
-const ROUND_FACTOR = 10000;
+const RATE_FACTOR = 1000000000000n;
+const ROUND_FACTOR = 10000n;
 const DAY = 86400n;
 const HOUR = 3600n;
 const INITIAL_DAY_INDEX = 21000n;
@@ -102,13 +102,13 @@ describe("YieldStreamerV2Testable", function () {
   }
 
   function roundDown(amount: bigint): bigint {
-    return (amount / BigInt(ROUND_FACTOR)) * BigInt(ROUND_FACTOR);
+    return amount / ROUND_FACTOR * ROUND_FACTOR;
   }
 
   function roundUp(amount: bigint): bigint {
     const roundedAmount = roundDown(amount);
     if (roundedAmount < amount) {
-      return roundedAmount + BigInt(ROUND_FACTOR);
+      return roundedAmount + ROUND_FACTOR;
     }
     return roundedAmount;
   }
@@ -121,15 +121,15 @@ describe("YieldStreamerV2Testable", function () {
     const rates: YieldRate[] = [];
 
     // Build the yield rates array.
-    for (let i = 0; i < count; i++) {
+    for (let i = 0n; i < count; i++) {
       rates.push({
         tiers: [
           {
-            rate: BigInt(i),
-            cap: BigInt(i)
+            rate: i,
+            cap: i
           }
         ],
-        effectiveDay: BigInt(i)
+        effectiveDay: i
       });
     }
 
@@ -154,10 +154,10 @@ describe("YieldStreamerV2Testable", function () {
 
   function normalizeYieldRates(rates: any[]): YieldRate[] {
     return rates.map((rate: any) => ({
-      effectiveDay: BigInt(rate[1]),
+      effectiveDay: rate[1],
       tiers: rate[0].map((tier: any) => ({
-        rate: BigInt(tier[0]),
-        cap: BigInt(tier[1])
+        rate: tier[0],
+        cap: tier[1]
       }))
     }));
   }
@@ -170,7 +170,7 @@ describe("YieldStreamerV2Testable", function () {
     return (amount * rate * elapsedSeconds) / (DAY * RATE_FACTOR);
   }
 
-  describe.only("Function 'getAccruePreview()'", function () {
+  describe("Function 'getAccruePreview()'", function () {
     let yieldStreamerTestable: Contract;
 
     beforeEach(async function () {
@@ -666,24 +666,24 @@ describe("YieldStreamerV2Testable", function () {
 
         // Convert result to comparable format
         const normalizedResult: AccruePreview = {
-          fromTimestamp: BigInt(result.fromTimestamp),
-          toTimestamp: BigInt(result.toTimestamp),
-          balance: BigInt(result.balance),
-          streamYieldBefore: BigInt(result.streamYieldBefore),
-          accruedYieldBefore: BigInt(result.accruedYieldBefore),
-          streamYieldAfter: BigInt(result.streamYieldAfter),
-          accruedYieldAfter: BigInt(result.accruedYieldAfter),
+          fromTimestamp: result.fromTimestamp,
+          toTimestamp: result.toTimestamp,
+          balance: result.balance,
+          streamYieldBefore: result.streamYieldBefore,
+          accruedYieldBefore: result.accruedYieldBefore,
+          streamYieldAfter: result.streamYieldAfter,
+          accruedYieldAfter: result.accruedYieldAfter,
           rates: result.rates.map((r: YieldRate) => ({
             tiers: r.tiers.map((t: RateTier) => ({
-              rate: BigInt(t.rate),
-              cap: BigInt(t.cap)
+              rate: t.rate,
+              cap: t.cap
             })),
-            effectiveDay: BigInt(r.effectiveDay)
+            effectiveDay: r.effectiveDay
           })),
           results: result.results.map((r: YieldResult) => ({
-            firstDayPartialYield: BigInt(r.firstDayPartialYield),
-            fullDaysYield: BigInt(r.fullDaysYield),
-            lastDayPartialYield: BigInt(r.lastDayPartialYield),
+            firstDayPartialYield: r.firstDayPartialYield,
+            fullDaysYield: r.fullDaysYield,
+            lastDayPartialYield: r.lastDayPartialYield,
             tieredFirstDayPartialYield: r.tieredFirstDayPartialYield.map((n: bigint) => n),
             tieredFullDaysYield: r.tieredFullDaysYield.map((n: bigint) => n),
             tieredLastDayPartialYield: r.tieredLastDayPartialYield.map((n: bigint) => n)
@@ -1094,12 +1094,12 @@ describe("YieldStreamerV2Testable", function () {
 
         // Convert result to comparable format
         const normalizedResult: YieldResult[] = result.map((r: any) => ({
-          firstDayPartialYield: BigInt(r.firstDayPartialYield),
-          fullDaysYield: BigInt(r.fullDaysYield),
-          lastDayPartialYield: BigInt(r.lastDayPartialYield),
-          tieredFirstDayPartialYield: r.tieredFirstDayPartialYield.map((n: any) => BigInt(n)),
-          tieredFullDaysYield: r.tieredFullDaysYield.map((n: any) => BigInt(n)),
-          tieredLastDayPartialYield: r.tieredLastDayPartialYield.map((n: any) => BigInt(n))
+          firstDayPartialYield: r.firstDayPartialYield,
+          fullDaysYield: r.fullDaysYield,
+          lastDayPartialYield: r.lastDayPartialYield,
+          tieredFirstDayPartialYield: r.tieredFirstDayPartialYield.map((n: bigint) => n),
+          tieredFullDaysYield: r.tieredFullDaysYield.map((n: bigint) => n),
+          tieredLastDayPartialYield: r.tieredLastDayPartialYield.map((n: bigint) => n)
         }));
 
         // Compare each result
@@ -1528,9 +1528,9 @@ describe("YieldStreamerV2Testable", function () {
 
           // Normalize the result for comparison
           const compoundYieldResult: YieldResult = {
-            firstDayPartialYield: BigInt(result.firstDayPartialYield),
-            fullDaysYield: BigInt(result.fullDaysYield),
-            lastDayPartialYield: BigInt(result.lastDayPartialYield),
+            firstDayPartialYield: result.firstDayPartialYield,
+            fullDaysYield: result.fullDaysYield,
+            lastDayPartialYield: result.lastDayPartialYield,
             tieredFirstDayPartialYield: result.tieredFirstDayPartialYield.map((n: bigint) => n),
             tieredFullDaysYield: result.tieredFullDaysYield.map((n: bigint) => n),
             tieredLastDayPartialYield: result.tieredLastDayPartialYield.map((n: bigint) => n)
@@ -1698,7 +1698,7 @@ describe("YieldStreamerV2Testable", function () {
           { rate: 0n, cap: 100000000n },
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 50000000n }
         ],
-        elapsedSeconds: BigInt(3600),
+        elapsedSeconds: 3600n,
         expectedTieredYield: [
           0n,
           ((RATE_FACTOR / 100n) * 2n * 200000000n * 3600n) / (DAY * RATE_FACTOR),
@@ -1752,22 +1752,22 @@ describe("YieldStreamerV2Testable", function () {
     });
 
     it("Should return zero when amount is zero", async function () {
-      const amount = BigInt(0); // zero amount
-      const rate = BigInt(1000); // arbitrary non-zero rate
+      const amount = 0n; // zero amount
+      const rate = 1000n; // arbitrary non-zero rate
       const yieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
       expect(yieldResult).to.equal(0);
     });
 
     it("Should return zero when rate is zero", async function () {
-      const amount = BigInt(100); // arbitrary non-zero amount
-      const rate = BigInt(0); // zero rate
+      const amount = 100n; // arbitrary non-zero amount
+      const rate = 0n; // zero rate
       const yieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
       expect(yieldResult).to.equal(0);
     });
 
     it("Should calculate yield correctly for typical values", async function () {
-      const amount = BigInt(123456789);
-      const rate = BigInt(123456789);
+      const amount = 123456789n;
+      const rate = 123456789n;
       const expectedYield = (amount * rate) / RATE_FACTOR;
 
       const yieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
@@ -1784,45 +1784,45 @@ describe("YieldStreamerV2Testable", function () {
     });
 
     it("Should return zero when amount is zero", async function () {
-      const amount = BigInt(0); // zero amount
-      const rate = BigInt(1000); // arbitrary non-zero rate
-      const elapsedSeconds = BigInt(3600); // arbitrary non-zero elapsed seconds
+      const amount = 0n; // zero amount
+      const rate = 1000n; // arbitrary non-zero rate
+      const elapsedSeconds = 3600n; // arbitrary non-zero elapsed seconds
       const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
       expect(yieldResult).to.equal(0);
     });
 
     it("Should return zero when rate is zero", async function () {
-      const amount = BigInt(1000); // arbitrary non-zero amount
-      const rate = BigInt(0); // zero rate
-      const elapsedSeconds = BigInt(3600); // arbitrary non-zero elapsed seconds
+      const amount = 1000n; // arbitrary non-zero amount
+      const rate = 0n; // zero rate
+      const elapsedSeconds = 3600n; // arbitrary non-zero elapsed seconds
       const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
       expect(yieldResult).to.equal(0);
     });
 
     it("Should return zero when elapsedSeconds is zero", async function () {
-      const amount = BigInt(1000); // arbitrary non-zero amount
-      const rate = BigInt(1000); // arbitrary non-zero rate
-      const elapsedSeconds = BigInt(0); // zero elapsed seconds
+      const amount = 1000n; // arbitrary non-zero amount
+      const rate = 1000n; // arbitrary non-zero rate
+      const elapsedSeconds = 0n; // zero elapsed seconds
       const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
       expect(yieldResult).to.equal(0);
     });
 
     it("Should calculate partial day yield correctly", async function () {
-      const amount = BigInt(123456789); // arbitrary non-zero amount
-      const rate = BigInt(123456789); // arbitrary non-zero rate
-      const elapsedSeconds = BigInt(12345); // arbitrary non-zero elapsed seconds
-      const expectedYield = (amount * rate * elapsedSeconds) / (BigInt(86400) * RATE_FACTOR);
+      const amount = 123456789n; // arbitrary non-zero amount
+      const rate = 123456789n; // arbitrary non-zero rate
+      const elapsedSeconds = 12345n; // arbitrary non-zero elapsed seconds
+      const expectedYield = (amount * rate * elapsedSeconds) / (86400n * RATE_FACTOR);
 
       const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
       expect(yieldResult).to.equal(expectedYield);
     });
 
     it("Should calculate full day yield when elapsedSeconds equals 1 day", async function () {
-      const amount = BigInt(123456789); // arbitrary non-zero amount
-      const rate = BigInt(123456789); // arbitrary non-zero rate
-      const elapsedSeconds = BigInt(86400); // 1 day
+      const amount = 123456789n; // arbitrary non-zero amount
+      const rate = 123456789n; // arbitrary non-zero rate
+      const elapsedSeconds = 86400n; // 1 day
 
-      const expectedYield = (amount * rate * elapsedSeconds) / (BigInt(86400) * RATE_FACTOR);
+      const expectedYield = (amount * rate * elapsedSeconds) / (86400n * RATE_FACTOR);
 
       const partialDayYieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(
         amount,
@@ -2072,12 +2072,12 @@ describe("YieldStreamerV2Testable", function () {
 
       // Single YieldResult with sample values
       const yieldResult: YieldResult = {
-        firstDayPartialYield: BigInt(100),
-        fullDaysYield: BigInt(200),
-        lastDayPartialYield: BigInt(50),
-        tieredFirstDayPartialYield: [BigInt(100)],
-        tieredFullDaysYield: [BigInt(200)],
-        tieredLastDayPartialYield: [BigInt(50)]
+        firstDayPartialYield: 100n,
+        fullDaysYield: 200n,
+        lastDayPartialYield: 50n,
+        tieredFirstDayPartialYield: [100n],
+        tieredFullDaysYield: [200n],
+        tieredLastDayPartialYield: [50n]
       };
 
       const yieldResults: YieldResult[] = [yieldResult];
@@ -2097,28 +2097,28 @@ describe("YieldStreamerV2Testable", function () {
 
       const yieldResults: YieldResult[] = [
         {
-          firstDayPartialYield: BigInt(100),
-          fullDaysYield: BigInt(200),
-          lastDayPartialYield: BigInt(50),
-          tieredFirstDayPartialYield: [BigInt(100)],
-          tieredFullDaysYield: [BigInt(200)],
-          tieredLastDayPartialYield: [BigInt(50)]
+          firstDayPartialYield: 100n,
+          fullDaysYield: 200n,
+          lastDayPartialYield: 50n,
+          tieredFirstDayPartialYield: [100n],
+          tieredFullDaysYield: [200n],
+          tieredLastDayPartialYield: [50n]
         },
         {
-          firstDayPartialYield: BigInt(80),
-          fullDaysYield: BigInt(150),
-          lastDayPartialYield: BigInt(40),
-          tieredFirstDayPartialYield: [BigInt(80)],
-          tieredFullDaysYield: [BigInt(150)],
-          tieredLastDayPartialYield: [BigInt(40)]
+          firstDayPartialYield: 80n,
+          fullDaysYield: 150n,
+          lastDayPartialYield: 40n,
+          tieredFirstDayPartialYield: [80n],
+          tieredFullDaysYield: [150n],
+          tieredLastDayPartialYield: [40n]
         },
         {
-          firstDayPartialYield: BigInt(70),
-          fullDaysYield: BigInt(120),
-          lastDayPartialYield: BigInt(30),
-          tieredFirstDayPartialYield: [BigInt(70)],
-          tieredFullDaysYield: [BigInt(120)],
-          tieredLastDayPartialYield: [BigInt(30)]
+          firstDayPartialYield: 70n,
+          fullDaysYield: 120n,
+          lastDayPartialYield: 30n,
+          tieredFirstDayPartialYield: [70n],
+          tieredFullDaysYield: [120n],
+          tieredLastDayPartialYield: [30n]
         }
       ];
 
@@ -2149,20 +2149,20 @@ describe("YieldStreamerV2Testable", function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
       const timestamps = [
-        BigInt(0),
-        BigInt(1),
-        BigInt(50),
-        BigInt(86399),
-        BigInt(86400),
-        BigInt(86401),
-        BigInt(2 * 86400),
-        BigInt(3 * 86400 + 12345),
-        BigInt(1660135722n)
+        0n,
+        1n,
+        50n,
+        86399n,
+        86400n,
+        86401n,
+        2n * 86400n,
+        3n * 86400n + 12345n,
+        1660135722n
       ];
 
       for (const ts of timestamps) {
         const nextDay = await yieldStreamerTestable.nextDay(ts);
-        const expectedNextDay = ts - (ts % BigInt(86400)) + BigInt(86400);
+        const expectedNextDay = ts - (ts % 86400n) + 86400n;
         expect(nextDay).to.equal(expectedNextDay);
       }
     });
@@ -2171,20 +2171,20 @@ describe("YieldStreamerV2Testable", function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
       const timestamps = [
-        BigInt(0),
-        BigInt(1),
-        BigInt(50),
-        BigInt(86399),
-        BigInt(86400),
-        BigInt(86401),
-        BigInt(2 * 86400),
-        BigInt(3 * 86400 + 12345),
-        BigInt(1660135722n)
+        0n,
+        1n,
+        50n,
+        86399n,
+        86400n,
+        86401n,
+        2n * 86400n,
+        3n * 86400n + 12345n,
+        1660135722n
       ];
 
       for (const ts of timestamps) {
         const effectiveDay = await yieldStreamerTestable.effectiveDay(ts);
-        const expectedDay = ts / BigInt(86400);
+        const expectedDay = ts / 86400n;
         expect(effectiveDay).to.equal(expectedDay);
       }
     });
@@ -2193,20 +2193,20 @@ describe("YieldStreamerV2Testable", function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
       const timestamps = [
-        BigInt(0),
-        BigInt(1),
-        BigInt(50),
-        BigInt(86399),
-        BigInt(86400),
-        BigInt(86401),
-        BigInt(2 * 86400),
-        BigInt(3 * 86400 + 12345),
-        BigInt(1660135722n)
+        0n,
+        1n,
+        50n,
+        86399n,
+        86400n,
+        86401n,
+        2n * 86400n,
+        3n * 86400n + 12345n,
+        1660135722n
       ];
 
       for (const ts of timestamps) {
         const remainingSeconds = await yieldStreamerTestable.remainingSeconds(ts);
-        const expectedRemainingSeconds = ts % BigInt(86400);
+        const expectedRemainingSeconds = ts % 86400n;
         expect(remainingSeconds).to.equal(expectedRemainingSeconds);
       }
     });
@@ -2215,20 +2215,20 @@ describe("YieldStreamerV2Testable", function () {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
       const timestamps = [
-        BigInt(0),
-        BigInt(1),
-        BigInt(50),
-        BigInt(86399),
-        BigInt(86400),
-        BigInt(86401),
-        BigInt(2 * 86400),
-        BigInt(3 * 86400 + 12345),
-        BigInt(1660135722n)
+        0n,
+        1n,
+        50n,
+        86399n,
+        86400n,
+        86401n,
+        2n * 86400n,
+        3n * 86400n + 12345n,
+        1660135722n
       ];
 
       for (const ts of timestamps) {
         const effectiveTimestamp = await yieldStreamerTestable.effectiveTimestamp(ts);
-        const expectedEffectiveTimestamp = (ts / BigInt(86400)) * BigInt(86400);
+        const expectedEffectiveTimestamp = (ts / 86400n) * 86400n;
         expect(effectiveTimestamp).to.equal(expectedEffectiveTimestamp);
       }
     });
@@ -2304,28 +2304,28 @@ describe("YieldStreamerV2Testable", function () {
   describe("Function 'roundDown()'", async () => {
     it("Should round down as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-      expect(await yieldStreamerTestable.roundDown(BigInt("0"))).to.equal(BigInt("0"));
-      expect(await yieldStreamerTestable.roundDown(BigInt("10000000"))).to.equal(BigInt("10000000"));
-      expect(await yieldStreamerTestable.roundDown(BigInt("10000001"))).to.equal(BigInt("10000000"));
-      expect(await yieldStreamerTestable.roundDown(BigInt("10009999"))).to.equal(BigInt("10000000"));
-      expect(await yieldStreamerTestable.roundDown(BigInt("0"))).to.equal(roundDown(BigInt("0")));
-      expect(await yieldStreamerTestable.roundDown(BigInt("10000000"))).to.equal(roundDown(BigInt("10000000")));
-      expect(await yieldStreamerTestable.roundDown(BigInt("10000001"))).to.equal(roundDown(BigInt("10000001")));
-      expect(await yieldStreamerTestable.roundDown(BigInt("10009999"))).to.equal(roundDown(BigInt("10009999")));
+      expect(await yieldStreamerTestable.roundDown(0n)).to.equal(0n);
+      expect(await yieldStreamerTestable.roundDown(10000000n)).to.equal(10000000n);
+      expect(await yieldStreamerTestable.roundDown(10000001n)).to.equal(10000000n);
+      expect(await yieldStreamerTestable.roundDown(10009999n)).to.equal(10000000n);
+      expect(await yieldStreamerTestable.roundDown(0n)).to.equal(roundDown(0n));
+      expect(await yieldStreamerTestable.roundDown(10000000n)).to.equal(roundDown(10000000n));
+      expect(await yieldStreamerTestable.roundDown(10000001n)).to.equal(roundDown(10000001n));
+      expect(await yieldStreamerTestable.roundDown(10009999n)).to.equal(roundDown(10009999n));
     });
   });
 
   describe("Function 'roundUp()'", async () => {
     it("Should round up as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-      expect(await yieldStreamerTestable.roundUp(BigInt("0"))).to.equal(BigInt("0"));
-      expect(await yieldStreamerTestable.roundUp(BigInt("10000000"))).to.equal(BigInt("10000000"));
-      expect(await yieldStreamerTestable.roundUp(BigInt("10000001"))).to.equal(BigInt("10010000"));
-      expect(await yieldStreamerTestable.roundUp(BigInt("10009999"))).to.equal(BigInt("10010000"));
-      expect(await yieldStreamerTestable.roundUp(BigInt("0"))).to.equal(roundUp(BigInt("0")));
-      expect(await yieldStreamerTestable.roundUp(BigInt("10000000"))).to.equal(roundUp(BigInt("10000000")));
-      expect(await yieldStreamerTestable.roundUp(BigInt("10000001"))).to.equal(roundUp(BigInt("10000001")));
-      expect(await yieldStreamerTestable.roundUp(BigInt("10009999"))).to.equal(roundUp(BigInt("10009999")));
+      expect(await yieldStreamerTestable.roundUp(0n)).to.equal(0n);
+      expect(await yieldStreamerTestable.roundUp(10000000n)).to.equal(10000000n);
+      expect(await yieldStreamerTestable.roundUp(10000001n)).to.equal(10010000n);
+      expect(await yieldStreamerTestable.roundUp(10009999n)).to.equal(10010000n);
+      expect(await yieldStreamerTestable.roundUp(0n)).to.equal(roundUp(0n));
+      expect(await yieldStreamerTestable.roundUp(10000000n)).to.equal(roundUp(10000000n));
+      expect(await yieldStreamerTestable.roundUp(10000001n)).to.equal(roundUp(10000001n));
+      expect(await yieldStreamerTestable.roundUp(10009999n)).to.equal(roundUp(10009999n));
     });
   });
 
@@ -2335,57 +2335,57 @@ describe("YieldStreamerV2Testable", function () {
 
       // Create an AccruePreview object with sample data.
       const accruePreview: AccruePreview = {
-        fromTimestamp: BigInt("10000000"),
-        toTimestamp: BigInt("20000000"),
-        balance: BigInt("30000000"),
-        streamYieldBefore: BigInt("199999"),
-        accruedYieldBefore: BigInt("299999"),
-        streamYieldAfter: BigInt("499999"),
-        accruedYieldAfter: BigInt("399999"),
+        fromTimestamp: 10000000n,
+        toTimestamp: 20000000n,
+        balance: 30000000n,
+        streamYieldBefore: 199999n,
+        accruedYieldBefore: 299999n,
+        streamYieldAfter: 499999n,
+        accruedYieldAfter: 399999n,
         rates: [
           {
             tiers: [
               {
-                rate: BigInt("100"),
-                cap: BigInt("100")
+                rate: 100n,
+                cap: 100n
               },
               {
-                rate: BigInt("200"),
-                cap: BigInt("200")
+                rate: 200n,
+                cap: 200n
               }
             ],
-            effectiveDay: BigInt("1")
+            effectiveDay: 1n
           },
           {
             tiers: [
               {
-                rate: BigInt("300"),
-                cap: BigInt("300")
+                rate: 300n,
+                cap: 300n
               },
               {
-                rate: BigInt("400"),
-                cap: BigInt("400")
+                rate: 400n,
+                cap: 400n
               }
             ],
-            effectiveDay: BigInt("9")
+            effectiveDay: 9n
           }
         ],
         results: [
           {
-            firstDayPartialYield: BigInt("10"),
-            fullDaysYield: BigInt("20"),
-            lastDayPartialYield: BigInt("30"),
-            tieredFirstDayPartialYield: [BigInt("10")],
-            tieredFullDaysYield: [BigInt("20")],
-            tieredLastDayPartialYield: [BigInt("30")]
+            firstDayPartialYield: 10n,
+            fullDaysYield: 20n,
+            lastDayPartialYield: 30n,
+            tieredFirstDayPartialYield: [10n],
+            tieredFullDaysYield: [20n],
+            tieredLastDayPartialYield: [30n]
           },
           {
-            firstDayPartialYield: BigInt("40"),
-            fullDaysYield: BigInt("50"),
-            lastDayPartialYield: BigInt("60"),
-            tieredFirstDayPartialYield: [BigInt("40")],
-            tieredFullDaysYield: [BigInt("50")],
-            tieredLastDayPartialYield: [BigInt("60")]
+            firstDayPartialYield: 40n,
+            fullDaysYield: 50n,
+            lastDayPartialYield: 60n,
+            tieredFirstDayPartialYield: [40n],
+            tieredFullDaysYield: [50n],
+            tieredLastDayPartialYield: [60n]
           }
         ]
       };
@@ -2396,8 +2396,8 @@ describe("YieldStreamerV2Testable", function () {
       // Set the expected values.
       const expectedClaimPreview: ClaimPreview = {
         yield: roundDown(accruePreview.accruedYieldAfter + accruePreview.streamYieldAfter),
-        fee: BigInt("0"),
-        timestamp: BigInt("0"),
+        fee: 0n,
+        timestamp: 0n,
         balance: accruePreview.balance,
         rates: accruePreview.rates[accruePreview.rates.length - 1].tiers.map(tier => tier.rate),
         caps: accruePreview.rates[accruePreview.rates.length - 1].tiers.map(tier => tier.cap)
