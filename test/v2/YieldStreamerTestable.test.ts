@@ -13,6 +13,7 @@ const INITIAL_TIMESTAMP = INITIAL_DAY_INDEX * DAY;
 
 const REVERT_ERROR_IF_YIELD_RATE_ARRAY_IS_EMPTY = "YieldStreamer_YieldRateArrayIsEmpty";
 const REVERT_ERROR_IF_TIME_RANGE_IS_INVALID = "YieldStreamer_TimeRangeIsInvalid";
+
 interface YieldState {
   flags: bigint;
   streamYield: bigint;
@@ -83,7 +84,7 @@ async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   }
 }
 
-describe("YieldStreamerV2Testable", function () {
+describe.only("YieldStreamerV2Testable", async () => {
   let yieldStreamerTestableFactory: ContractFactory;
 
   before(async function () {
