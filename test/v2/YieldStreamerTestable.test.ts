@@ -9,6 +9,7 @@ const ROUND_FACTOR = 10000n; // 10^4
 const DAY = 86400n; // 1 day (in seconds)
 const HOUR = 3600n; // 1 hour (in seconds)
 const INITIAL_DAY_INDEX = 21000n; // 21000 days
+const INITIAL_TIMESTAMP = INITIAL_DAY_INDEX * DAY;
 
 const REVERT_ERROR_IF_YIELD_RATE_ARRAY_IS_EMPTY = "YieldStreamer_YieldRateArrayIsEmpty";
 const REVERT_ERROR_IF_TIME_RANGE_IS_INVALID = "YieldStreamer_TimeRangeIsInvalid";
@@ -182,7 +183,7 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "One yield rate",
         state: {
-          lastUpdateTimestamp: INITIAL_DAY_INDEX * DAY + HOUR * 6n,
+          lastUpdateTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
           lastUpdateBalance: 3000000n,
           streamYield: 1000000n,
           accruedYield: 2000000n,
@@ -204,10 +205,10 @@ describe("YieldStreamerV2Testable", function () {
             effectiveDay: INITIAL_DAY_INDEX
           }
         ],
-        currentTimestamp: INITIAL_DAY_INDEX * DAY + DAY * 3n + HOUR * 6n,
+        currentTimestamp: INITIAL_TIMESTAMP + DAY * 3n + HOUR * 6n,
         expected: {
-          fromTimestamp: INITIAL_DAY_INDEX * DAY + HOUR * 6n,
-          toTimestamp: INITIAL_DAY_INDEX * DAY + DAY * 3n + HOUR * 6n,
+          fromTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
+          toTimestamp: INITIAL_TIMESTAMP + DAY * 3n + HOUR * 6n,
           balance: 3000000n,
           streamYieldBefore: 1000000n,
           accruedYieldBefore: 2000000n,
@@ -294,10 +295,10 @@ describe("YieldStreamerV2Testable", function () {
                 simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR * 6n), // - LPD T2: 5000
                 simpleYield(
                   3000000n + // - Initial balance
-                    1000000n + // - Stream yield
-                    60000n + // --- FPD yield
-                    90600n + // --- FD1 yield
-                    91506n, // ---- FD2 yield
+                  1000000n + // - Stream yield
+                  60000n + // --- FPD yield
+                  90600n + // --- FD1 yield
+                  91506n, // ---- FD2 yield
                   (RATE_FACTOR / 100n) * 1n,
                   HOUR * 6n
                 ) // ------------------------------------------------------------- LPD T3: 10605
@@ -309,7 +310,7 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "Two yield rates",
         state: {
-          lastUpdateTimestamp: INITIAL_DAY_INDEX * DAY + HOUR * 6n,
+          lastUpdateTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
           lastUpdateBalance: 3000000n,
           streamYield: 1000000n,
           accruedYield: 2000000n,
@@ -345,10 +346,10 @@ describe("YieldStreamerV2Testable", function () {
             effectiveDay: INITIAL_DAY_INDEX + 1000n
           }
         ],
-        currentTimestamp: INITIAL_DAY_INDEX * DAY + DAY * 3n + HOUR * 6n,
+        currentTimestamp: INITIAL_TIMESTAMP + DAY * 3n + HOUR * 6n,
         expected: {
-          fromTimestamp: INITIAL_DAY_INDEX * DAY + HOUR * 6n,
-          toTimestamp: INITIAL_DAY_INDEX * DAY + DAY * 3n + HOUR * 6n,
+          fromTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
+          toTimestamp: INITIAL_TIMESTAMP + DAY * 3n + HOUR * 6n,
           balance: 3000000n,
           streamYieldBefore: 1000000n,
           accruedYieldBefore: 2000000n,
@@ -405,8 +406,8 @@ describe("YieldStreamerV2Testable", function () {
                 simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY), // - FD1 T2: 20000
                 simpleYield(
                   3000000n + // - Initial balance
-                    1000000n + // - Stream yield
-                    60000n, // ---- FPD yield
+                  1000000n + // - Stream yield
+                  60000n, // ---- FPD yield
                   (RATE_FACTOR / 100n) * 1n,
                   DAY
                 ) // --------------------------------------------------------- FD1 T3: 40600
@@ -437,9 +438,9 @@ describe("YieldStreamerV2Testable", function () {
                 simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY), // - FD2 T2: 20000
                 simpleYield(
                   3000000n + // - Initial balance
-                    1000000n + // - Stream yield
-                    60000n + // --- FPD yield
-                    90600n, // ---- FD1 yield
+                  1000000n + // - Stream yield
+                  60000n + // --- FPD yield
+                  90600n, // ---- FD1 yield
                   (RATE_FACTOR / 100n) * 1n,
                   DAY
                 ) // --------------------------------------------------------- FD2 T3: 41506
@@ -450,10 +451,10 @@ describe("YieldStreamerV2Testable", function () {
                 simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR * 6n), // - LPD T2: 5000
                 simpleYield(
                   3000000n + // - Initial balance
-                    1000000n + // - Stream yield
-                    60000n + // --- FPD yield
-                    90600n + // --- FD1 yield
-                    91506n, // ---- FD2 yield
+                  1000000n + // - Stream yield
+                  60000n + // --- FPD yield
+                  90600n + // --- FD1 yield
+                  91506n, // ---- FD2 yield
                   (RATE_FACTOR / 100n) * 1n,
                   HOUR * 6n
                 ) // ------------------------------------------------------------- LPD T3: 10605
@@ -465,7 +466,7 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "Three yield rates",
         state: {
-          lastUpdateTimestamp: INITIAL_DAY_INDEX * DAY + HOUR * 6n,
+          lastUpdateTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
           lastUpdateBalance: 3000000n,
           streamYield: 1000000n,
           accruedYield: 2000000n,
@@ -509,10 +510,10 @@ describe("YieldStreamerV2Testable", function () {
             effectiveDay: INITIAL_DAY_INDEX + 1000n
           }
         ],
-        currentTimestamp: INITIAL_DAY_INDEX * DAY + DAY * 3n + HOUR * 6n,
+        currentTimestamp: INITIAL_TIMESTAMP + DAY * 3n + HOUR * 6n,
         expected: {
-          fromTimestamp: INITIAL_DAY_INDEX * DAY + HOUR * 6n,
-          toTimestamp: INITIAL_DAY_INDEX * DAY + DAY * 3n + HOUR * 6n,
+          fromTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
+          toTimestamp: INITIAL_TIMESTAMP + DAY * 3n + HOUR * 6n,
           balance: 3000000n,
           streamYieldBefore: 1000000n,
           accruedYieldBefore: 2000000n,
@@ -577,8 +578,8 @@ describe("YieldStreamerV2Testable", function () {
                 simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY), // - FD1 T2: 20000
                 simpleYield(
                   3000000n + // - Initial balance
-                    1000000n + // - Stream yield
-                    60000n, // ---- FPD yield
+                  1000000n + // - Stream yield
+                  60000n, // ---- FPD yield
                   (RATE_FACTOR / 100n) * 1n,
                   DAY
                 ) // ---------------------------------------------------------- FD1 T3: 40600
@@ -603,9 +604,9 @@ describe("YieldStreamerV2Testable", function () {
                 simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY), // - FD2 T2: 20000
                 simpleYield(
                   3000000n + // - Initial balance
-                    1000000n + // - Stream yield
-                    60000n + // --- FPD yield
-                    90600n, // ---- FD1 yield
+                  1000000n + // - Stream yield
+                  60000n + // --- FPD yield
+                  90600n, // ---- FD1 yield
                   (RATE_FACTOR / 100n) * 1n,
                   DAY
                 ) // --------------------------------------------------------- FD2 T3: 41506
@@ -630,10 +631,10 @@ describe("YieldStreamerV2Testable", function () {
                 simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR * 6n), // - LPD T2: 5000
                 simpleYield(
                   3000000n + // - Initial balance
-                    1000000n + // - Stream yield
-                    60000n + // --- FPD yield
-                    90600n + // --- FD1 yield
-                    91506n, // ---- FD2 yield
+                  1000000n + // - Stream yield
+                  60000n + // --- FPD yield
+                  90600n + // --- FD1 yield
+                  91506n, // ---- FD2 yield
                   (RATE_FACTOR / 100n) * 1n,
                   HOUR * 6n
                 ) // ------------------------------------------------------------- LPD T3: 10605
@@ -722,8 +723,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "one yield rate period",
         params: {
-          fromTimestamp: INITIAL_DAY_INDEX * DAY + HOUR * 6n,
-          toTimestamp: INITIAL_DAY_INDEX * DAY + DAY * 3n + HOUR * 6n,
+          fromTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
+          toTimestamp: INITIAL_TIMESTAMP + DAY * 3n + HOUR * 6n,
           rateStartIndex: 1n,
           rateEndIndex: 1n,
           initialBalance: 3000000n,
@@ -819,8 +820,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "two yield rate periods",
         params: {
-          fromTimestamp: INITIAL_DAY_INDEX * DAY + HOUR * 6n,
-          toTimestamp: INITIAL_DAY_INDEX * DAY + DAY * 3n + HOUR * 6n,
+          fromTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
+          toTimestamp: INITIAL_TIMESTAMP + DAY * 3n + HOUR * 6n,
           rateStartIndex: 1n,
           rateEndIndex: 2n,
           initialBalance: 3000000n,
@@ -931,8 +932,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "three yield rate periods",
         params: {
-          fromTimestamp: INITIAL_DAY_INDEX * DAY + HOUR * 6n,
-          toTimestamp: INITIAL_DAY_INDEX * DAY + DAY * 3n + HOUR * 6n,
+          fromTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
+          toTimestamp: INITIAL_TIMESTAMP + DAY * 3n + HOUR * 6n,
           rateStartIndex: 1n,
           rateEndIndex: 3n,
           initialBalance: 3000000n,
@@ -1117,8 +1118,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "single partial day: D1:00:00:00 - D1:01:00:00",
         params: {
-          fromTimestamp: DAY,
-          toTimestamp: DAY + HOUR,
+          fromTimestamp: INITIAL_TIMESTAMP,
+          toTimestamp: INITIAL_TIMESTAMP + HOUR,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1155,8 +1156,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "single partial day: D1:01:00:00 - D1:23:00:00",
         params: {
-          fromTimestamp: DAY + HOUR,
-          toTimestamp: DAY * 2n - HOUR,
+          fromTimestamp: INITIAL_TIMESTAMP + HOUR,
+          toTimestamp: INITIAL_TIMESTAMP + DAY - HOUR,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1187,8 +1188,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "single partial day: D1:23:00:00 - D2:00:00:00",
         params: {
-          fromTimestamp: DAY * 2n - HOUR,
-          toTimestamp: DAY * 2n,
+          fromTimestamp: INITIAL_TIMESTAMP + DAY - HOUR,
+          toTimestamp: INITIAL_TIMESTAMP + DAY,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1219,8 +1220,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "single full day: D1:00:00:00 - D2:00:00:00",
         params: {
-          fromTimestamp: DAY,
-          toTimestamp: DAY * 2n,
+          fromTimestamp: INITIAL_TIMESTAMP,
+          toTimestamp: INITIAL_TIMESTAMP + DAY,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1257,8 +1258,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "two full days: D1:00:00:00 - D3:00:00:00",
         params: {
-          fromTimestamp: DAY,
-          toTimestamp: DAY * 3n,
+          fromTimestamp: INITIAL_TIMESTAMP,
+          toTimestamp: INITIAL_TIMESTAMP + DAY * 2n,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1311,8 +1312,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "two full days AND first partial day: D1:06:00:00 - D4:00:00:00",
         params: {
-          fromTimestamp: DAY + HOUR * 6n,
-          toTimestamp: DAY * 4n,
+          fromTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
+          toTimestamp: INITIAL_TIMESTAMP + DAY * 3n,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1376,8 +1377,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "two full days AND last partial day: D1:00:00:00 - D4:06:00:00",
         params: {
-          fromTimestamp: DAY,
-          toTimestamp: DAY * 3n + HOUR * 6n,
+          fromTimestamp: INITIAL_TIMESTAMP,
+          toTimestamp: INITIAL_TIMESTAMP + DAY * 2n + HOUR * 6n,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1446,8 +1447,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "two full days AND first partial day AND last partial day: D1:06:00:00 - D4:06:00:00",
         params: {
-          fromTimestamp: DAY + HOUR * 6n,
-          toTimestamp: DAY * 4n + HOUR * 6n,
+          fromTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
+          toTimestamp: INITIAL_TIMESTAMP + DAY * 3n + HOUR * 6n,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1527,8 +1528,8 @@ describe("YieldStreamerV2Testable", function () {
       {
         description: "two partial days: D1:06:00:00 - D2:06:00:00",
         params: {
-          fromTimestamp: DAY + HOUR * 6n,
-          toTimestamp: DAY * 2n + HOUR * 6n,
+          fromTimestamp: INITIAL_TIMESTAMP + HOUR * 6n,
+          toTimestamp: INITIAL_TIMESTAMP + DAY + HOUR * 6n,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
