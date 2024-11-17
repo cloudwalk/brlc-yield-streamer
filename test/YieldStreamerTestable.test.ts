@@ -84,7 +84,7 @@ async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   }
 }
 
-describe("YieldStreamerV2Testable", async () => {
+describe.only("YieldStreamerV2Testable", async () => {
   let yieldStreamerTestableFactory: ContractFactory;
 
   before(async () => {

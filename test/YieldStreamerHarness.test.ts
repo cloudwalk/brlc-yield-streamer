@@ -3,7 +3,7 @@ import { ethers, network, upgrades } from "hardhat";
 import { Contract, ContractFactory } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { checkEquality, getAddress, getLatestBlockTimestamp, proveTx } from "../../test-utils/eth";
+import { getAddress, getLatestBlockTimestamp, proveTx } from "../test-utils/eth";
 
 // Constants for rate calculations and time units
 const SECONDS_IN_DAY = 24 * 60 * 60; // Number of seconds in a day
@@ -11,7 +11,7 @@ const SECONDS_IN_DAY = 24 * 60 * 60; // Number of seconds in a day
 const BYTES32_ZERO = ethers.ZeroHash;
 const ADDRESS_ZERO = ethers.ZeroAddress;
 
-const RATE_FACTOR = 10 ** 9;
+const RATE_FACTOR = 10 ** 12;
 const ROUND_FACTOR = 10000;
 const FEE_RATE = 0;
 const NEGATIVE_TIME_SHIFT = 3 * 60 * 60;

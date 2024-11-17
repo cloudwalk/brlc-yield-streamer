@@ -10,7 +10,7 @@ import { YieldStreamerV2 } from "./YieldStreamerV2.sol";
  * @dev Implements additional functions to test private and internal functions of base contracts.
  */
 contract YieldStreamerV2Testable is YieldStreamerV2 {
-    // ------------------ Yield Math ------------------------------- //
+    // ------------------ Yield calculation ----------------------- //
 
     function getAccruePreview(
         YieldState memory state,
@@ -39,7 +39,7 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
         return _calculateTieredYield(amount, elapsedSeconds, rateTiers);
     }
 
-    function calculateSimpleYield(
+    function calculateSimpleYield( // TODO: Change parameter order
         uint256 amount,
         uint256 rate,
         uint256 elapsedSeconds
@@ -48,7 +48,7 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
     }
 
 
-    function inRangeYieldRates(
+    function inRangeYieldRates( // TODO: Change parameter order
         YieldRate[] memory rates,
         uint256 fromTimestamp,
         uint256 toTimestamp

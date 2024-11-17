@@ -9,7 +9,7 @@ import { Bitwise } from "./libs/Bitwise.sol";
 import { YieldStreamerStorage } from "./YieldStreamerStorage.sol";
 import { IYieldStreamerPrimary_Errors } from "./interfaces/IYieldStreamerPrimary.sol";
 import { IYieldStreamerPrimary_Events } from "./interfaces/IYieldStreamerPrimary.sol";
-import { IERC20Hook } from "../interfaces/IERC20Hook.sol";
+import { IERC20Hook } from "./interfaces/IERC20Hook.sol";
 import { Versionable } from "./base/Versionable.sol";
 
 /**
@@ -104,7 +104,7 @@ abstract contract YieldStreamerPrimary is
         }
     }
 
-    // -------------------- Functions ------------------------------ //
+    // -------------------- Internal functions -------------------- //
 
     /**
      * @dev Claims a specified amount of accrued yield for an account.
