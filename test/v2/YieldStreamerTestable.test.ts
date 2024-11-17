@@ -116,11 +116,7 @@ describe("YieldStreamerV2Testable", async () => {
     return roundedAmount;
   }
 
-  async function addSampleYieldRates(
-    yieldStreamerTestable: Contract,
-    groupId: number,
-    count: number
-  ): Promise<YieldRate[]> {
+  function getSampleYieldRates(count: number): YieldRate[] {
     const rates: YieldRate[] = [];
 
     // Build the yield rates array.
@@ -134,13 +130,6 @@ describe("YieldStreamerV2Testable", async () => {
         ],
         effectiveDay: i
       });
-    }
-
-    // Add yield rates to the contract.
-    for (const rate of rates) {
-      const ratesArray = rate.tiers.map(tier => tier.rate);
-      const capsArray = rate.tiers.map(tier => tier.cap);
-      await yieldStreamerTestable.addYieldRate(groupId, rate.effectiveDay, ratesArray, capsArray);
     }
 
     return rates;
@@ -2184,12 +2173,10 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should return the full array when `startIndex` is 0 and `endIndex` is `rates.length - 1`", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up the group ID and add sample yield rates
-      const groupId = 0;
-      const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      const rates = getSampleYieldRates(5);
 
       // Call the `truncateArray` function
-      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 0, rates.length - 1);
+      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(0, rates.length - 1, rates);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
       // Assertion
@@ -2199,12 +2186,10 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should return a truncated array when `startIndex` and `endIndex` are different (internal range)", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up the group ID and add sample yield rates
-      const groupId = 0;
-      const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      const rates = getSampleYieldRates(5);
 
       // Call the `truncateArray` function
-      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 1, 3);
+      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(1, 3, rates);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
       // Assertion
@@ -2214,12 +2199,10 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should return a truncated array when `startIndex` and `endIndex` are different (include the first element)", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up the group ID and add sample yield rates
-      const groupId = 0;
-      const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      const rates = getSampleYieldRates(5);
 
       // Call the `truncateArray` function
-      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 0, 3);
+      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(0, 3, rates);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
       // Assertion
@@ -2229,12 +2212,10 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should return a truncated array when `startIndex` and `endIndex` are different (include the last element)", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up the group ID and add sample yield rates
-      const groupId = 0;
-      const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      const rates = getSampleYieldRates(5);
 
       // Call the `truncateArray` function
-      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 1, 4);
+      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(1, 4, rates);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
       // Assertion
@@ -2244,12 +2225,10 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should return a single element when `startIndex` and `endIndex` are the same (multiple rates in array)", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up the group ID and add sample yield rates
-      const groupId = 0;
-      const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      const rates = getSampleYieldRates(5);
 
       // Call the `truncateArray` function
-      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 2, 2);
+      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(2, 2, rates);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
       // Assertion
@@ -2260,12 +2239,10 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should return a single element when `startIndex` and `endIndex` are the same (single rate in array)", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up the group ID and add sample yield rates
-      const groupId = 0;
-      const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 1);
+      const rates = getSampleYieldRates(1);
 
       // Call the `truncateArray` function
-      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 0, 0);
+      const yieldRatesRaw = await yieldStreamerTestable.truncateArray(0, 0, rates);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
       // Assertion
@@ -2276,33 +2253,26 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should revert when `startIndex` is greater than `endIndex`", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up the group ID and add sample yield rates
-      const groupId = 0;
-      await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      const rates = getSampleYieldRates(5);
 
       // Arithmetic operation overflowed outside of an unchecked block
-      await expect(yieldStreamerTestable.truncateArray(groupId, 3, 2)).to.be.revertedWithPanic(0x11);
+      await expect(yieldStreamerTestable.truncateArray(3, 2, rates)).to.be.revertedWithPanic(0x11);
     });
 
     it("Should revert when `endIndex` is out of bounds", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up the group ID and add sample yield rates
-      const groupId = 0;
-      await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+      const rates = getSampleYieldRates(5);
 
       // Array accessed at an out-of-bounds or negative index
-      await expect(yieldStreamerTestable.truncateArray(groupId, 5, 5)).to.be.revertedWithPanic(0x32);
+      await expect(yieldStreamerTestable.truncateArray(5, 5, rates)).to.be.revertedWithPanic(0x32);
     });
 
     it("Should revert when rates array is empty", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up the group ID
-      const groupId = 0;
-
       // Array accessed at an out-of-bounds or negative index
-      await expect(yieldStreamerTestable.truncateArray(groupId, 0, 0)).to.be.revertedWithPanic(0x32);
+      await expect(yieldStreamerTestable.truncateArray(0, 0, [])).to.be.revertedWithPanic(0x32);
     });
   });
 

@@ -2,8 +2,6 @@
 
 pragma solidity 0.8.24;
 
-import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-
 import { YieldStreamerV2 } from "./YieldStreamerV2.sol";
 
 /**
@@ -71,12 +69,11 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
     // ------------------ Utility --------------------------------- //
 
     function truncateArray(
-        uint32 groupId,
         uint256 startIndex,
-        uint256 endIndex
-    ) external view returns (YieldRate[] memory) {
-        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        return _truncateArray(startIndex, endIndex, $.yieldRates[groupId]);
+        uint256 endIndex,
+        YieldRate[] memory yieldRates
+    ) external pure returns (YieldRate[] memory) {
+        return _truncateArray(startIndex, endIndex, yieldRates);
     }
 
     function calculateFee(uint256 amount) external pure returns (uint256) {
