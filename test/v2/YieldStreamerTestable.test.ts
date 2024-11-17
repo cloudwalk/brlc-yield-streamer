@@ -656,7 +656,7 @@ describe("YieldStreamerV2Testable", async () => {
       it(`Should handle test case ${index + 1}: ${testCase.description}`, async () => {
         const { yieldStreamerTestable } = await loadFixture(deployContracts);
 
-        // Add yield rates to contract.
+        // Add yield rates to contract
         for (let i = 0; i < testCase.rates.length; i++) {
           await yieldStreamerTestable.addYieldRate(
             0,
@@ -666,17 +666,17 @@ describe("YieldStreamerV2Testable", async () => {
           );
         }
 
-        // Call the `getAccruePreview()` function.
+        // Call the `getAccruePreview()` function
         const accruePreviewRaw = await yieldStreamerTestable.getAccruePreview(
           testCase.state,
           testCase.rates,
           testCase.currentTimestamp
         );
 
-        // Convert the function result to a comparable format.
+        // Convert the function result to a comparable format
         const accruePreview = normalizeAccruePreview(accruePreviewRaw);
 
-        // Assertions.
+        // Assertion
         expect(accruePreview.fromTimestamp).to.equal(testCase.expected.fromTimestamp);
         expect(accruePreview.toTimestamp).to.equal(testCase.expected.toTimestamp);
         expect(accruePreview.balance).to.equal(testCase.expected.balance);
@@ -1062,7 +1062,7 @@ describe("YieldStreamerV2Testable", async () => {
       it(`Should handle test case ${index + 1}: ${testCase.description}`, async () => {
         const { yieldStreamerTestable } = await loadFixture(deployContracts);
 
-        // Add yield rates to contract.
+        // Add yield rates to contract
         for (let i = 0; i < testCase.rates.length; i++) {
           await yieldStreamerTestable.addYieldRate(
             0,
@@ -1072,13 +1072,13 @@ describe("YieldStreamerV2Testable", async () => {
           );
         }
 
-        // Call the `calculateYield()` function.
+        // Call the `calculateYield()` function
         const yieldResultsRaw = await yieldStreamerTestable.calculateYield(testCase.params, testCase.rates);
 
-        // Convert the function result to a comparable format.
+        // Convert the function result to a comparable format
         const yieldResults = yieldResultsRaw.map(normalizeYieldResult);
 
-        // Assertion.
+        // Assertion
         expect(yieldResults).to.deep.equal(testCase.expected);
       });
     }
@@ -1571,19 +1571,19 @@ describe("YieldStreamerV2Testable", async () => {
         const { yieldStreamerTestable } = await loadFixture(deployContracts);
 
         if (testCase.shouldRevert) {
-          // Call the `compoundYield()` function and expect it to revert.
+          // Call the `compoundYield()` function and expect it to revert
           await expect(yieldStreamerTestable.compoundYield(testCase.params)).to.be.revertedWithCustomError(
             yieldStreamerTestable,
             testCase.revertMessage!
           );
         } else {
-          // Call the `compoundYield()` function and get the result.
+          // Call the `compoundYield()` function and expect it to return
           const yieldResultRaw = await yieldStreamerTestable.compoundYield(testCase.params);
 
-          // Convert the function result to a comparable format.
+          // Convert the function result to a comparable format
           const yieldResult = normalizeYieldResult(yieldResultRaw);
 
-          // Assertions.
+          // Assertion
           expect(yieldResult.tieredFirstDayPartialYield).to.deep.equal(testCase.expected.tieredFirstDayPartialYield);
           expect(yieldResult.tieredFullDaysYield).to.deep.equal(testCase.expected.tieredFullDaysYield);
           expect(yieldResult.tieredLastDayPartialYield).to.deep.equal(testCase.expected.tieredLastDayPartialYield);
@@ -1727,20 +1727,20 @@ describe("YieldStreamerV2Testable", async () => {
       it(`Should handle test case ${index + 1}: ${testCase.description}`, async () => {
         const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-        // Calculate the expected yield.
+        // Calculate the expected yield
         const expectedTotalYield = testCase.expectedTieredYield.reduce((acc, curr) => acc + curr, 0n);
 
-        // Call `calculateTieredYield` function.
+        // Call the `calculateTieredYield` function
         const resultRaw = await yieldStreamerTestable.calculateTieredYield(
           testCase.amount,
           testCase.elapsedSeconds,
           testCase.tiers
         );
 
-        // Convert the function result to a comparable format.
+        // Convert the function result to a comparable format
         const [totalYield, tieredYield] = resultRaw.map((n: bigint) => n);
 
-        // Assertions.
+        // Assertion
         expect(tieredYield).to.deep.equal(testCase.expectedTieredYield);
         expect(totalYield).to.equal(expectedTotalYield);
       });
@@ -1752,25 +1752,27 @@ describe("YieldStreamerV2Testable", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
       const amount = 1000n;
-      const rate = 0n; // Zero rate.
+      const rate = 0n; // Zero rate
       const elapsedSeconds = HOUR;
 
-      // Call `calculateSimpleYield` function.
+      // Call the `calculateSimpleYield` function
       const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
+      // Assertion
       expect(yieldResult).to.equal(0);
     });
 
     it("Should return zero when amount is zero", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      const amount = 0n; // Zero amount.
+      const amount = 0n; // Zero amount
       const rate = 1000n;
       const elapsedSeconds = HOUR;
 
-      // Call `calculateSimpleYield` function.
+      // Call the `calculateSimpleYield` function
       const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
+      // Assertion
       expect(yieldResult).to.equal(0);
     });
 
@@ -1779,11 +1781,12 @@ describe("YieldStreamerV2Testable", async () => {
 
       const amount = 1000n;
       const rate = 1000n;
-      const elapsedSeconds = 0n; // Zero elapsed seconds.
+      const elapsedSeconds = 0n; // Zero elapsed seconds
 
-      // Call `calculateSimpleYield` function.
+      // Call the `calculateSimpleYield` function
       const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
+      // Assertion
       expect(yieldResult).to.equal(0);
     });
 
@@ -1795,9 +1798,10 @@ describe("YieldStreamerV2Testable", async () => {
       const elapsedSeconds = DAY;
       const expectedYield = (amount * rate * elapsedSeconds) / (DAY * RATE_FACTOR);
 
-      // Call `calculateSimpleYield` function.
+      // Call the `calculateSimpleYield` function
       const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
+      // Assertion
       expect(yieldResult).to.equal(expectedYield);
     });
 
@@ -1809,9 +1813,10 @@ describe("YieldStreamerV2Testable", async () => {
       const elapsedSeconds = HOUR * 3n;
       const expectedYield = (amount * rate * elapsedSeconds) / (DAY * RATE_FACTOR);
 
-      // Call `calculateSimpleYield` function.
+      // Call the `calculateSimpleYield` function
       const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
+      // Assertion
       expect(yieldResult).to.equal(expectedYield);
     });
 
@@ -1823,9 +1828,10 @@ describe("YieldStreamerV2Testable", async () => {
       const elapsedSeconds = DAY * 2n + HOUR * 3n;
       const expectedYield = (amount * rate * elapsedSeconds) / (DAY * RATE_FACTOR);
 
-      // Call `calculateSimpleYield` function.
+      // Call the `calculateSimpleYield` function
       const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
+      // Assertion
       expect(yieldResult).to.equal(expectedYield);
     });
   });
@@ -1834,12 +1840,12 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should return indices (0, 0) when there is only one yield rate in the array", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up `fromTimestamp` and `toTimestamp`.
+      // Set up `fromTimestamp` and `toTimestamp`
       const fromTimestamp = 100n;
       const toTimestamp = 200n;
 
-      // Set up one yield rate with `effectiveDay` equal to 0.
-      // It's a rule that the first rate has to be with `effectiveDay` equal to 0.
+      // Set up one yield rate with `effectiveDay` equal to 0
+      // It's a rule that the first rate has to be with `effectiveDay` equal to 0
       const rates: YieldRate[] = [
         {
           tiers: [{ rate: 1000n, cap: 1000n }],
@@ -1847,9 +1853,10 @@ describe("YieldStreamerV2Testable", async () => {
         }
       ];
 
-      // Call `inRangeYieldRates` function.
+      // Call the `inRangeYieldRates` function
       const [startIndex, endIndex] = await yieldStreamerTestable.inRangeYieldRates(rates, fromTimestamp, toTimestamp);
 
+      // Assertion
       expect(startIndex).to.equal(0);
       expect(endIndex).to.equal(0);
     });
@@ -1989,14 +1996,14 @@ describe("YieldStreamerV2Testable", async () => {
       it(`Should handle test case ${index + 1}: ${testCase.description}.`, async () => {
         const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-        // Call `inRangeYieldRates` function for the given test case.
+        // Call the `inRangeYieldRates` function for the given test case
         const [startIndex, endIndex] = await yieldStreamerTestable.inRangeYieldRates(
           testRates,
           testCase.fromTimestamp,
           testCase.toTimestamp
         );
 
-        // Assertions.
+        // Assertion
         expect(startIndex).to.equal(testCase.expectedStartIndex);
         expect(endIndex).to.equal(testCase.expectedEndIndex);
       });
@@ -2005,11 +2012,11 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should revert when the `fromTimestamp` is greater than the `toTimestamp`", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up `fromTimestamp` and `toTimestamp`.
+      // Set up `fromTimestamp` and `toTimestamp`
       const fromTimestamp = 101n;
       const toTimestamp = 100n;
 
-      // Call `inRangeYieldRates` function.
+      // Call the `inRangeYieldRates` function
       await expect(
         yieldStreamerTestable.inRangeYieldRates(testRates, fromTimestamp, toTimestamp)
       ).to.be.revertedWithCustomError(yieldStreamerTestable, REVERT_ERROR_IF_TIME_RANGE_IS_INVALID);
@@ -2018,11 +2025,11 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should revert when the `fromTimestamp` is equal to the `toTimestamp`", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up `fromTimestamp` and `toTimestamp`.
+      // Set up `fromTimestamp` and `toTimestamp`
       const fromTimestamp = 100n;
       const toTimestamp = 100n;
 
-      // Call `inRangeYieldRates` function.
+      // Call the `inRangeYieldRates` function
       await expect(
         yieldStreamerTestable.inRangeYieldRates(testRates, fromTimestamp, toTimestamp)
       ).to.be.revertedWithCustomError(yieldStreamerTestable, REVERT_ERROR_IF_TIME_RANGE_IS_INVALID);
@@ -2031,11 +2038,11 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should revert when there are no yield rates in the array", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up `fromTimestamp` and `toTimestamp`.
+      // Set up `fromTimestamp` and `toTimestamp`
       const fromTimestamp = 100n;
       const toTimestamp = 200n;
 
-      // Call `inRangeYieldRates` function.
+      // Call the `inRangeYieldRates` function
       await expect(
         yieldStreamerTestable.inRangeYieldRates([], fromTimestamp, toTimestamp)
       ).to.be.revertedWithCustomError(yieldStreamerTestable, REVERT_ERROR_IF_YIELD_RATE_ARRAY_IS_EMPTY);
@@ -2046,7 +2053,7 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should correctly aggregate a single yield result", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up a single yield result with sample values.
+      // Set up a single yield result with sample values
       const yieldResult: YieldResult = {
         firstDayPartialYield: 100n,
         fullDaysYield: 200n,
@@ -2057,13 +2064,14 @@ describe("YieldStreamerV2Testable", async () => {
       };
       const yieldResults: YieldResult[] = [yieldResult];
 
-      // Calculate expected values based on the function logic.
+      // Calculate expected values based on the function logic
       const expectedAccruedYield = yieldResult.firstDayPartialYield + yieldResult.fullDaysYield;
       const expectedStreamYield = yieldResult.lastDayPartialYield;
 
-      // Call the `aggregateYield` function with the yield results.
+      // Call the `aggregateYield` function with the yield results
       const [accruedYield, streamYield] = await yieldStreamerTestable.aggregateYield(yieldResults);
 
+      // Assertion
       expect(accruedYield).to.equal(expectedAccruedYield);
       expect(streamYield).to.equal(expectedStreamYield);
     });
@@ -2071,7 +2079,7 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should correctly aggregate multiple yield results", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Set up multiple yield results with sample values.
+      // Set up multiple yield results with sample values
       const yieldResults: YieldResult[] = [
         {
           firstDayPartialYield: 100n,
@@ -2099,25 +2107,26 @@ describe("YieldStreamerV2Testable", async () => {
         }
       ];
 
-      // Calculate expected `accruedYield` according to the function logic.
+      // Calculate expected `accruedYield` according to the function logic
       const expectedAccruedYield =
-        // First period: include `firstDayPartialYield`, `fullDaysYield`, and `lastDayPartialYield`.
+        // First period: include `firstDayPartialYield`, `fullDaysYield`, and `lastDayPartialYield`
         yieldResults[0].firstDayPartialYield +
         yieldResults[0].fullDaysYield +
         yieldResults[0].lastDayPartialYield +
-        // Second period: include `firstDayPartialYield`, `fullDaysYield`, and `lastDayPartialYield`.
+        // Second period: include `firstDayPartialYield`, `fullDaysYield`, and `lastDayPartialYield`
         yieldResults[1].firstDayPartialYield +
         yieldResults[1].fullDaysYield +
         yieldResults[1].lastDayPartialYield +
-        // Third period: include `firstDayPartialYield` and `fullDaysYield` (exclude `lastDayPartialYield`).
+        // Third period: include `firstDayPartialYield` and `fullDaysYield` (exclude `lastDayPartialYield`)
         yieldResults[2].firstDayPartialYield +
         yieldResults[2].fullDaysYield;
-      // Calculate expected `streamYield` according to the function logic.
+      // Calculate expected `streamYield` according to the function logic
       const expectedStreamYield = yieldResults[yieldResults.length - 1].lastDayPartialYield;
 
-      // Call the `aggregateYield` function with the yield results.
+      // Call the `aggregateYield` function with the yield results
       const [accruedYield, streamYield] = await yieldStreamerTestable.aggregateYield(yieldResults);
 
+      // Assertion
       expect(accruedYield).to.equal(expectedAccruedYield);
       expect(streamYield).to.equal(expectedStreamYield);
     });
@@ -2125,10 +2134,11 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should correctly aggregate an empty yield results array", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Call the `aggregateYield` function with an empty array.
+      // Call the `aggregateYield` function with an empty array
       const yieldResults: YieldResult[] = [];
       const [accruedYield, streamYield] = await yieldStreamerTestable.aggregateYield(yieldResults);
 
+      // Assertion
       expect(accruedYield).to.equal(0);
       expect(streamYield).to.equal(0);
     });
@@ -2174,55 +2184,75 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should return the full array when `startIndex` is 0 and `endIndex` is `rates.length - 1`", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
+      // Set up the group ID and add sample yield rates
       const groupId = 0;
       const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+
+      // Call the `truncateArray` function
       const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 0, rates.length - 1);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
+      // Assertion
       expect(yieldRates).to.deep.equal(rates);
     });
 
     it("Should return a truncated array when `startIndex` and `endIndex` are different (internal range)", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
+      // Set up the group ID and add sample yield rates
       const groupId = 0;
       const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+
+      // Call the `truncateArray` function
       const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 1, 3);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
+      // Assertion
       expect(yieldRates).to.deep.equal(rates.slice(1, 4));
     });
 
     it("Should return a truncated array when `startIndex` and `endIndex` are different (include the first element)", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
+      // Set up the group ID and add sample yield rates
       const groupId = 0;
       const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+
+      // Call the `truncateArray` function
       const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 0, 3);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
+      // Assertion
       expect(yieldRates).to.deep.equal(rates.slice(0, 4));
     });
 
     it("Should return a truncated array when `startIndex` and `endIndex` are different (include the last element)", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
+      // Set up the group ID and add sample yield rates
       const groupId = 0;
       const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+
+      // Call the `truncateArray` function
       const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 1, 4);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
+      // Assertion
       expect(yieldRates).to.deep.equal(rates.slice(1, 5));
     });
 
     it("Should return a single element when `startIndex` and `endIndex` are the same (multiple rates in array)", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
+      // Set up the group ID and add sample yield rates
       const groupId = 0;
       const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
+
+      // Call the `truncateArray` function
       const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 2, 2);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
+      // Assertion
       expect(yieldRates.length).to.equal(1);
       expect(yieldRates[0]).to.deep.equal(rates[2]);
     });
@@ -2230,11 +2260,15 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should return a single element when `startIndex` and `endIndex` are the same (single rate in array)", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
+      // Set up the group ID and add sample yield rates
       const groupId = 0;
       const rates = await addSampleYieldRates(yieldStreamerTestable, groupId, 1);
+
+      // Call the `truncateArray` function
       const yieldRatesRaw = await yieldStreamerTestable.truncateArray(groupId, 0, 0);
       const yieldRates: YieldRate[] = yieldRatesRaw.map(normalizeYieldRate);
 
+      // Assertion
       expect(yieldRates.length).to.equal(1);
       expect(yieldRates[0]).to.deep.equal(rates[0]);
     });
@@ -2242,29 +2276,32 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should revert when `startIndex` is greater than `endIndex`", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
+      // Set up the group ID and add sample yield rates
       const groupId = 0;
       await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
 
-      // Arithmetic operation overflowed outside of an unchecked block.
+      // Arithmetic operation overflowed outside of an unchecked block
       await expect(yieldStreamerTestable.truncateArray(groupId, 3, 2)).to.be.revertedWithPanic(0x11);
     });
 
     it("Should revert when `endIndex` is out of bounds", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
+      // Set up the group ID and add sample yield rates
       const groupId = 0;
       await addSampleYieldRates(yieldStreamerTestable, groupId, 5);
 
-      // Array accessed at an out-of-bounds or negative index.
+      // Array accessed at an out-of-bounds or negative index
       await expect(yieldStreamerTestable.truncateArray(groupId, 5, 5)).to.be.revertedWithPanic(0x32);
     });
 
     it("Should revert when rates array is empty", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
+      // Set up the group ID
       const groupId = 0;
 
-      // Array accessed at an out-of-bounds or negative index.
+      // Array accessed at an out-of-bounds or negative index
       await expect(yieldStreamerTestable.truncateArray(groupId, 0, 0)).to.be.revertedWithPanic(0x32);
     });
   });
@@ -2273,7 +2310,7 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should calculate fee as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // `FEE_RATE` is 0, so the fee should always be 0.
+      // `FEE_RATE` is 0, so the fee should always be 0
       expect(await yieldStreamerTestable.calculateFee(0n)).to.equal(0n);
       expect(await yieldStreamerTestable.calculateFee(1000000n)).to.equal(0n);
       expect(await yieldStreamerTestable.calculateFee(1000000000000n)).to.equal(0n);
@@ -2284,13 +2321,13 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should round down as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Verify the function works as expected with hardcoded values.
+      // Verify the function works as expected with hardcoded values
       expect(await yieldStreamerTestable.roundDown(0n)).to.equal(0n);
       expect(await yieldStreamerTestable.roundDown(10000000n)).to.equal(10000000n);
       expect(await yieldStreamerTestable.roundDown(10000001n)).to.equal(10000000n);
       expect(await yieldStreamerTestable.roundDown(10009999n)).to.equal(10000000n);
 
-      // Verify the function works as expected with the `roundDown` utility function.
+      // Verify the function works as expected with the `roundDown` utility function
       expect(await yieldStreamerTestable.roundDown(0n)).to.equal(roundDown(0n));
       expect(await yieldStreamerTestable.roundDown(10000000n)).to.equal(roundDown(10000000n));
       expect(await yieldStreamerTestable.roundDown(10000001n)).to.equal(roundDown(10000001n));
@@ -2302,13 +2339,13 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should round up as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Verify the function works as expected with hardcoded values.
+      // Verify the function works as expected with hardcoded values
       expect(await yieldStreamerTestable.roundUp(0n)).to.equal(0n);
       expect(await yieldStreamerTestable.roundUp(10000000n)).to.equal(10000000n);
       expect(await yieldStreamerTestable.roundUp(10000001n)).to.equal(10010000n);
       expect(await yieldStreamerTestable.roundUp(10009999n)).to.equal(10010000n);
 
-      // Verify the function works as expected with the `roundUp` utility function.
+      // Verify the function works as expected with the `roundUp` utility function
       expect(await yieldStreamerTestable.roundUp(0n)).to.equal(roundUp(0n));
       expect(await yieldStreamerTestable.roundUp(10000000n)).to.equal(roundUp(10000000n));
       expect(await yieldStreamerTestable.roundUp(10000001n)).to.equal(roundUp(10000001n));
@@ -2320,7 +2357,7 @@ describe("YieldStreamerV2Testable", async () => {
     it("Should map as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Create an `AccruePreview` struct with sample data.
+      // Create an `AccruePreview` struct with sample data
       const accruePreview: AccruePreview = {
         fromTimestamp: 10000000n,
         toTimestamp: 20000000n,
@@ -2365,10 +2402,10 @@ describe("YieldStreamerV2Testable", async () => {
         ]
       };
 
-      // Call the `map` function.
+      // Call the `map` function
       const claimPreviewRaw: ClaimPreview = await yieldStreamerTestable.map(accruePreview);
 
-      // Create the `ClaimPreview` struct with expected values.
+      // Create the `ClaimPreview` struct with expected values
       const expectedClaimPreview: ClaimPreview = {
         yield: roundDown(accruePreview.accruedYieldAfter + accruePreview.streamYieldAfter),
         balance: accruePreview.balance,
@@ -2378,7 +2415,7 @@ describe("YieldStreamerV2Testable", async () => {
         caps: accruePreview.rates[accruePreview.rates.length - 1].tiers.map(tier => tier.cap)
       };
 
-      // Verify the `ClaimPreview` struct is as expected.
+      // Verify the `ClaimPreview` struct is as expected
       expect(expectedClaimPreview.yield).to.equal(claimPreviewRaw.yield);
       expect(expectedClaimPreview.fee).to.equal(claimPreviewRaw.fee);
       expect(expectedClaimPreview.timestamp).to.equal(claimPreviewRaw.timestamp);
