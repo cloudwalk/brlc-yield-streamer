@@ -1572,9 +1572,7 @@ describe.only("YieldStreamerV2Testable", async () => {
           const yieldResult = normalizeYieldResult(yieldResultRaw);
 
           // Assertions.
-          expect(yieldResult.tieredFirstDayPartialYield).to.deep.equal(
-            testCase.expected.tieredFirstDayPartialYield
-          );
+          expect(yieldResult.tieredFirstDayPartialYield).to.deep.equal(testCase.expected.tieredFirstDayPartialYield);
           expect(yieldResult.tieredFullDaysYield).to.deep.equal(testCase.expected.tieredFullDaysYield);
           expect(yieldResult.tieredLastDayPartialYield).to.deep.equal(testCase.expected.tieredLastDayPartialYield);
           expect(yieldResult.firstDayPartialYield).to.equal(testCase.expected.firstDayPartialYield);
@@ -1874,84 +1872,96 @@ describe.only("YieldStreamerV2Testable", async () => {
 
     const testCases: InRangeYieldRatesTestCase[] = [
       {
-        description: "`fromTimestamp` is 2s before the second rate effective day, `toTimestamp` is 1s before the second rate effective day",
+        description:
+          "`fromTimestamp` is 2s before the second rate effective day, `toTimestamp` is 1s before the second rate effective day",
         fromTimestamp: -2n + secondRateEffectiveDay * DAY,
         toTimestamp: -1n + secondRateEffectiveDay * DAY,
         expectedStartIndex: 0,
         expectedEndIndex: 0
       },
       {
-        description: "`fromTimestamp` is 1s before the second rate effective day, `toTimestamp` is exactly on the second rate effective day",
+        description:
+          "`fromTimestamp` is 1s before the second rate effective day, `toTimestamp` is exactly on the second rate effective day",
         fromTimestamp: -1n + secondRateEffectiveDay * DAY,
         toTimestamp: 0n + secondRateEffectiveDay * DAY,
         expectedStartIndex: 0,
         expectedEndIndex: 0
       },
       {
-        description: "`fromTimestamp` is 1s before the second rate effective day, `toTimestamp` is 1s after the second rate effective day",
+        description:
+          "`fromTimestamp` is 1s before the second rate effective day, `toTimestamp` is 1s after the second rate effective day",
         fromTimestamp: -1n + secondRateEffectiveDay * DAY,
         toTimestamp: 1n + secondRateEffectiveDay * DAY,
         expectedStartIndex: 0,
         expectedEndIndex: 1
       },
       {
-        description: "`fromTimestamp` is 1s before the second rate effective day, `toTimestamp` is 1s before the third rate effective day",
+        description:
+          "`fromTimestamp` is 1s before the second rate effective day, `toTimestamp` is 1s before the third rate effective day",
         fromTimestamp: -1n + secondRateEffectiveDay * DAY,
         toTimestamp: -1n + thirdRateEffectiveDay * DAY,
         expectedStartIndex: 0,
         expectedEndIndex: 1
       },
       {
-        description: "`fromTimestamp` is 1s before the second rate effective day, `toTimestamp` is exactly on the third rate effective day",
+        description:
+          "`fromTimestamp` is 1s before the second rate effective day, `toTimestamp` is exactly on the third rate effective day",
         fromTimestamp: -1n + secondRateEffectiveDay * DAY,
         toTimestamp: 0n + thirdRateEffectiveDay * DAY,
         expectedStartIndex: 0,
         expectedEndIndex: 1
       },
       {
-        description: "`fromTimestamp` is 1s before the second rate effective day, `toTimestamp` is 1s after the third rate effective day",
+        description:
+          "`fromTimestamp` is 1s before the second rate effective day, `toTimestamp` is 1s after the third rate effective day",
         fromTimestamp: -1n + secondRateEffectiveDay * DAY,
         toTimestamp: 1n + thirdRateEffectiveDay * DAY,
         expectedStartIndex: 0,
         expectedEndIndex: 2
       },
       {
-        description: "`fromTimestamp` is exactly on the second rate effective day, `toTimestamp` is 1s after the third rate effective day",
+        description:
+          "`fromTimestamp` is exactly on the second rate effective day, `toTimestamp` is 1s after the third rate effective day",
         fromTimestamp: 0n + secondRateEffectiveDay * DAY,
         toTimestamp: 1n + thirdRateEffectiveDay * DAY,
         expectedStartIndex: 1,
         expectedEndIndex: 2
       },
       {
-        description: "`fromTimestamp` is 1s after the second rate effective day, `toTimestamp` is 1s after the third rate effective day",
+        description:
+          "`fromTimestamp` is 1s after the second rate effective day, `toTimestamp` is 1s after the third rate effective day",
         fromTimestamp: 1n + secondRateEffectiveDay * DAY,
         toTimestamp: 1n + thirdRateEffectiveDay * DAY,
         expectedStartIndex: 1,
         expectedEndIndex: 2
       },
       {
-        description: "`fromTimestamp` is 1s before the third rate effective day, `toTimestamp` is 1s after the third rate effective day",
+        description:
+          "`fromTimestamp` is 1s before the third rate effective day, `toTimestamp` is 1s after the third rate effective day",
         fromTimestamp: -1n + thirdRateEffectiveDay * DAY,
         toTimestamp: 1n + thirdRateEffectiveDay * DAY,
         expectedStartIndex: 1,
         expectedEndIndex: 2
       },
       {
-        description: "`fromTimestamp` is exactly on the third rate effective day, `toTimestamp` is 1s after the third rate effective day",
+        description:
+          "`fromTimestamp` is exactly on the third rate effective day, `toTimestamp` is 1s after the third rate effective day",
         fromTimestamp: 0n + thirdRateEffectiveDay * DAY,
         toTimestamp: 1n + thirdRateEffectiveDay * DAY,
         expectedStartIndex: 2,
         expectedEndIndex: 2
       },
       {
-        description: "`fromTimestamp` is 1s after the third rate effective day, `toTimestamp` is 2s after the third rate effective day",
+        description:
+          "`fromTimestamp` is 1s after the third rate effective day, `toTimestamp` is 2s after the third rate effective day",
         fromTimestamp: 1n + thirdRateEffectiveDay * DAY,
         toTimestamp: 2n + thirdRateEffectiveDay * DAY,
         expectedStartIndex: 2,
         expectedEndIndex: 2
       },
       {
-        description: "`fromTimestamp` is exactly on the second rate effective day, `toTimestamp` is 1s before the third rate effective day",
+        description:
+          "`fromTimestamp` is exactly on the second rate effective day, `toTimestamp` is 1s before the third rate effective day",
         fromTimestamp: 0n + secondRateEffectiveDay * DAY,
         toTimestamp: -1n + thirdRateEffectiveDay * DAY,
         expectedStartIndex: 1,
@@ -1959,17 +1969,24 @@ describe.only("YieldStreamerV2Testable", async () => {
       }
     ];
 
-    testCases.forEach(async ({ description, fromTimestamp, toTimestamp, expectedStartIndex, expectedEndIndex }, index) => {
-      it(`Should handle test case ${index + 1}: ${description}.`, async () => {
-        const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+    testCases.forEach(
+      async ({ description, fromTimestamp, toTimestamp, expectedStartIndex, expectedEndIndex }, index) => {
+        it(`Should handle test case ${index + 1}: ${description}.`, async () => {
+          const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-        // Call `inRangeYieldRates` function for the given test case.
-        const [startIndex, endIndex] = await yieldStreamerTestable.inRangeYieldRates(testRates, fromTimestamp, toTimestamp);
+          // Call `inRangeYieldRates` function for the given test case.
+          const [startIndex, endIndex] = await yieldStreamerTestable.inRangeYieldRates(
+            testRates,
+            fromTimestamp,
+            toTimestamp
+          );
 
-        expect(startIndex).to.equal(expectedStartIndex);
-        expect(endIndex).to.equal(expectedEndIndex);
-      });
-    });
+          // Assertions.
+          expect(startIndex).to.equal(expectedStartIndex);
+          expect(endIndex).to.equal(expectedEndIndex);
+        });
+      }
+    );
 
     it("Should revert when the `fromTimestamp` is greater than the `toTimestamp`", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
@@ -1979,10 +1996,9 @@ describe.only("YieldStreamerV2Testable", async () => {
       const toTimestamp = 100n;
 
       // Call `inRangeYieldRates` function.
-      await expect(yieldStreamerTestable.inRangeYieldRates(testRates, fromTimestamp, toTimestamp)).to.be.revertedWithCustomError(
-        yieldStreamerTestable,
-        REVERT_ERROR_IF_TIME_RANGE_IS_INVALID
-      );
+      await expect(
+        yieldStreamerTestable.inRangeYieldRates(testRates, fromTimestamp, toTimestamp)
+      ).to.be.revertedWithCustomError(yieldStreamerTestable, REVERT_ERROR_IF_TIME_RANGE_IS_INVALID);
     });
 
     it("Should revert when the `fromTimestamp` is equal to the `toTimestamp`", async () => {
@@ -1993,10 +2009,9 @@ describe.only("YieldStreamerV2Testable", async () => {
       const toTimestamp = 100n;
 
       // Call `inRangeYieldRates` function.
-      await expect(yieldStreamerTestable.inRangeYieldRates(testRates, fromTimestamp, toTimestamp)).to.be.revertedWithCustomError(
-        yieldStreamerTestable,
-        REVERT_ERROR_IF_TIME_RANGE_IS_INVALID
-      );
+      await expect(
+        yieldStreamerTestable.inRangeYieldRates(testRates, fromTimestamp, toTimestamp)
+      ).to.be.revertedWithCustomError(yieldStreamerTestable, REVERT_ERROR_IF_TIME_RANGE_IS_INVALID);
     });
 
     it("Should revert when there are no yield rates in the array", async () => {
@@ -2007,10 +2022,9 @@ describe.only("YieldStreamerV2Testable", async () => {
       const toTimestamp = 200n;
 
       // Call `inRangeYieldRates` function.
-      await expect(yieldStreamerTestable.inRangeYieldRates([], fromTimestamp, toTimestamp)).to.be.revertedWithCustomError(
-        yieldStreamerTestable,
-        REVERT_ERROR_IF_YIELD_RATE_ARRAY_IS_EMPTY
-      );
+      await expect(
+        yieldStreamerTestable.inRangeYieldRates([], fromTimestamp, toTimestamp)
+      ).to.be.revertedWithCustomError(yieldStreamerTestable, REVERT_ERROR_IF_YIELD_RATE_ARRAY_IS_EMPTY);
     });
   });
 
