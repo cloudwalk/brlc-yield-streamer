@@ -663,42 +663,38 @@ abstract contract YieldStreamerPrimary is
         // Represents the start of the next day.
         uint256 nextDayTimestamp = fromTimestampEffective + 1 days;
 
-        // Represents the yield for the first partial day.
-        uint256 partialYield = 0;
-
         if (params.fromTimestamp != fromTimestampEffective) {
             // Case 1 & 2: Starting mid-day.
             if (params.toTimestamp <= nextDayTimestamp) {
                 // Case 1: Both start and end within same partial day.
                 // Example: D1 14:00 -> D1 18:00.
-                (partialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
+                (result.lastDayPartialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
                     params.balance,
                     params.toTimestamp - params.fromTimestamp,
                     params.tiers
                 );
-                result.lastDayPartialYield = params.streamYield + partialYield;
+                result.lastDayPartialYield += params.streamYield;
                 return result;
             } else {
                 // Case 2: Start mid-day but continue to next day.
                 // Example: D1 14:00 -> D2 18:00.
-                (partialYield, result.tieredFirstDayPartialYield) = _calculateTieredYield(
+                (result.firstDayPartialYield, result.tieredFirstDayPartialYield) = _calculateTieredYield(
                     params.balance,
                     nextDayTimestamp - params.fromTimestamp,
                     params.tiers
                 );
-                result.firstDayPartialYield = params.streamYield + partialYield;
+                result.firstDayPartialYield += params.streamYield;
                 params.fromTimestamp = nextDayTimestamp; // Move to start of next day
             }
         } else if (params.toTimestamp < nextDayTimestamp) {
             // Case 3: Start at day start (00:00:00) but end within same day.
             // Example: D1 00:00 -> D1 18:00.
-            (partialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
+            (result.lastDayPartialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
                 params.balance + params.streamYield,
                 params.toTimestamp - params.fromTimestamp,
                 params.tiers
             );
             result.firstDayPartialYield = params.streamYield;
-            result.lastDayPartialYield = partialYield;
             return result;
         } else {
             // Case 4: Start at day start and continue to next day.

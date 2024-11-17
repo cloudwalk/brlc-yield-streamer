@@ -1747,17 +1747,17 @@ describe("YieldStreamerV2Testable", function () {
         const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
         // Calculate the expected yield.
-        const expectedYield = expectedTieredYield.reduce((acc, curr) => acc + curr, 0n);
+        const expectedTotalYield = expectedTieredYield.reduce((acc, curr) => acc + curr, 0n);
 
         // Call `calculateTieredYield` function.
         const yieldResult = await yieldStreamerTestable.calculateTieredYield(amount, elapsedSeconds, tiers);
 
         // Normalize the result for comparison.
-        const [partDayYield, tieredPartDayYield] = normalizeYieldResult(yieldResult);
+        const [totalYield, tieredYield] = normalizeYieldResult(yieldResult);
 
         // Assertions.
-        expect(tieredPartDayYield).to.deep.equal(expectedTieredYield);
-        expect(partDayYield).to.equal(expectedYield);
+        expect(tieredYield).to.deep.equal(expectedTieredYield);
+        expect(totalYield).to.equal(expectedTotalYield);
       });
     });
   });
