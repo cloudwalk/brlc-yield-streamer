@@ -84,7 +84,7 @@ async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   }
 }
 
-describe.only("YieldStreamerV2Testable", async () => {
+describe("YieldStreamerV2Testable", async () => {
   let yieldStreamerTestableFactory: ContractFactory;
 
   before(async () => {
@@ -652,7 +652,7 @@ describe.only("YieldStreamerV2Testable", async () => {
       }
     ];
 
-    testCases.forEach(async (testCase, index) => {
+    for (const [index, testCase] of testCases.entries()) {
       it(`Should handle test case ${index + 1}: ${testCase.description}`, async () => {
         const { yieldStreamerTestable } = await loadFixture(deployContracts);
 
@@ -687,7 +687,7 @@ describe.only("YieldStreamerV2Testable", async () => {
         expect(accruePreview.rates).to.deep.equal(testCase.expected.rates);
         expect(accruePreview.results).to.deep.equal(testCase.expected.results);
       });
-    });
+    }
   });
 
   describe("Function 'calculateYield()'", async () => {
@@ -837,12 +837,18 @@ describe.only("YieldStreamerV2Testable", async () => {
               { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n } // -------- 1% rate, no cap
             ],
             effectiveDay: INITIAL_DAY_INDEX + 2n
+          },
+          {
+            tiers: [
+              { rate: RATE_FACTOR / 1000n, cap: 0n } // - 0.1% rate, no cap
+            ],
+            effectiveDay: INITIAL_DAY_INDEX + 1000n
           }
         ],
         expected: [
           {
             firstDayPartialYield:
-              // FPD Total: 1000000 + 60000 = 106000
+              // FPD Total: 1000000 + 60000 = 1060000
               1000000n + // - Stream yield
               22500n + // --- T1: 3% on 1000000 for 18 hours (Initial balance)
               15000n + // --- T2: 2% on 2000000 for 18 hours (Initial balance)
@@ -957,12 +963,18 @@ describe.only("YieldStreamerV2Testable", async () => {
               { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n } // -------- 1% rate, no cap
             ],
             effectiveDay: INITIAL_DAY_INDEX + 3n
+          },
+          {
+            tiers: [
+              { rate: RATE_FACTOR / 1000n, cap: 0n } // - 0.1% rate, no cap
+            ],
+            effectiveDay: INITIAL_DAY_INDEX + 1000n
           }
         ],
         expected: [
           {
             firstDayPartialYield:
-              // FPD Total: 1000000 + 60000 = 106000
+              // FPD Total: 1000000 + 60000 = 1060000
               1000000n + // - Stream yield
               22500n + // --- T1: 3% on 1000000 for 18 hours (Initial balance)
               15000n + // --- T2: 2% on 2000000 for 18 hours (Initial balance)
@@ -1046,7 +1058,7 @@ describe.only("YieldStreamerV2Testable", async () => {
       }
     ];
 
-    testCases.forEach(async (testCase, index) => {
+    for (const [index, testCase] of testCases.entries()) {
       it(`Should handle test case ${index + 1}: ${testCase.description}`, async () => {
         const { yieldStreamerTestable } = await loadFixture(deployContracts);
 
@@ -1069,7 +1081,7 @@ describe.only("YieldStreamerV2Testable", async () => {
         // Assertion.
         expect(yieldResults).to.deep.equal(testCase.expected);
       });
-    });
+    }
   });
 
   describe("Function 'compoundYield()'", async () => {
@@ -1554,7 +1566,7 @@ describe.only("YieldStreamerV2Testable", async () => {
       }
     ];
 
-    testCases.forEach(async (testCase, index) => {
+    for (const [index, testCase] of testCases.entries()) {
       it(`Should handle test case ${index + 1}: ${testCase.description}`, async () => {
         const { yieldStreamerTestable } = await loadFixture(deployContracts);
 
@@ -1580,7 +1592,7 @@ describe.only("YieldStreamerV2Testable", async () => {
           expect(yieldResult.lastDayPartialYield).to.equal(testCase.expected.lastDayPartialYield);
         }
       });
-    });
+    }
   });
 
   describe("Function 'calculateTieredYield()'", async () => {
@@ -1711,24 +1723,28 @@ describe.only("YieldStreamerV2Testable", async () => {
       }
     ];
 
-    testCases.forEach(async ({ description, amount, tiers, elapsedSeconds, expectedTieredYield }, index) => {
-      it(`Should handle test case ${index + 1}: ${description}`, async () => {
+    for (const [index, testCase] of testCases.entries()) {
+      it(`Should handle test case ${index + 1}: ${testCase.description}`, async () => {
         const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
         // Calculate the expected yield.
-        const expectedTotalYield = expectedTieredYield.reduce((acc, curr) => acc + curr, 0n);
+        const expectedTotalYield = testCase.expectedTieredYield.reduce((acc, curr) => acc + curr, 0n);
 
         // Call `calculateTieredYield` function.
-        const resultRaw = await yieldStreamerTestable.calculateTieredYield(amount, elapsedSeconds, tiers);
+        const resultRaw = await yieldStreamerTestable.calculateTieredYield(
+          testCase.amount,
+          testCase.elapsedSeconds,
+          testCase.tiers
+        );
 
         // Convert the function result to a comparable format.
         const [totalYield, tieredYield] = resultRaw.map((n: bigint) => n);
 
         // Assertions.
-        expect(tieredYield).to.deep.equal(expectedTieredYield);
+        expect(tieredYield).to.deep.equal(testCase.expectedTieredYield);
         expect(totalYield).to.equal(expectedTotalYield);
       });
-    });
+    }
   });
 
   describe("Function 'calculateSimpleYield()'", async () => {
@@ -1969,24 +1985,22 @@ describe.only("YieldStreamerV2Testable", async () => {
       }
     ];
 
-    testCases.forEach(
-      async ({ description, fromTimestamp, toTimestamp, expectedStartIndex, expectedEndIndex }, index) => {
-        it(`Should handle test case ${index + 1}: ${description}.`, async () => {
-          const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+    for (const [index, testCase] of testCases.entries()) {
+      it(`Should handle test case ${index + 1}: ${testCase.description}.`, async () => {
+        const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-          // Call `inRangeYieldRates` function for the given test case.
-          const [startIndex, endIndex] = await yieldStreamerTestable.inRangeYieldRates(
-            testRates,
-            fromTimestamp,
-            toTimestamp
-          );
+        // Call `inRangeYieldRates` function for the given test case.
+        const [startIndex, endIndex] = await yieldStreamerTestable.inRangeYieldRates(
+          testRates,
+          testCase.fromTimestamp,
+          testCase.toTimestamp
+        );
 
-          // Assertions.
-          expect(startIndex).to.equal(expectedStartIndex);
-          expect(endIndex).to.equal(expectedEndIndex);
-        });
-      }
-    );
+        // Assertions.
+        expect(startIndex).to.equal(testCase.expectedStartIndex);
+        expect(endIndex).to.equal(testCase.expectedEndIndex);
+      });
+    }
 
     it("Should revert when the `fromTimestamp` is greater than the `toTimestamp`", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
