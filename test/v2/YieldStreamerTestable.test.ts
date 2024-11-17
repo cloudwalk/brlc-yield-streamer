@@ -1063,14 +1063,14 @@ describe("YieldStreamerV2Testable", async () => {
         const { yieldStreamerTestable } = await loadFixture(deployContracts);
 
         // Add yield rates to contract.
-        testCase.rates.forEach(async rate => {
+        for (let i = 0; i < testCase.rates.length; i++) {
           await yieldStreamerTestable.addYieldRate(
             0,
-            rate.effectiveDay,
-            rate.tiers.map(tier => tier.rate),
-            rate.tiers.map(tier => tier.cap)
+            testCase.rates[i].effectiveDay,
+            testCase.rates[i].tiers.map(tier => tier.rate),
+            testCase.rates[i].tiers.map(tier => tier.cap)
           );
-        });
+        }
 
         // Call the `calculateYield()` function.
         const yieldResultsRaw = await yieldStreamerTestable.calculateYield(testCase.params, testCase.rates);
