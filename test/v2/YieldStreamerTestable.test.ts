@@ -6,8 +6,8 @@ import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 const NEGATIVE_TIME_SHIFT = 10800n; // 3 hours
 const RATE_FACTOR = 1000000000000n; // 10^12
 const ROUND_FACTOR = 10000n; // 10^4
-const DAY = 86400n; // 1 day
-const HOUR = 3600n; // 1 hour
+const DAY = 86400n; // 1 day (in seconds)
+const HOUR = 3600n; // 1 hour (in seconds)
 const INITIAL_DAY_INDEX = 21000n; // 21000 days
 
 const REVERT_ERROR_IF_YIELD_RATE_ARRAY_IS_EMPTY = "YieldStreamer_YieldRateArrayIsEmpty";
@@ -142,15 +142,6 @@ describe("YieldStreamerV2Testable", function () {
     }
 
     return rates;
-  }
-
-  // Helper function to add yield rates to the contract
-  async function addYieldRatesToContract(yieldStreamerTestable: Contract, groupId: number, rates: YieldRate[]) {
-    for (const rate of rates) {
-      const ratesArray = rate.tiers.map(tier => tier.rate);
-      const capsArray = rate.tiers.map(tier => tier.cap);
-      await yieldStreamerTestable.addYieldRate(groupId, rate.effectiveDay, ratesArray, capsArray);
-    }
   }
 
   function normalizeYieldRates(rates: any[]): YieldRate[] {
@@ -794,33 +785,33 @@ describe("YieldStreamerV2Testable", function () {
               605n, // --- T3: 1% on 242106 for 6 hours (Accrued yield)
             tieredFirstDayPartialYield: [
               // FPD Total: 60000
-              simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 3600n * 18n), // - FPD T1: 22500
-              simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 3600n * 18n), // - FPD T2: 15000
-              simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, 3600n * 18n) // -- FPD T3: 22500
+              simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, HOUR * 18n), // - FPD T1: 22500
+              simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR * 18n), // - FPD T2: 15000
+              simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, HOUR * 18n) // -- FPD T3: 22500
             ],
             tieredFullDaysYield: [
               // FD1 + FD2 Total: 182106
               // FD1 Total: 30000 + 20000 + 40600 = 90600
               // FD2 Total: 30000 + 20000 + 41506 = 91506
-              simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 86400n) + // - FD1 T1: 30000
-                simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 86400n), // -- FD2 T1: 30000
-              simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 86400n) + // - FD1 T2: 20000
-                simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 86400n), // -- FD2 T2: 20000
+              simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, DAY) + // - FD1 T1: 30000
+              simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, DAY), // -- FD2 T1: 30000
+              simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY) + // - FD1 T2: 20000
+              simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY), // -- FD2 T2: 20000
               simpleYield(
                 3000000n + // - Initial balance
-                  1000000n + // - Stream yield
-                  60000n, // ---- FPD yield
+                1000000n + // - Stream yield
+                60000n, // ---- FPD yield
                 (RATE_FACTOR / 100n) * 1n,
-                86400n
+                DAY
               ) + // -------------------------------------------------------- FD1 T3: 40600
-                simpleYield(
-                  3000000n + // - Initial balance
-                    1000000n + // - Stream yield
-                    60000n + // --- FPD yield
-                    90600n, // ---- FD1 yield
-                  (RATE_FACTOR / 100n) * 1n,
-                  86400n
-                ) // ---------------------------------------------------------- FD2 T3: 41506
+              simpleYield(
+                3000000n + // - Initial balance
+                1000000n + // - Stream yield
+                60000n + // --- FPD yield
+                90600n, // ---- FD1 yield
+                (RATE_FACTOR / 100n) * 1n,
+                DAY
+              ) // ---------------------------------------------------------- FD2 T3: 41506
             ],
             tieredLastDayPartialYield: [
               // LPD Total: 23105
@@ -1125,14 +1116,7 @@ describe("YieldStreamerV2Testable", function () {
     });
   });
 
-  describe("Function 'compoundYield()'", function () {
-    let yieldStreamerTestable: Contract;
-
-    beforeEach(async function () {
-      const contracts = await setUpFixture(deployContracts);
-      yieldStreamerTestable = contracts.yieldStreamerTestable;
-    });
-
+  describe.only("Function 'compoundYield()'", async () => {
     interface CompoundYieldTestCase {
       description: string;
       params: {
@@ -1156,10 +1140,10 @@ describe("YieldStreamerV2Testable", function () {
 
     const testCases: CompoundYieldTestCase[] = [
       {
-        description: "Single partial day: D1:00:00:00 - D1:01:00:00",
+        description: "single partial day: D1:00:00:00 - D1:01:00:00",
         params: {
-          fromTimestamp: 86400n,
-          toTimestamp: 86400n + 3600n,
+          fromTimestamp: DAY,
+          toTimestamp: DAY + HOUR,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1169,23 +1153,35 @@ describe("YieldStreamerV2Testable", function () {
           streamYield: 1000000n
         },
         expected: {
-          firstDayPartialYield: 1000000n,
+          firstDayPartialYield:
+            // FPD Total: 1000000
+            1000000n, // - Stream yield
           fullDaysYield: 0n,
-          lastDayPartialYield: 1250n + 833n + 1666n,
+          lastDayPartialYield:
+            // LPD Total: 3749
+            1250n + // - T1: 3% on 1000000 for 1 hour (Initial balance)
+            833n + // -- T2: 2% on 1000000 for 1 hour (Initial balance)
+            1666n, // -- T3: 1% on (3000000 + 1000000) for 1 hour (Initial balance + Stream yield)
           tieredFirstDayPartialYield: [0n, 0n, 0n],
           tieredFullDaysYield: [0n, 0n, 0n],
           tieredLastDayPartialYield: [
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 3600n), // ----------- 1250
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 3600n), // ----------- 833
-            simpleYield(3000000n + 1000000n, (RATE_FACTOR / 100n) * 1n, 3600n) // - 1666
+            // LPD Total: 3749
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, HOUR), // - LPD T1: 1250
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR), // - LPD T2: 833
+            simpleYield(
+              3000000n + // - Initial balance
+              1000000n, // -- Stream yield
+              (RATE_FACTOR / 100n) * 1n,
+              HOUR
+            ) // ------------------------------------------------------- LPD T3: 1666
           ]
         }
       },
       {
-        description: "Single partial day: D1:01:00:00 - D1:23:00:00",
+        description: "single partial day: D1:01:00:00 - D1:23:00:00",
         params: {
-          fromTimestamp: 86400n + 3600n,
-          toTimestamp: 86400n + 86400n - 3600n,
+          fromTimestamp: DAY + HOUR,
+          toTimestamp: DAY * 2n - HOUR,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1197,21 +1193,27 @@ describe("YieldStreamerV2Testable", function () {
         expected: {
           firstDayPartialYield: 0n,
           fullDaysYield: 0n,
-          lastDayPartialYield: 1000000n + 27500n + 18333n + 27500n,
+          lastDayPartialYield:
+            // LPD Total: 1000000 + 73333 = 1073333
+            1000000n + // - Stream yield
+            27500n + // --- T1: 3% on 1000000 for 22 hours (Initial balance)
+            18333n + // --- T2: 2% on 1000000 for 22 hours (Initial balance)
+            27500n, // ---- T3: 1% on 3000000 for 22 hours (Initial balance)
           tieredFirstDayPartialYield: [0n, 0n, 0n],
           tieredFullDaysYield: [0n, 0n, 0n],
           tieredLastDayPartialYield: [
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 3600n * 22n), // - 27500
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 3600n * 22n), // - 18333
-            simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, 3600n * 22n) // -- 27500
+            // LPD Total: 73333
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, HOUR * 22n), // - LPD T1: 27500
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR * 22n), // - LPD T2: 18333
+            simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, HOUR * 22n) // -- LPD T3: 27500
           ]
         }
       },
       {
-        description: "Single partial day: D1:23:00:00 - D2:00:00:00",
+        description: "single partial day: D1:23:00:00 - D2:00:00:00",
         params: {
-          fromTimestamp: 86400n + 86400n - 3600n,
-          toTimestamp: 86400n + 86400n,
+          fromTimestamp: DAY * 2n - HOUR,
+          toTimestamp: DAY * 2n,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1223,76 +1225,27 @@ describe("YieldStreamerV2Testable", function () {
         expected: {
           firstDayPartialYield: 0n,
           fullDaysYield: 0n,
-          lastDayPartialYield: 1000000n + 1250n + 833n + 1250n,
+          lastDayPartialYield:
+            // LPD Total: 1000000 + 3333 = 1003333
+            1000000n + // - Stream yield
+            1250n + // ---- T1: 3% on 1000000 for 1 hour (Initial balance)
+            833n + // ----- T2: 2% on 1000000 for 1 hour (Initial balance)
+            1250n, // ----- T3: 1% on 3000000 for 1 hour (Initial balance)
           tieredFirstDayPartialYield: [0n, 0n, 0n],
           tieredFullDaysYield: [0n, 0n, 0n],
           tieredLastDayPartialYield: [
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 3600n), // - 1250
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 3600n), // - 833
-            simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, 3600n) // -- 1250
+            // LPD Total: 3333
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, HOUR), // - LPD T1: 1250
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR), // - LPD T2: 833
+            simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, HOUR) // -- LPD T3: 1250
           ]
         }
       },
       {
-        description: "Single full day: D1:00:00:00 - D2:00:00:00",
+        description: "single full day: D1:00:00:00 - D2:00:00:00",
         params: {
-          fromTimestamp: 86400n,
-          toTimestamp: 86400n + 86400n,
-          tiers: [
-            { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
-            { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
-            { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n } // -------- 1% rate, no cap
-          ],
-          balance: 5000000n,
-          streamYield: 1000000n
-        },
-        expected: {
-          firstDayPartialYield: 1000000n,
-          fullDaysYield: 30000n + 20000n + 40000n,
-          lastDayPartialYield: 0n,
-          tieredFirstDayPartialYield: [0n, 0n, 0n],
-          tieredFullDaysYield: [
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 86400n), // ----------- 30000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 86400n), // ----------- 20000
-            simpleYield(3000000n + 1000000n, (RATE_FACTOR / 100n) * 1n, 86400n) // - 30000 + 10000 = 40000
-          ],
-          tieredLastDayPartialYield: [0n, 0n, 0n]
-        }
-      },
-      {
-        description: "Two full days: D1:00:00:00 - D3:00:00:00",
-        params: {
-          fromTimestamp: 86400n,
-          toTimestamp: 86400n + 86400n * 2n,
-          tiers: [
-            { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
-            { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
-            { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n } // -------- 1% rate, no cap
-          ],
-          balance: 5000000n,
-          streamYield: 1000000n
-        },
-        expected: {
-          firstDayPartialYield: 1000000n,
-          fullDaysYield: 30000n + 20000n + 30000n + 20000n + 40000n + 40900n,
-          lastDayPartialYield: 0n,
-          tieredFirstDayPartialYield: [0n, 0n, 0n],
-          tieredFullDaysYield: [
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 86400n) + // ------------------- T1 D1: 30000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 86400n), // -------------------- T1 D2: 30000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 86400n) + // ------------------- T2 D1: 20000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 86400n), // -------------------- T2 D2: 20000
-            simpleYield(3000000n + 1000000n, (RATE_FACTOR / 100n) * 1n, 86400n) + // -------- T3 D1: 30000 + 10000 = 40000
-            simpleYield(3000000n + 1000000n + 90000n, (RATE_FACTOR / 100n) * 1n, 86400n) // - T3 D2: 30000 + 10000 + 900 = 40900
-          ],
-          tieredLastDayPartialYield: [0n, 0n, 0n]
-        }
-      },
-      {
-        description: "Two full days ANDFirst partial day: D1:06:00:00 - D4:00:00:00",
-        params: {
-          fromTimestamp: 86400n + 3600n * 6n,
-          toTimestamp: 86400n + 86400n * 3n,
+          fromTimestamp: DAY,
+          toTimestamp: DAY * 2n,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1303,102 +1256,88 @@ describe("YieldStreamerV2Testable", function () {
         },
         expected: {
           firstDayPartialYield:
-            // PD0
-            1000000n + // - stream yield
-            22500n + // --- T1: 3% on 1000000 for 18 hours
-            15000n + // --- T2: 2% on 2000000 for 18 hours
-            22500n, // ---- T3: 1% on 3000000 for 18 hours
-          // PD0 Total: 60000
-          fullDaysYield:
-            // FD1
-            30000n + // - T1: 3% on 1000000 (balance) for 1 day
-            20000n + // - T2: 2% on 1000000 (balance) for 1 day
-            30000n + // - T3: 1% on 3000000 (balance) for 1 day
-            10000n + // - T3: 1% on 1000000 (stream yield) for 1 day
-            600n + // --- T3: 1% on 60000 (first day partial yield) for 1 day
-            // FD1 Total: 90600
-            // ------
-            // FD2
-            30000n + // - T1: 3% on 1000000 (balance) for 1 day
-            20000n + // - T2: 2% on 1000000 (balance) for 1 day
-            30000n + // - T3: 1% on 3000000 (balance) for 1 day
-            10000n + // - T3: 1% on 1000000 (stream yield) for 1 day
-            600n + // --- T3: 1% on 60000 (first day partial yield) for 1 day
-            906n, // ---- T3: 1% on 90600 (FD1 yield) for 1 day
-          // FD2 Total: 91506
-          lastDayPartialYield: 0n,
-          tieredFirstDayPartialYield: [
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 3600n * 18n), // - PD0 T1: 22500
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 3600n * 18n), // - PD0 T2: 15000
-            simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, 3600n * 18n) // -- PD0 T3: 22500
-          ],
-          tieredFullDaysYield: [
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 86400n) + // ---------------------------- FD1 T1: 30000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 86400n), // ----------------------------- FD2 T1: 30000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 86400n) + // ---------------------------- FD1 T2: 20000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 86400n), // ----------------------------- FD2 T2: 20000
-            simpleYield(3000000n + 1000000n + 60000n, (RATE_FACTOR / 100n) * 1n, 86400n) + // -------- FD1 T3: 40400
-            simpleYield(3000000n + 1000000n + 60000n + 90600n, (RATE_FACTOR / 100n) * 1n, 86400n) // - FD2 T3: 40900
-          ],
-          tieredLastDayPartialYield: [0n, 0n, 0n]
-        }
-      },
-      {
-        description: "Two full days AND Last partial day: D1:00:00:00 - D4:06:00:00",
-        params: {
-          fromTimestamp: 86400n,
-          toTimestamp: 86400n + 86400n * 2n + 3600n * 6n,
-          tiers: [
-            { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
-            { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
-            { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n } // -------- 1% rate, no cap
-          ],
-          balance: 5000000n,
-          streamYield: 1000000n
-        },
-        expected: {
-          firstDayPartialYield:
-            // PD0
-            1000000n, // - stream yield
+            // FDP Total: 1000000
+            1000000n, // - Stream yield
           fullDaysYield:
             // FD1 Total: 90000
-            30000n + // - T1: 3% on 1000000 (balance) for 1 day
-            20000n + // - T2: 2% on 1000000 (balance) for 1 day
-            30000n + // - T3: 1% on 3000000 (balance) for 1 day
-            10000n + // - T3: 1% on 1000000 (stream yield) for 1 day
+            30000n + // - T1: 3% on 1000000 for 1 day (Initial balance)
+            20000n + // - T2: 2% on 1000000 for 1 day (Initial balance)
+            40000n, // -- T3: 1% on 3000000 + 1000000 for 1 day (Initial balance + Stream yield)
+          lastDayPartialYield: 0n,
+          tieredFirstDayPartialYield: [0n, 0n, 0n],
+          tieredFullDaysYield: [
+            // FD1 Total: 90000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, DAY), // - FD1 T1: 30000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY), // - FD1 T2: 20000
+            simpleYield(
+              3000000n + // - Initial balance
+              1000000n, // -- Stream yield
+              (RATE_FACTOR / 100n) * 1n,
+              DAY
+            ) // ------------------------------------------------------ FD1 T3: 40000
+          ],
+          tieredLastDayPartialYield: [0n, 0n, 0n]
+        }
+      },
+      {
+        description: "two full days: D1:00:00:00 - D3:00:00:00",
+        params: {
+          fromTimestamp: DAY,
+          toTimestamp: DAY * 3n,
+          tiers: [
+            { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
+            { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
+            { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n } // -------- 1% rate, no cap
+          ],
+          balance: 5000000n,
+          streamYield: 1000000n
+        },
+        expected: {
+          firstDayPartialYield:
+            // FDP Total: 1000000
+            1000000n, // - Stream yield
+          fullDaysYield:
+            // FD1 Total: 90000
+            30000n + // - T1: 3% on 1000000 for 1 day (Initial balance)
+            20000n + // - T2: 2% on 1000000 for 1 day (Initial balance)
+            40000n + // - T3: 1% on 3000000 + 1000000 for 1 day (Initial balance + Stream yield)
             // ------
-            // FD2 Total: 91506
-            30000n + // - T1: 3% on 1000000 (balance) for 1 day
-            20000n + // - T2: 2% on 1000000 (balance) for 1 day
-            30000n + // - T3: 1% on 3000000 (balance) for 1 day
-            10000n + // - T3: 1% on 1000000 (stream yield) for 1 day
-            900n, // ---- T3: 1% on 90000 (FD1 yield) for 1 day
-          lastDayPartialYield: 22952n,
+            // FD2 Total: 90900
+            30000n + // - T1: 3% on 1000000 for 1 day (Initial balance)
+            20000n + // - T2: 2% on 1000000 for 1 day (Initial balance)
+            40900n, // -- T3: 1% on 3000000 + 1000000 + 90000 for 1 day (Initial balance + Stream yield + FD1 yield)
+          lastDayPartialYield: 0n,
           tieredFirstDayPartialYield: [0n, 0n, 0n],
           tieredFullDaysYield: [
             // FD1 + FD2 Total: 180900
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 86400n) + // ------------------- FD1 T1: 30000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 86400n), // -------------------- FD2 T1: 30000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 86400n) + // ------------------- FD1 T2: 20000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 86400n), // -------------------- FD2 T2: 20000
-            simpleYield(3000000n + 1000000n, (RATE_FACTOR / 100n) * 1n, 86400n) + // -------- FD1 T3: 40000
-            simpleYield(3000000n + 1000000n + 90000n, (RATE_FACTOR / 100n) * 1n, 86400n) // - FD2 T3: 40900
+            // FD1 Total: 30000 + 20000 + 40000 = 90000
+            // FD2 Total: 30000 + 20000 + 40900 = 90900
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, DAY) + // - FD1 T1: 30000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, DAY), // -- FD2 T1: 30000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY) + // - FD1 T2: 20000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY), // -- FD2 T2: 20000
+            simpleYield(
+              3000000n + // - Initial balance
+              1000000n, // -- Stream yield
+              (RATE_FACTOR / 100n) * 1n,
+              DAY
+            ) + // ----------------------------------------------------- FD1 T3: 40000
+            simpleYield(
+              3000000n + // - Initial balance
+              1000000n + // - Stream yield
+              90000n, // ---- FD1 yield
+              (RATE_FACTOR / 100n) * 1n,
+              DAY
+            ) // ------------------------------------------------------- FD2 T3: 40900
           ],
-          tieredLastDayPartialYield: [
-            // LDY Total: 22952
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 3600n * 6n), // -- LDY T1: 7500
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 3600n * 6n), // -- LDY T2: 5000
-            simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, 3600n * 6n) + // - LDY T3: 7500
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 1n, 3600n * 6n) + // - LDY T3: 2500
-            simpleYield(180900n, (RATE_FACTOR / 100n) * 1n, 3600n * 6n) // ---- LDY T3: 452
-          ]
+          tieredLastDayPartialYield: [0n, 0n, 0n]
         }
       },
       {
-        description: "Two full days AND First partial day AND Last partial day: D1:06:00:00 - D4:06:00:00",
+        description: "two full days AND first partial day: D1:06:00:00 - D4:00:00:00",
         params: {
-          fromTimestamp: 86400n + 3600n * 6n,
-          toTimestamp: 86400n + 86400n * 3n + 3600n * 6n,
+          fromTimestamp: DAY + HOUR * 6n,
+          toTimestamp: DAY * 4n,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1409,7 +1348,142 @@ describe("YieldStreamerV2Testable", function () {
         },
         expected: {
           firstDayPartialYield:
+            // FDP Total: 1000000 + 60000 = 1060000
+            1000000n + // - Stream yield
+            22500n + // --- T1: 3% on 1000000 for 18 hours (Initial balance)
+            15000n + // --- T2: 2% on 2000000 for 18 hours (Initial balance)
+            22500n, // ---- T3: 1% on 3000000 for 18 hours (Initial balance)
+          // PD0 Total: 60000
+          fullDaysYield:
+            // FD1 Total: 90600
+            30000n + // - T1: 3% on 1000000 for 1 day (Initial balance)
+            20000n + // - T2: 2% on 1000000 for 1 day (Initial balance)
+            40600n + // - T3: 1% on 3000000 + 1000000 + 60000 for 1 day (Initial balance + Stream yield + FDP yield)
+            // ------
+            // FD2 Total: 91506
+            30000n + // - T1: 3% on 1000000 for 1 day (Initial balance)
+            20000n + // - T2: 2% on 1000000 for 1 day (Initial balance)
+            41506n, // -- T3: 1% on 3000000 + 1000000 + 60000 + 90600 for 1 day (Initial balance + Stream yield + FDP yield + FD1 yield)
+          lastDayPartialYield: 0n,
+          tieredFirstDayPartialYield: [
             // FPD Total: 60000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, HOUR * 18n), // - FPD T1: 22500
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR * 18n), // - FPD T2: 15000
+            simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, HOUR * 18n) // -- FPD T3: 22500
+          ],
+          tieredFullDaysYield: [
+            // FD1 + FD2 Total: 181506
+            // FD1 Total: 30000 + 20000 + 40600 = 90600
+            // FD2 Total: 30000 + 20000 + 41506 = 91506
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, DAY) + // - FD1 T1: 30000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, DAY), // -- FD2 T1: 30000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY) + // - FD1 T2: 20000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY), // -- FD2 T2: 20000
+            simpleYield(
+              3000000n + // - Initial balance
+              1000000n + // - Stream yield
+              60000n, // ---- FPD yield
+              (RATE_FACTOR / 100n) * 1n,
+              DAY
+            ) + // ----------------------------------------------------- FD1 T3: 40600
+            simpleYield(
+              3000000n + // - Initial balance
+              1000000n + // - Stream yield
+              60000n + // --- FPD yield
+              90600n, // ---- FD1 yield
+              (RATE_FACTOR / 100n) * 1n,
+              DAY
+            ) // ------------------------------------------------------- FD2 T3: 41506
+          ],
+          tieredLastDayPartialYield: [0n, 0n, 0n]
+        }
+      },
+      {
+        description: "two full days AND last partial day: D1:00:00:00 - D4:06:00:00",
+        params: {
+          fromTimestamp: DAY,
+          toTimestamp: DAY * 3n + HOUR * 6n,
+          tiers: [
+            { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
+            { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
+            { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n } // -------- 1% rate, no cap
+          ],
+          balance: 5000000n,
+          streamYield: 1000000n
+        },
+        expected: {
+          firstDayPartialYield:
+            // FDP Total: 1000000
+            1000000n, // - Stream yield
+          fullDaysYield:
+            // FD1 Total: 90000
+            30000n + // - T1: 3% on 1000000 for 1 day (Initial balance)
+            20000n + // - T2: 2% on 1000000 for 1 day (Initial balance)
+            40000n + // - T3: 1% on 3000000 + 1000000 for 1 day (Initial balance + Stream yield)
+            // ------
+            // FD2 Total: 90900
+            30000n + // - T1: 3% on 1000000 for 1 day (Initial balance)
+            20000n + // - T2: 2% on 1000000 for 1 day (Initial balance)
+            40900n, // -- T3: 1% on 3000000 + 1000000 + 90000 for 1 day (Initial balance + Stream yield + FD1 yield)
+          lastDayPartialYield:
+            // LDP Total: 22952
+            7500n + // - T1: 3% on 1000000 for 6 hours (Initial balance)
+            5000n + // - T2: 2% on 1000000 for 6 hours (Initial balance)
+            10452n, // - T3: 1% on 3000000 + 1000000 + 90000 + 90900 for 6 hours (Initial balance + Stream yield + FD1 yield + FD2 yield)
+          tieredFirstDayPartialYield: [0n, 0n, 0n],
+          tieredFullDaysYield: [
+            // FD1 + FD2 Total: 180900
+            // FD1 Total: 30000 + 20000 + 40000 = 90000
+            // FD2 Total: 30000 + 20000 + 40900 = 90900
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, DAY) + // - FD1 T1: 30000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, DAY), // -- FD2 T1: 30000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY) + // - FD1 T2: 20000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY), // -- FD2 T2: 20000
+            simpleYield(
+              3000000n + // - Initial balance
+              1000000n, // -- Stream yield
+              (RATE_FACTOR / 100n) * 1n,
+              DAY
+            ) + // ----------------------------------------------------- FD1 T3: 40000
+            simpleYield(
+              3000000n + // - Initial balance
+              1000000n + // - Stream yield
+              90000n, // --- FD1 yield
+              (RATE_FACTOR / 100n) * 1n,
+              DAY
+            ) // ------------------------------------------------------- FD2 T3: 40900
+          ],
+          tieredLastDayPartialYield: [
+            // LDP Total: 22952
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, HOUR * 6n), // - LDP T1: 7500
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR * 6n), // - LDP T2: 5000
+            simpleYield(
+              3000000n + // - Initial balance
+              1000000n + // - Stream yield
+              90000n + // --- FD1 yield
+              90900n, // ---- FD2 yield
+              (RATE_FACTOR / 100n) * 1n,
+              HOUR * 6n
+            ) // ------------------------------------------------------------ LDP T3: 10452
+          ]
+        }
+      },
+      {
+        description: "two full days AND first partial day AND last partial day: D1:06:00:00 - D4:06:00:00",
+        params: {
+          fromTimestamp: DAY + HOUR * 6n,
+          toTimestamp: DAY * 4n + HOUR * 6n,
+          tiers: [
+            { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
+            { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
+            { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n } // -------- 1% rate, no cap
+          ],
+          balance: 5000000n,
+          streamYield: 1000000n
+        },
+        expected: {
+          firstDayPartialYield:
+            // FPD Total: 1000000 + 60000 = 1060000
             1000000n + // - Stream yield
             22500n + // --- T1: 3% on 1000000 for 18 hours (Initial balance)
             15000n + // --- T2: 2% on 2000000 for 18 hours (Initial balance)
@@ -1418,44 +1492,37 @@ describe("YieldStreamerV2Testable", function () {
             // FD1 Total: 90600
             30000n + // - T1: 3% on 1000000 for 1 day (Initial balance)
             20000n + // - T2: 2% on 1000000 for 1 day (Initial balance)
-            30000n + // - T3: 1% on 3000000 for 1 day (Initial balance)
-            10000n + // - T3: 1% on 1000000 for 1 day (Stream yield)
-            600n + // --- T3: 1% on 60000 for 1 day (FPD yield)
+            40600n + // - T3: 1% on 3000000 + 1000000 + 60000 for 1 day (Initial balance + Stream yield + FDP yield)
             // ------
             // FD2 Total: 91506
             30000n + // - T1: 3% on 1000000 for 1 day (Initial balance)
             20000n + // - T2: 2% on 1000000 for 1 day (Initial balance)
-            30000n + // - T3: 1% on 3000000 for 1 day (Initial balance)
-            10000n + // - T3: 1% on 1000000 for 1 day (Stream yield)
-            600n + // --- T3: 1% on 60000 for 1 day (FPD yield)
-            906n, // ---- T3: 1% on 90600 for 1 day (FD1 yield)
+            41506n, // -- T3: 1% on 3000000 + 1000000 + 60000 + 90600 for 1 day (Initial balance + Stream yield + FDP yield + FD1 yield)
           lastDayPartialYield:
             // LPD Total: 23105
             7500n + // - T1: 3% on 1000000 for 6 hours (Initial balance)
             5000n + // - T2: 2% on 1000000 for 6 hours (Initial balance)
-            7500n + // - T3: 1% on 3000000 for 6 hours (Initial balance)
-            2500n + // - T3: 1% on 1000000 for 6 hours (Stream yield)
-            605n, // --- T3: 1% on 242106 for 6 hours (Accrued yield)
+            10605n, // - T3: 1% on 3000000 + 1000000 + 60000 + 90600 + 91506 for 6 hours (Initial balance + Stream yield + FDP yield + FD1 yield + FD2 yield)
           tieredFirstDayPartialYield: [
             // FPD Total: 60000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 3600n * 18n), // - FPD T1: 22500
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 3600n * 18n), // - FPD T2: 15000
-            simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, 3600n * 18n) // -- FPD T3: 22500
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, HOUR * 18n), // - FPD T1: 22500
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR * 18n), // - FPD T2: 15000
+            simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, HOUR * 18n) // -- FPD T3: 22500
           ],
           tieredFullDaysYield: [
             // FD1 + FD2 Total: 182106
             // FD1 Total: 30000 + 20000 + 40600 = 90600
             // FD2 Total: 30000 + 20000 + 41506 = 91506
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 86400n) + // - FD1 T1: 30000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 86400n), // -- FD2 T1: 30000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 86400n) + // - FD1 T2: 20000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 86400n), // -- FD2 T2: 20000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, DAY) + // - FD1 T1: 30000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, DAY), // -- FD2 T1: 30000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY) + // - FD1 T2: 20000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, DAY), // -- FD2 T2: 20000
             simpleYield(
               3000000n + // - Initial balance
               1000000n + // - Stream yield
               60000n, // ---- FPD yield
               (RATE_FACTOR / 100n) * 1n,
-              86400n
+              DAY
             ) + // -------------------------------------------------------- FD1 T3: 40600
             simpleYield(
               3000000n + // - Initial balance
@@ -1463,13 +1530,13 @@ describe("YieldStreamerV2Testable", function () {
               60000n + // --- FPD yield
               90600n, // ---- FD1 yield
               (RATE_FACTOR / 100n) * 1n,
-              86400n
+              DAY
             ) // ---------------------------------------------------------- FD2 T3: 41506
           ],
           tieredLastDayPartialYield: [
-            // LPD Total: 23105
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 3600n * 6n), // - LPD T1: 7500
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 3600n * 6n), // - LPD T2: 5000
+            // LPD Total: 7500 + 5000 + 10605 = 23105
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, HOUR * 6n), // - LPD T1: 7500
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR * 6n), // - LPD T2: 5000
             simpleYield(
               3000000n + // - Initial balance
               1000000n + // - Stream yield
@@ -1477,16 +1544,16 @@ describe("YieldStreamerV2Testable", function () {
               90600n + // --- FD1 yield
               91506n, // ---- FD2 yield
               (RATE_FACTOR / 100n) * 1n,
-              3600n * 6n
-            ) // ------------------------------------------------------------- LPD T3: 10605
+              HOUR * 6n
+            ) // ------------------------------------------------------------ LPD T3: 10605
           ]
         }
       },
       {
-        description: "Two partial days: D1:06:00:00 - D2:06:00:00",
+        description: "two partial days: D1:06:00:00 - D2:06:00:00",
         params: {
-          fromTimestamp: 86400n + 3600n * 6n,
-          toTimestamp: 86400n + 86400n + 3600n * 6n,
+          fromTimestamp: DAY + HOUR * 6n,
+          toTimestamp: DAY * 2n + HOUR * 6n,
           tiers: [
             { rate: (RATE_FACTOR / 100n) * 3n, cap: 1000000n }, // - 3% rate, cap 1000000
             { rate: (RATE_FACTOR / 100n) * 2n, cap: 1000000n }, // - 2% rate, cap 1000000
@@ -1497,7 +1564,7 @@ describe("YieldStreamerV2Testable", function () {
         },
         expected: {
           firstDayPartialYield:
-            // FPD Total: 60000
+            // FDP Total: 1000000 + 60000 = 1060000
             1000000n + // - Stream yield
             22500n + // --- T1: 3% on 1000000 for 18 hours (Initial balance)
             15000n + // --- T2: 2% on 2000000 for 18 hours (Initial balance)
@@ -1507,43 +1574,45 @@ describe("YieldStreamerV2Testable", function () {
             // LPD Total: 22650
             7500n + // - T1: 3% on 1000000 for 6 hours (Initial balance)
             5000n + // - T2: 2% on 1000000 for 6 hours (Initial balance)
-            7500n + // - T3: 1% on 3000000 for 6 hours (Initial balance)
-            2500n + // - T3: 1% on 1000000 for 6 hours (Stream yield)
-            150n, // --- T3: 1% on 60000 for 6 hours (FPD yield)
+            10150n, // - T3: 1% on 3000000 + 1000000 + 60000 for 6 hours (Initial balance + Stream yield + FDP yield)
           tieredFirstDayPartialYield: [
-            // FPD Total: 22500 + 15000 + 22500 = 60000
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 3600n * 18n), // - FPD T1: 22500
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 3600n * 18n), // - FPD T2: 15000
-            simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, 3600n * 18n) // -- FPD T3: 22500
+            // FPD Total: 60000
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, HOUR * 18n), // - FPD T1: 22500
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR * 18n), // - FPD T2: 15000
+            simpleYield(3000000n, (RATE_FACTOR / 100n) * 1n, HOUR * 18n) // -- FPD T3: 22500
           ],
           tieredFullDaysYield: [0n, 0n, 0n],
           tieredLastDayPartialYield: [
-            // LPD Total: 7500 + 5000 + 10105 = 22650
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, 3600n * 6n), // - LPD T1: 7500
-            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, 3600n * 6n), // - LPD T2: 5000
+            // LPD Total: 22650
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 3n, HOUR * 6n), // - LPD T1: 7500
+            simpleYield(1000000n, (RATE_FACTOR / 100n) * 2n, HOUR * 6n), // - LPD T2: 5000
             simpleYield(
               3000000n + // - Initial balance
               1000000n + // - Stream yield
               60000n, // ---- FPD yield
-              RATE_FACTOR / 100n,
-              3600n * 6n
-            ) // ------------------------------------------------------------- LPD T3: 10105
+              (RATE_FACTOR / 100n) * 1n,
+              HOUR * 6n
+            ) // ------------------------------------------------------------ LPD T3: 10105
           ]
         }
       }
     ];
 
-    testCases.forEach((testCase, index) => {
-      it(`Test case ${index + 1}: ${testCase.description}`, async function () {
+    testCases.forEach(async (testCase, index) => {
+      it(`Should handle test case ${index + 1}: ${testCase.description}`, async () => {
+        const { yieldStreamerTestable } = await loadFixture(deployContracts);
+
         if (testCase.shouldRevert) {
+          // Call the `compoundYield()` function and expect it to revert.
           await expect(yieldStreamerTestable.compoundYield(testCase.params)).to.be.revertedWithCustomError(
             yieldStreamerTestable,
             testCase.revertMessage!
           );
         } else {
+          // Call the `compoundYield()` function and get the result.
           const result = await yieldStreamerTestable.compoundYield(testCase.params);
 
-          // Normalize the result for comparison
+          // Normalize the function call result for comparison.
           const compoundYieldResult: YieldResult = {
             firstDayPartialYield: result.firstDayPartialYield,
             fullDaysYield: result.fullDaysYield,
@@ -1553,7 +1622,7 @@ describe("YieldStreamerV2Testable", function () {
             tieredLastDayPartialYield: result.tieredLastDayPartialYield.map((n: bigint) => n)
           };
 
-          // Assertions
+          // Assertions.
           expect(compoundYieldResult.tieredFirstDayPartialYield).to.deep.equal(
             testCase.expected.tieredFirstDayPartialYield
           );
@@ -1663,12 +1732,12 @@ describe("YieldStreamerV2Testable", function () {
           { rate: 0n, cap: 100000000n },
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 50000000n }
         ],
-        elapsedSeconds: 3600n,
+        elapsedSeconds: HOUR,
         expectedTieredYield: [
           0n,
-          ((RATE_FACTOR / 100n) * 2n * 200000000n * 3600n) / (DAY * RATE_FACTOR),
+          ((RATE_FACTOR / 100n) * 2n * 200000000n * HOUR) / (DAY * RATE_FACTOR),
           0n,
-          ((RATE_FACTOR / 100n) * 1n * 50000000n * 3600n) / (DAY * RATE_FACTOR)
+          ((RATE_FACTOR / 100n) * 1n * 50000000n * HOUR) / (DAY * RATE_FACTOR)
         ]
       },
       {
@@ -1692,12 +1761,12 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 2n, cap: 100000000n },
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
         ],
-        elapsedSeconds: 3600n,
+        elapsedSeconds: HOUR,
         expectedTieredYield: [0n, 0n, 0n, 0n]
       }
     ];
 
-    testCases.forEach(({ description, amount, tiers, elapsedSeconds, expectedTieredYield }, index) => {
+    testCases.forEach(async ({ description, amount, tiers, elapsedSeconds, expectedTieredYield }, index) => {
       it(`Should handle test case ${index + 1}: ${description}`, async () => {
         const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
@@ -1723,7 +1792,7 @@ describe("YieldStreamerV2Testable", function () {
 
       const amount = 1000n;
       const rate = 0n; // Zero rate.
-      const elapsedSeconds = 3600n;
+      const elapsedSeconds = HOUR;
 
       // Call `calculateSimpleYield` function.
       const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
@@ -1736,7 +1805,7 @@ describe("YieldStreamerV2Testable", function () {
 
       const amount = 0n; // Zero amount.
       const rate = 1000n;
-      const elapsedSeconds = 3600n;
+      const elapsedSeconds = HOUR;
 
       // Call `calculateSimpleYield` function.
       const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
@@ -1943,7 +2012,7 @@ describe("YieldStreamerV2Testable", function () {
       }
     ];
 
-    testCases.forEach(({ fromTimestamp, toTimestamp, expectedStartIndex, expectedEndIndex, description }, index) => {
+    testCases.forEach(async ({ description, fromTimestamp, toTimestamp, expectedStartIndex, expectedEndIndex }, index) => {
       it(`Should handle test case ${index + 1}: ${description}.`, async () => {
         const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
@@ -2118,9 +2187,9 @@ describe("YieldStreamerV2Testable", function () {
         1660135722n
       ];
 
-      for (const ts of timestamps) {
-        const effectiveTimestamp = await yieldStreamerTestable.effectiveTimestamp(ts);
-        const expectedEffectiveTimestamp = (ts / 86400n) * 86400n;
+      for (const timestamp of timestamps) {
+        const effectiveTimestamp = await yieldStreamerTestable.effectiveTimestamp(timestamp);
+        const expectedEffectiveTimestamp = (timestamp / DAY) * DAY;
         expect(effectiveTimestamp).to.equal(expectedEffectiveTimestamp);
       }
     });

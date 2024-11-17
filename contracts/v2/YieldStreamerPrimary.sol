@@ -572,26 +572,30 @@ abstract contract YieldStreamerPrimary is
         return results;
     }
 
-    function _initYieldResult(uint256 tiersLength) internal pure returns (YieldResult memory) {
-        YieldResult memory result;
-        result.tieredFirstDayPartialYield = new uint256[](tiersLength);
-        result.tieredFullDaysYield = new uint256[](tiersLength);
-        result.tieredLastDayPartialYield = new uint256[](tiersLength);
-        return result;
-    }
-
-    // Tested
     /**
-     * @dev Calculates compounded yield over a specified time range using a single yield rate.
-     * Handles partial and full days within the period, calculating yield accordingly.
+     * @dev Calculates compounded yield over a specified time range using tiered rates.
+     * The function handles three distinct periods:
+     * 1. First partial day (if timestamp doesn't start at 00:00:00);
+     * 2. Full intermediate days;
+     * 3. Last partial day (if timestamp doesn't end at 00:00:00).
      *
-     * @param params The parameters for the yield calculation, including timestamps, yield rate, and balance.
-     * @return A `YieldResult` struct containing the yield for first partial day, full days, and last partial day.
+     * For each period, yield is calculated per tier based on:
+     * - Balance amount (which compounds after each full day);
+     * - Rate tiers (each tier has a rate and optional cap);
+     * - Time duration.
+     *
+     * @param params Contains:
+     *   - fromTimestamp: Start time of yield calculation;
+     *   - toTimestamp: End time of yield calculation;
+     *   - tiers: Array of rate/cap pairs for tiered yield calculation;
+     *   - balance: Initial balance to calculate yield on;
+     *   - streamYield: Any prior yield to include in first calculation.
+     * @return result A `YieldResult` struct containing:
+     *   - Yield amounts for first partial day, full days, and last partial day;
+     *   - Per-tier breakdown of yield for each period.
      */
-    function _compoundYield(CompoundYieldParams memory params) internal pure returns (YieldResult memory) {
-        uint256 tiersLength = params.tiers.length;
-        YieldResult memory result = _initYieldResult(tiersLength);
-
+    function _compoundYield(CompoundYieldParams memory params) internal pure returns (YieldResult memory result) {
+        // Validate timestamps and balance.
         if (params.fromTimestamp > params.toTimestamp) {
             revert YieldStreamer_TimeRangeInvalid();
         }
@@ -599,24 +603,32 @@ abstract contract YieldStreamerPrimary is
             return result;
         }
 
+        uint256 length = params.tiers.length;
+
+        // Initialize arrays to track yield per tier for each period.
+        result.tieredFirstDayPartialYield = new uint256[](length);
+        result.tieredFullDaysYield = new uint256[](length);
+        result.tieredLastDayPartialYield = new uint256[](length);
+
         /**
-         * 1. Handle the first partial day.
+         * 1. First Partial Day Handling
+         * There are 4 possible cases for the first day:
          */
 
+        // Represents the start of the current day.
         uint256 fromTimestampEffective = _effectiveTimestamp(params.fromTimestamp);
+
+        // Represents the start of the next day.
         uint256 nextDayTimestamp = fromTimestampEffective + 1 days;
+
+        // Represents the yield for the first partial day.
         uint256 partialYield = 0;
 
         if (params.fromTimestamp != fromTimestampEffective) {
+            // Case 1 & 2: Starting mid-day.
             if (params.toTimestamp <= nextDayTimestamp) {
-                /**
-                 * Case 1: `toTimestamp` is within the same day as the `fromTimestamp`.
-                 * Example: D1:00:00:01+ <> D2:00:00:00-
-                 * Actions:
-                 * - calculate the yield for the partial day and set it as the last partial day yield;
-                 * - don't take into account stream yield when calculating the partial day yield;
-                 * - return the result.
-                 */
+                // Case 1: Both start and end within same partial day.
+                // Example: D1 14:00 -> D1 18:00.
                 (partialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
                     params.balance,
                     params.toTimestamp - params.fromTimestamp,
@@ -625,32 +637,19 @@ abstract contract YieldStreamerPrimary is
                 result.lastDayPartialYield = params.streamYield + partialYield;
                 return result;
             } else {
-                /**
-                 * Case 2: `toTimestamp` is not within the same day as the `fromTimestamp`.
-                 * Actions:
-                 * Example: D1:00:00:01+ <> D2:00:00:01+
-                 * - calculate the yield for the partial day and set it as the first partial day yield;
-                 * - don't take into account stream yield when calculating the partial day yield;
-                 * - set the `fromTimestamp` to the start of the next day;
-                 * - continue with the next steps.
-                 */
+                // Case 2: Start mid-day but continue to next day.
+                // Example: D1 14:00 -> D2 18:00.
                 (partialYield, result.tieredFirstDayPartialYield) = _calculateTieredYield(
                     params.balance,
                     nextDayTimestamp - params.fromTimestamp,
                     params.tiers
                 );
                 result.firstDayPartialYield = params.streamYield + partialYield;
-                params.fromTimestamp = nextDayTimestamp;
+                params.fromTimestamp = nextDayTimestamp; // Move to start of next day
             }
         } else if (params.toTimestamp < nextDayTimestamp) {
-            /**
-             * Case 3: `toTimestamp` is within the same day as the `fromTimestamp`.
-             * Actions:
-             * Example: D1:00:00:00 <> D1:23:59:59-
-             * - calculate the yield for the partial day and set it as the last partial day yield;
-             * - take into account stream yield when calculating the partial day yield;
-             * - return the result.
-             */
+            // Case 3: Start at day start (00:00:00) but end within same day.
+            // Example: D1 00:00 -> D1 18:00.
             (partialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
                 params.balance + params.streamYield,
                 params.toTimestamp - params.fromTimestamp,
@@ -660,32 +659,33 @@ abstract contract YieldStreamerPrimary is
             result.lastDayPartialYield = partialYield;
             return result;
         } else {
-            /**
-             * Case 4: TBD
-             */
+            // Case 4: Start at day start and continue to next day.
+            // Example: D1 00:00 -> D2 18:00.
             result.firstDayPartialYield = params.streamYield;
         }
 
         /**
-         * 2. Handle full intermediate days.
+         * 2. Full Days Handling
+         * Calculate and compound yield for each complete day.
          */
-
         uint256 toTimestampEffective = _effectiveTimestamp(params.toTimestamp);
         uint256 fullDaysCount = (toTimestampEffective - params.fromTimestamp) / 1 days;
-        params.balance += result.firstDayPartialYield;
+        params.balance += result.firstDayPartialYield; // Compound first day's yield.
 
         if (fullDaysCount > 0) {
             uint256 fullDayYield;
-            uint256[] memory tieredFullDayYield = new uint256[](tiersLength);
+            uint256[] memory tieredFullDayYield = new uint256[](length);
 
+            // For each full day, calculate yield and compound it into balance.
             for (uint256 i = 0; i < fullDaysCount; i++) {
                 (fullDayYield, tieredFullDayYield) = _calculateTieredYield(params.balance, 1 days, params.tiers);
 
-                for (uint256 j = 0; j < tiersLength; j++) {
+                // Accumulate per-tier yields.
+                for (uint256 j = 0; j < length; j++) {
                     result.tieredFullDaysYield[j] += tieredFullDayYield[j];
                 }
 
-                params.balance += fullDayYield;
+                params.balance += fullDayYield; // Compound the day's yield.
                 result.fullDaysYield += fullDayYield;
             }
 
@@ -693,9 +693,9 @@ abstract contract YieldStreamerPrimary is
         }
 
         /**
-         * 3. Handle the last partial day.
+         * 3. Last Partial Day Handling
+         * Calculate yield for any remaining time less than a full day.
          */
-
         if (params.fromTimestamp < params.toTimestamp) {
             (result.lastDayPartialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
                 params.balance,
@@ -705,7 +705,7 @@ abstract contract YieldStreamerPrimary is
         }
 
         /**
-         * Return the result.
+         * Return the final yield result.
          */
         return result;
     }
