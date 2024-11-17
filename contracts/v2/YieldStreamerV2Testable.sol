@@ -35,10 +35,10 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
 
     function calculateTieredYield(
         uint256 amount,
-        RateTier[] memory tiers,
-        uint256 elapsedSeconds
+        uint256 elapsedSeconds,
+        RateTier[] memory rateTiers
     ) external pure returns (uint256, uint256[] memory) {
-        return _calculateTieredYield(amount, tiers, elapsedSeconds);
+        return _calculateTieredYield(amount, elapsedSeconds, rateTiers);
     }
 
     function calculateSimpleYield(

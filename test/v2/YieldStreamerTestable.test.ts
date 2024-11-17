@@ -1569,23 +1569,25 @@ describe("YieldStreamerV2Testable", function () {
     });
   });
 
-  describe("Function 'calculateTieredFullDayYield()'", function () {
-    let yieldStreamerTestable: Contract;
+  describe("Function 'calculateTieredYield()'", async () => {
+    interface CalculateTieredYieldTestCase {
+      description: string;
+      amount: bigint;
+      tiers: RateTier[];
+      elapsedSeconds: bigint;
+      expectedTieredYield: bigint[];
+    }
 
-    beforeEach(async function () {
-      const contracts = await setUpFixture(deployContracts);
-      yieldStreamerTestable = contracts.yieldStreamerTestable;
-    });
-
-    const testCases = [
+    const testCases: CalculateTieredYieldTestCase[] = [
       {
-        description: "Single Tier - zero cap",
+        description: "single tier - zero cap - 1 hour",
         amount: 650000000n,
         tiers: [{ rate: (RATE_FACTOR / 100n) * 5n, cap: 0n }],
-        expectedTieredYield: [(5n * 650000000n) / 100n]
+        elapsedSeconds: HOUR,
+        expectedTieredYield: [((RATE_FACTOR / 100n) * 5n * 650000000n * HOUR) / (DAY * RATE_FACTOR)]
       },
       {
-        description: "Multiple Tiers - total caps are less than amount",
+        description: "multiple tiers - total cap less than amount - 1 hour",
         amount: 650000000n,
         tiers: [
           { rate: (RATE_FACTOR / 100n) * 5n, cap: 300000000n },
@@ -1593,15 +1595,16 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 2n, cap: 100000000n },
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
         ],
+        elapsedSeconds: HOUR,
         expectedTieredYield: [
-          (5n * 300000000n) / 100n,
-          (3n * 200000000n) / 100n,
-          (2n * 100000000n) / 100n,
-          (1n * 50000000n) / 100n
+          ((RATE_FACTOR / 100n) * 5n * 300000000n * HOUR) / (DAY * RATE_FACTOR),
+          ((RATE_FACTOR / 100n) * 3n * 200000000n * HOUR) / (DAY * RATE_FACTOR),
+          ((RATE_FACTOR / 100n) * 2n * 100000000n * HOUR) / (DAY * RATE_FACTOR),
+          ((RATE_FACTOR / 100n) * 1n * 50000000n * HOUR) / (DAY * RATE_FACTOR)
         ]
       },
       {
-        description: "Multiple Tiers - total caps are greater than amount",
+        description: "multiple tiers - total cap greater than amount - 1 hour",
         amount: 450000000n,
         tiers: [
           { rate: (RATE_FACTOR / 100n) * 5n, cap: 300000000n },
@@ -1609,88 +1612,16 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 2n, cap: 100000000n },
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
         ],
+        elapsedSeconds: HOUR,
         expectedTieredYield: [
-          (5n * 300000000n) / 100n, // Tools: prevent Prettier from formatting this line
-          (3n * 150000000n) / 100n,
+          ((RATE_FACTOR / 100n) * 5n * 300000000n * HOUR) / (DAY * RATE_FACTOR),
+          ((RATE_FACTOR / 100n) * 3n * 150000000n * HOUR) / (DAY * RATE_FACTOR),
           0n,
           0n
         ]
       },
       {
-        description: "Multiple Tiers - zero rates present in the tiers array",
-        amount: 650000000n,
-        tiers: [
-          { rate: 0n, cap: 300000000n },
-          { rate: (RATE_FACTOR / 100n) * 2n, cap: 200000000n },
-          { rate: 0n, cap: 100000000n },
-          { rate: (RATE_FACTOR / 100n) * 1n, cap: 50000000n }
-        ],
-        expectedTieredYield: [
-          0n, // Tools: prevent Prettier from formatting this line
-          (2n * 200000000n) / 100n,
-          0n,
-          (1n * 50000000n) / 100n
-        ]
-      },
-      {
-        description: "Multiple Tiers - zero amount",
-        amount: 0n,
-        tiers: [
-          { rate: (RATE_FACTOR / 100n) * 5n, cap: 300000000n },
-          { rate: (RATE_FACTOR / 100n) * 3n, cap: 200000000n },
-          { rate: (RATE_FACTOR / 100n) * 2n, cap: 100000000n },
-          { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
-        ],
-        expectedTieredYield: [0n, 0n, 0n, 0n]
-      }
-    ];
-
-    testCases.forEach(({ description, amount, tiers, expectedTieredYield }, index) => {
-      it(`Test case ${index + 1}: ${description}`, async function () {
-        const yieldResult = await yieldStreamerTestable.calculateTieredFullDayYield(amount, tiers);
-        const expectedYield = expectedTieredYield.reduce((acc, curr) => acc + curr, 0n);
-        const [fullDaysYield, tieredFullDaysYield] = normalizeYieldResult(yieldResult);
-        expect(tieredFullDaysYield).to.deep.equal(expectedTieredYield);
-        expect(fullDaysYield).to.equal(expectedYield);
-      });
-    });
-  });
-
-  describe("Function 'calculateTieredPartDayYield()'", function () {
-    let yieldStreamerTestable: Contract;
-
-    beforeEach(async function () {
-      const contracts = await setUpFixture(deployContracts);
-      yieldStreamerTestable = contracts.yieldStreamerTestable;
-    });
-
-    const testCases = [
-      {
-        description: "Single Tier - zero cap",
-        amount: 650000000n,
-        tiers: [{ rate: (RATE_FACTOR / 100n) * 5n, cap: 0n }],
-        elapsedSeconds: 3600n,
-        expectedTieredYield: [((RATE_FACTOR / 100n) * 5n * 650000000n * 3600n) / (DAY * RATE_FACTOR)]
-      },
-      {
-        description: "Multiple Tiers - total caps are less than amount",
-        amount: 650000000n,
-        tiers: [
-          { rate: (RATE_FACTOR / 100n) * 5n, cap: 300000000n },
-          { rate: (RATE_FACTOR / 100n) * 3n, cap: 200000000n },
-          { rate: (RATE_FACTOR / 100n) * 2n, cap: 100000000n },
-          { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
-        ],
-        elapsedSeconds: 3600n,
-        expectedTieredYield: [
-          ((RATE_FACTOR / 100n) * 5n * 300000000n * 3600n) / (DAY * RATE_FACTOR),
-          ((RATE_FACTOR / 100n) * 3n * 200000000n * 3600n) / (DAY * RATE_FACTOR),
-          ((RATE_FACTOR / 100n) * 2n * 100000000n * 3600n) / (DAY * RATE_FACTOR),
-          ((RATE_FACTOR / 100n) * 1n * 50000000n * 3600n) / (DAY * RATE_FACTOR)
-        ]
-      },
-      {
-        description: "Multiple Tiers - total caps are greater than amount",
+        description: "multiple tiers - total cap greater than amount - 1 day + 3 hours",
         amount: 450000000n,
         tiers: [
           { rate: (RATE_FACTOR / 100n) * 5n, cap: 300000000n },
@@ -1698,16 +1629,33 @@ describe("YieldStreamerV2Testable", function () {
           { rate: (RATE_FACTOR / 100n) * 2n, cap: 100000000n },
           { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
         ],
-        elapsedSeconds: 3600n,
+        elapsedSeconds: DAY + HOUR * 3n,
         expectedTieredYield: [
-          ((RATE_FACTOR / 100n) * 5n * 300000000n * 3600n) / (DAY * RATE_FACTOR),
-          ((RATE_FACTOR / 100n) * 3n * 150000000n * 3600n) / (DAY * RATE_FACTOR),
+          ((RATE_FACTOR / 100n) * 5n * 300000000n * (DAY + HOUR * 3n)) / (DAY * RATE_FACTOR),
+          ((RATE_FACTOR / 100n) * 3n * 150000000n * (DAY + HOUR * 3n)) / (DAY * RATE_FACTOR),
           0n,
           0n
         ]
       },
       {
-        description: "Multiple Tiers - zero rates present in the tiers array",
+        description: "multiple tiers - total cap greater than amount - 2 days + 18 hours",
+        amount: 450000000n,
+        tiers: [
+          { rate: (RATE_FACTOR / 100n) * 5n, cap: 300000000n },
+          { rate: (RATE_FACTOR / 100n) * 3n, cap: 200000000n },
+          { rate: (RATE_FACTOR / 100n) * 2n, cap: 100000000n },
+          { rate: (RATE_FACTOR / 100n) * 1n, cap: 0n }
+        ],
+        elapsedSeconds: DAY * 2n + HOUR * 18n,
+        expectedTieredYield: [
+          ((RATE_FACTOR / 100n) * 5n * 300000000n * (DAY * 2n + HOUR * 18n)) / (DAY * RATE_FACTOR),
+          ((RATE_FACTOR / 100n) * 3n * 150000000n * (DAY * 2n + HOUR * 18n)) / (DAY * RATE_FACTOR),
+          0n,
+          0n
+        ]
+      },
+      {
+        description: "multiple tiers - zero rates present in the tiers array",
         amount: 650000000n,
         tiers: [
           { rate: 0n, cap: 300000000n },
@@ -1724,7 +1672,7 @@ describe("YieldStreamerV2Testable", function () {
         ]
       },
       {
-        description: "Multiple Tiers - zero elapsed seconds",
+        description: "multiple tiers - zero elapsed seconds",
         amount: 650000000n,
         tiers: [
           { rate: (RATE_FACTOR / 100n) * 5n, cap: 300000000n },
@@ -1736,7 +1684,7 @@ describe("YieldStreamerV2Testable", function () {
         expectedTieredYield: [0n, 0n, 0n, 0n]
       },
       {
-        description: "Multiple Tiers - zero amount",
+        description: "multiple tiers - zero amount",
         amount: 0n,
         tiers: [
           { rate: (RATE_FACTOR / 100n) * 5n, cap: 300000000n },
@@ -1750,10 +1698,19 @@ describe("YieldStreamerV2Testable", function () {
     ];
 
     testCases.forEach(({ description, amount, tiers, elapsedSeconds, expectedTieredYield }, index) => {
-      it(`Test case ${index + 1}: ${description}`, async function () {
-        const yieldResult = await yieldStreamerTestable.calculateTieredPartDayYield(amount, tiers, elapsedSeconds);
+      it(`Should handle test case ${index + 1}: ${description}`, async () => {
+        const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+        // Calculate the expected yield.
         const expectedYield = expectedTieredYield.reduce((acc, curr) => acc + curr, 0n);
+
+        // Call `calculateTieredYield` function.
+        const yieldResult = await yieldStreamerTestable.calculateTieredYield(amount, elapsedSeconds, tiers);
+
+        // Normalize the result for comparison.
         const [partDayYield, tieredPartDayYield] = normalizeYieldResult(yieldResult);
+
+        // Assertions.
         expect(tieredPartDayYield).to.deep.equal(expectedTieredYield);
         expect(partDayYield).to.equal(expectedYield);
       });

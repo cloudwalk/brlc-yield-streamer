@@ -617,10 +617,10 @@ abstract contract YieldStreamerPrimary is
                  * - don't take into account stream yield when calculating the partial day yield;
                  * - return the result.
                  */
-                (partialYield, result.tieredLastDayPartialYield) = _calculateTieredPartDayYield(
+                (partialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
                     params.balance,
-                    params.tiers,
-                    params.toTimestamp - params.fromTimestamp
+                    params.toTimestamp - params.fromTimestamp,
+                    params.tiers
                 );
                 result.lastDayPartialYield = params.streamYield + partialYield;
                 return result;
@@ -634,10 +634,10 @@ abstract contract YieldStreamerPrimary is
                  * - set the `fromTimestamp` to the start of the next day;
                  * - continue with the next steps.
                  */
-                (partialYield, result.tieredFirstDayPartialYield) = _calculateTieredPartDayYield(
+                (partialYield, result.tieredFirstDayPartialYield) = _calculateTieredYield(
                     params.balance,
-                    params.tiers,
-                    nextDayTimestamp - params.fromTimestamp
+                    nextDayTimestamp - params.fromTimestamp,
+                    params.tiers
                 );
                 result.firstDayPartialYield = params.streamYield + partialYield;
                 params.fromTimestamp = nextDayTimestamp;
@@ -651,10 +651,10 @@ abstract contract YieldStreamerPrimary is
              * - take into account stream yield when calculating the partial day yield;
              * - return the result.
              */
-            (partialYield, result.tieredLastDayPartialYield) = _calculateTieredPartDayYield(
+            (partialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
                 params.balance + params.streamYield,
-                params.tiers,
-                params.toTimestamp - params.fromTimestamp
+                params.toTimestamp - params.fromTimestamp,
+                params.tiers
             );
             result.firstDayPartialYield = params.streamYield;
             result.lastDayPartialYield = partialYield;
@@ -679,7 +679,7 @@ abstract contract YieldStreamerPrimary is
             uint256[] memory tieredFullDayYield = new uint256[](tiersLength);
 
             for (uint256 i = 0; i < fullDaysCount; i++) {
-                (fullDayYield, tieredFullDayYield) = _calculateTieredFullDayYield(params.balance, params.tiers);
+                (fullDayYield, tieredFullDayYield) = _calculateTieredYield(params.balance, 1 days, params.tiers);
 
                 for (uint256 j = 0; j < tiersLength; j++) {
                     result.tieredFullDaysYield[j] += tieredFullDayYield[j];
@@ -697,10 +697,10 @@ abstract contract YieldStreamerPrimary is
          */
 
         if (params.fromTimestamp < params.toTimestamp) {
-            (result.lastDayPartialYield, result.tieredLastDayPartialYield) = _calculateTieredPartDayYield(
+            (result.lastDayPartialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
                 params.balance,
-                params.tiers,
-                params.toTimestamp - params.fromTimestamp
+                params.toTimestamp - params.fromTimestamp,
+                params.tiers
             );
         }
 
@@ -710,34 +710,43 @@ abstract contract YieldStreamerPrimary is
         return result;
     }
 
-    // Tested
     /**
-     * @dev Calculates the yield for a partial day.
+     * @dev Calculates the yield for a given period using tiered rates.
      *
      * @param amount The amount to calculate the yield for.
-     * @param tiers The yield tiers to apply during the calculation period.
-     * @param elapsedSeconds The elapsed seconds within the day.
-     * @return The yield accrued during the partial day.
+     * @param elapsedSeconds The elapsed seconds within the period.
+     * @param rateTiers The yield tiers to apply during the calculation period.
+     * @return totalYield The yield accrued during the period.
+     * @return tieredYield The yield accrued during the period for each tier.
      */
-    function _calculateTieredPartDayYield(
+    function _calculateTieredYield(
         uint256 amount,
-        RateTier[] memory tiers,
-        uint256 elapsedSeconds
-    ) internal pure returns (uint256, uint256[] memory) {
+        uint256 elapsedSeconds,
+        RateTier[] memory rateTiers
+    ) internal pure returns (uint256 totalYield, uint256[] memory tieredYield) {
         uint256 remainingAmount = amount;
-        uint256 totalYield = 0;
-        uint256 i = 0;
         uint256 cappedAmount;
+        uint256 yield;
+        uint256 i;
         RateTier memory tier;
-        uint256[] memory tieredYield = new uint256[](tiers.length);
+        uint256 length = rateTiers.length;
+
+        // Initialize array to store yield for each tier.
+        tieredYield = new uint256[](length);
 
         do {
+            // If no amount remains to be processed, exit the loop.
             if (remainingAmount == 0) {
                 break;
             }
 
-            tier = tiers[i];
+            // Get current tier being processed.
+            tier = rateTiers[i];
 
+            // Determine how much of `remainingAmount` to process in this tier:
+            // 1. If `tier.cap` is 0, process all remaining amount (0 means no cap);
+            // 2. If remaining amount exceeds tier cap, process up to cap;
+            // 3. Otherwise process entire remaining amount.
             if (tier.cap == 0) {
                 cappedAmount = remainingAmount;
             } else if (remainingAmount > tier.cap) {
@@ -746,12 +755,19 @@ abstract contract YieldStreamerPrimary is
                 cappedAmount = remainingAmount;
             }
 
-            uint256 yield = _calculateSimpleYield(cappedAmount, tier.rate, elapsedSeconds);
-            totalYield += yield;
+            // Calculate yield for this tier's portion using simple interest formula.
+            yield = _calculateSimpleYield(cappedAmount, tier.rate, elapsedSeconds);
+
+            // Store yield for this specific tier.
             tieredYield[i] = yield;
+
+            // Add this tier's yield to total and subtract processed amount.
+            totalYield += yield;
             remainingAmount -= cappedAmount;
+
+            // Move to next tier.
             i++;
-        } while (i < tiers.length);
+        } while (i < length);
 
         return (totalYield, tieredYield);
     }
@@ -762,14 +778,14 @@ abstract contract YieldStreamerPrimary is
      * @param amount The amount to calculate the yield for.
      * @param rate The rate to apply when calculating the yield.
      * @param elapsedSeconds The elapsed seconds within the period.
-     * @return The yield accrued during the period.
+     * @return yield The yield accrued during the period.
      */
     function _calculateSimpleYield(
         uint256 amount,
         uint256 rate,
         uint256 elapsedSeconds
-    ) internal pure returns (uint256) {
-        return (amount * rate * elapsedSeconds) / (1 days * RATE_FACTOR);
+    ) internal pure returns (uint256 yield) {
+        yield = (amount * rate * elapsedSeconds) / (1 days * RATE_FACTOR);
     }
 
     /**
