@@ -405,74 +405,96 @@ abstract contract YieldStreamerPrimary is
 
     /**
      * @dev Calculates the yield for a given period using provided yield rates.
-     * Handles multiple yield rate periods that may occur within the time range.
+     * This function handles multiple yield rate periods that may overlap with the specified time range.
+     * It divides the overall time range into sub-periods based on the effective days of the yield rates
+     * and calculates the yield for each sub-period individually using the `_compoundYield` function.
      *
-     * @param params The parameters for the yield calculation, including timestamps and initial values.
-     * @param rates The array of yield rates to use for the calculation.
-     * @return An array of `YieldResult` structs containing yield calculations for sub-periods.
+     * @param params The parameters required for yield calculation, including:
+     *   - `fromTimestamp`: The start of the yield calculation period.
+     *   - `toTimestamp`: The end of the yield calculation period.
+     *   - `rateStartIndex`: The index of the first relevant yield rate in the `yieldRates` array.
+     *   - `rateEndIndex`: The index of the last relevant yield rate in the `yieldRates` array.
+     *   - `initialBalance`: The initial balance amount to calculate yield on.
+     *   - `initialStreamYield`: Any prior stream yield to include in the first calculation.
+     *   - `initialAccruedYield`: Any prior accrued yield to include in the calculations.
+     * @param yieldRates The array of `YieldRate` structs that contain the yield rate tiers and their effective days.
+     * @return results An array of `YieldResult` structs, each representing the yield calculated for a sub-period.
      */
     function _calculateYield(
         CalculateYieldParams memory params,
-        YieldRate[] memory rates // Tools: this comment prevents Prettier from formatting into a single line.
-    ) internal pure returns (YieldResult[] memory) {
-        YieldResult[] memory results;
+        YieldRate[] memory yieldRates
+    ) internal pure returns (YieldResult[] memory results) {
         uint256 ratePeriods = params.rateEndIndex - params.rateStartIndex + 1;
         uint256 localFromTimestamp = params.fromTimestamp;
         uint256 localToTimestamp = params.toTimestamp;
 
         /**
-         * NOTE:
-         * At this point we are sure that `rates` array contains and least one element
-         * that fully covers `fromTimestamp` to `toTimestamp` period passed to this function.
-         * Therefore, there is no need to have any checks related to rates or period validation.
+         * At this point, we ensure that the `rates` array contains at least one yield rate
+         * that fully covers the period from `fromTimestamp` to `toTimestamp`. Hence, no additional
+         * validation on the rates or the time range is necessary.
          */
 
         if (ratePeriods == 1) {
             /**
-             * Scenario 1
-             * If there is only one yield rate period in the range, we calculate the yield for the entire range
-             * using this yield rate.
+             * Scenario 1: Single Yield Rate Period
+             * If there's only one yield rate applicable for the entire time range, we calculate the yield
+             * for the entire period using this one rate.
+             *
+             * Steps:
+             * 1. Initialize the `results` array with a single `YieldResult`.
+             * 2. Call `_compoundYield` with the current time range and the applicable yield rate tiers.
+             * 3. Store the calculated yield in the `results` array.
              */
-
             results = new YieldResult[](1);
             results[0] = _compoundYield(
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex].tiers,
+                    yieldRates[params.rateStartIndex].tiers,
                     params.initialBalance + params.initialAccruedYield,
                     params.initialStreamYield
                 )
             );
         } else if (ratePeriods == 2) {
             /**
-             * Scenario 2
-             * If there are two yield rate periods in the range, we:
-             * 1. Use the first yield rate to calculate the yield from `fromTimestamp` to the start of the second yield rate period.
-             * 2. Use the second yield rate to calculate the yield from the start of the second yield rate period to `toTimestamp`.
+             * Scenario 2: Two Yield Rate Periods
+             * When the time range spans two different yield rate periods, we need to calculate the yield
+             * separately for each sub-period.
+             *
+             * Steps:
+             * 1. Initialize the `results` array with two `YieldResult` entries.
+             * 2. For the first sub-period:
+             *    a. Set `localFromTimestamp` to `params.fromTimestamp`.
+             *    b. Set `localToTimestamp` to the start of the second yield rate period.
+             *    c. Calculate the yield using the first yield rate's tiers.
+             * 3. For the second sub-period:
+             *    a. Update `localFromTimestamp` to the start of the second yield rate period.
+             *    b. Set `localToTimestamp` to `params.toTimestamp`.
+             *    c. Calculate the yield using the second yield rate's tiers.
+             * 4. Accumulate the results accordingly.
              */
 
             results = new YieldResult[](2);
 
             /**
-             * Calculate yield for the first period.
+             * Calculate yield for the first yield rate period.
              */
 
             localFromTimestamp = params.fromTimestamp;
-            localToTimestamp = uint256(rates[params.rateStartIndex + 1].effectiveDay) * 1 days;
+            localToTimestamp = uint256(yieldRates[params.rateStartIndex + 1].effectiveDay) * 1 days;
 
             results[0] = _compoundYield(
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex].tiers,
+                    yieldRates[params.rateStartIndex].tiers,
                     params.initialBalance + params.initialAccruedYield,
                     params.initialStreamYield
                 )
             );
 
             /**
-             * Calculate yield for the second period.
+             * Calculate yield for the second yield rate period.
              */
 
             localFromTimestamp = localToTimestamp;
@@ -482,7 +504,7 @@ abstract contract YieldStreamerPrimary is
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex + 1].tiers,
+                    yieldRates[params.rateStartIndex + 1].tiers,
                     params.initialBalance +
                         params.initialAccruedYield +
                         results[0].firstDayPartialYield +
@@ -493,58 +515,73 @@ abstract contract YieldStreamerPrimary is
             );
         } else {
             /**
-             * Scenario 3
-             * If there are more than two yield rate periods in the range, we:
-             * 1. Use the first yield rate to calculate the yield from `fromTimestamp` to the start of the second yield rate period.
-             * 2. Use the second yield rate to calculate the yield from the start of the second yield rate period to the start of the third yield rate period.
-             * 3. Repeat this process for each subsequent yield rate period until the last yield rate period.
-             * 4. Use the last yield rate to calculate the yield from the start of the last yield rate period to `toTimestamp`.
+             * Scenario 3: Multiple Yield Rate Periods
+             * When the time range spans more than two yield rate periods, we must divide the period into
+             * multiple sub-periods, each corresponding to a different yield rate period.
+             *
+             * Steps:
+             * 1. Initialize the `results` array with an entry for each yield rate period.
+             * 2. For the first sub-period:
+             *    a. Set `localFromTimestamp` to `params.fromTimestamp`.
+             *    b. Set `localToTimestamp` to the start of the second yield rate period.
+             *    c. Calculate the yield using the first yield rate's tiers.
+             *    d. Update the `currentBalance` by adding the yield from this sub-period.
+             * 3. For each intermediate sub-period:
+             *    a. Set `localFromTimestamp` to the start of the current yield rate period.
+             *    b. Set `localToTimestamp` to the start of the next yield rate period.
+             *    c. Calculate the yield using the current yield rate's tiers.
+             *    d. Update the `currentBalance` by adding the yield from this sub-period.
+             * 4. For the last sub-period:
+             *    a. Set `localFromTimestamp` to the start of the last yield rate period.
+             *    b. Set `localToTimestamp` to `params.toTimestamp`.
+             *    c. Calculate the yield using the last yield rate's tiers.
              */
-
             results = new YieldResult[](ratePeriods);
             uint256 currentBalance;
 
             /**
-             * Calculate yield for the first period.
+             * Calculate yield for the first yield rate period.
              */
 
             localFromTimestamp = params.fromTimestamp;
-            localToTimestamp = uint256(rates[params.rateStartIndex + 1].effectiveDay) * 1 days;
+            localToTimestamp = uint256(yieldRates[params.rateStartIndex + 1].effectiveDay) * 1 days;
             currentBalance = params.initialBalance + params.initialAccruedYield;
 
             results[0] = _compoundYield(
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex].tiers,
+                    yieldRates[params.rateStartIndex].tiers,
                     currentBalance,
                     params.initialStreamYield
                 )
             );
 
+            // Update the balance by adding the yield from the first sub-period.
             currentBalance +=
                 results[0].firstDayPartialYield +
                 results[0].fullDaysYield +
                 results[0].lastDayPartialYield;
 
             /**
-             * Calculate yield for the intermediate periods.
+             * Calculate yield for the intermediate yield rate periods.
              */
 
             for (uint256 i = params.rateStartIndex + 1; i < params.rateEndIndex; i++) {
-                localFromTimestamp = uint256(rates[i].effectiveDay) * 1 days;
-                localToTimestamp = uint256(rates[i + 1].effectiveDay) * 1 days;
+                localFromTimestamp = uint256(yieldRates[i].effectiveDay) * 1 days;
+                localToTimestamp = uint256(yieldRates[i + 1].effectiveDay) * 1 days;
 
                 results[i - params.rateStartIndex] = _compoundYield(
                     CompoundYieldParams(
                         localFromTimestamp, // Tools: this comment prevents Prettier from formatting into a single line.
                         localToTimestamp,
-                        rates[i].tiers,
+                        yieldRates[i].tiers,
                         currentBalance,
                         0
                     )
                 );
 
+                // Update the balance by adding the yield from the current sub-period.
                 currentBalance +=
                     results[i - params.rateStartIndex].firstDayPartialYield +
                     results[i - params.rateStartIndex].fullDaysYield +
@@ -552,23 +589,28 @@ abstract contract YieldStreamerPrimary is
             }
 
             /**
-             * Calculate yield for the last period.
+             * Calculate yield for the last yield rate period.
              */
 
-            localFromTimestamp = uint256(rates[params.rateStartIndex + ratePeriods - 1].effectiveDay) * 1 days;
+            localFromTimestamp = uint256(yieldRates[params.rateStartIndex + ratePeriods - 1].effectiveDay) * 1 days;
             localToTimestamp = params.toTimestamp;
 
             results[ratePeriods - 1] = _compoundYield(
                 CompoundYieldParams(
                     localFromTimestamp,
                     localToTimestamp,
-                    rates[params.rateStartIndex + ratePeriods - 1].tiers,
+                    yieldRates[params.rateStartIndex + ratePeriods - 1].tiers,
                     currentBalance,
                     0
                 )
             );
         }
 
+        /**
+         * @dev Returns the array of `YieldResult` structs, each containing the yield calculations
+         * for their respective sub-periods. These results can then be aggregated to understand
+         * the total yield over the entire specified time range.
+         */
         return results;
     }
 
