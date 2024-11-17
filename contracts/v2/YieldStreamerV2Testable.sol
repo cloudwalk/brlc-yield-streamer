@@ -33,32 +33,22 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
         return _compoundYield(params);
     }
 
-    function calculateTieredPartDayYield(
+    function calculateTieredYield(
         uint256 amount,
         RateTier[] memory tiers,
         uint256 elapsedSeconds
-    ) public pure returns (uint256, uint256[] memory) {
-        return _calculateTieredPartDayYield(amount, tiers, elapsedSeconds);
+    ) external pure returns (uint256, uint256[] memory) {
+        return _calculateTieredYield(amount, tiers, elapsedSeconds);
     }
 
-    function calculateTieredFullDayYield(
-        uint256 amount,
-        RateTier[] memory tiers
-    ) public pure returns (uint256, uint256[] memory) {
-        return _calculateTieredFullDayYield(amount, tiers);
-    }
-
-    function calculateSimplePartDayYield(
+    function calculateSimpleYield(
         uint256 amount,
         uint256 rate,
         uint256 elapsedSeconds
     ) external pure returns (uint256) {
-        return _calculateSimplePartDayYield(amount, rate, elapsedSeconds);
+        return _calculateSimpleYield(amount, rate, elapsedSeconds);
     }
 
-    function calculateSimpleFullDayYield(uint256 amount, uint256 rate) external pure returns (uint256) {
-        return _calculateSimpleFullDayYield(amount, rate);
-    }
 
     function inRangeYieldRates(
         YieldRate[] memory rates,

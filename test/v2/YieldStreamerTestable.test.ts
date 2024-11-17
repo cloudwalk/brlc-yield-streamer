@@ -1760,100 +1760,90 @@ describe("YieldStreamerV2Testable", function () {
     });
   });
 
-  describe("Function 'calculateSimpleFullDayYield()'", function () {
-    let yieldStreamerTestable: Contract;
+  describe("Function 'calculateSimpleYield()'", async () => {
+    it("Should return zero when rate is zero", async () => {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-    beforeEach(async function () {
-      const contracts = await setUpFixture(deployContracts);
-      yieldStreamerTestable = contracts.yieldStreamerTestable;
-    });
+      const amount = 1000n;
+      const rate = 0n; // Zero rate.
+      const elapsedSeconds = 3600n;
 
-    it("Should return zero when amount is zero", async function () {
-      const amount = 0n; // zero amount
-      const rate = 1000n; // arbitrary non-zero rate
-      const yieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
+      // Call `calculateSimpleYield` function.
+      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+
       expect(yieldResult).to.equal(0);
     });
 
-    it("Should return zero when rate is zero", async function () {
-      const amount = 100n; // arbitrary non-zero amount
-      const rate = 0n; // zero rate
-      const yieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
+    it("Should return zero when amount is zero", async () => {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      const amount = 0n; // Zero amount.
+      const rate = 1000n;
+      const elapsedSeconds = 3600n;
+
+      // Call `calculateSimpleYield` function.
+      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+
       expect(yieldResult).to.equal(0);
     });
 
-    it("Should calculate yield correctly for typical values", async function () {
+    it("Should return zero when elapsedSeconds is zero", async () => {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      const amount = 1000n;
+      const rate = 1000n;
+      const elapsedSeconds = 0n; // Zero elapsed seconds.
+
+      // Call `calculateSimpleYield` function.
+      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+
+      expect(yieldResult).to.equal(0);
+    });
+
+    it("Should calculate the yield correctly when elapsed seconds is equal to 1 day", async () => {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
       const amount = 123456789n;
       const rate = 123456789n;
-      const expectedYield = (amount * rate) / RATE_FACTOR;
+      const elapsedSeconds = DAY;
+      const expectedYield = (amount * rate * elapsedSeconds) / (DAY * RATE_FACTOR);
 
-      const yieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
+      // Call `calculateSimpleYield` function.
+      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+
+      expect(yieldResult).to.equal(expectedYield);
+    });
+
+    it("Should calculate the yield correctly when elapsed seconds is less than 1 day", async () => {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      const amount = 123456789n;
+      const rate = 123456789n;
+      const elapsedSeconds = HOUR * 3n;
+      const expectedYield = (amount * rate * elapsedSeconds) / (DAY * RATE_FACTOR);
+
+      // Call `calculateSimpleYield` function.
+      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+
+      expect(yieldResult).to.equal(expectedYield);
+    });
+
+    it("Should calculate the yield correctly when elapsed seconds is greater than 1 day", async () => {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      const amount = 123456789n;
+      const rate = 123456789n;
+      const elapsedSeconds = DAY * 2n + HOUR * 3n;
+      const expectedYield = (amount * rate * elapsedSeconds) / (DAY * RATE_FACTOR);
+
+      // Call `calculateSimpleYield` function.
+      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+
       expect(yieldResult).to.equal(expectedYield);
     });
   });
 
-  describe("Function 'calculateSimplePartDayYield()'", function () {
-    let yieldStreamerTestable: Contract;
-
-    beforeEach(async function () {
-      const contracts = await setUpFixture(deployContracts);
-      yieldStreamerTestable = contracts.yieldStreamerTestable;
-    });
-
-    it("Should return zero when amount is zero", async function () {
-      const amount = 0n; // zero amount
-      const rate = 1000n; // arbitrary non-zero rate
-      const elapsedSeconds = 3600n; // arbitrary non-zero elapsed seconds
-      const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
-      expect(yieldResult).to.equal(0);
-    });
-
-    it("Should return zero when rate is zero", async function () {
-      const amount = 1000n; // arbitrary non-zero amount
-      const rate = 0n; // zero rate
-      const elapsedSeconds = 3600n; // arbitrary non-zero elapsed seconds
-      const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
-      expect(yieldResult).to.equal(0);
-    });
-
-    it("Should return zero when elapsedSeconds is zero", async function () {
-      const amount = 1000n; // arbitrary non-zero amount
-      const rate = 1000n; // arbitrary non-zero rate
-      const elapsedSeconds = 0n; // zero elapsed seconds
-      const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
-      expect(yieldResult).to.equal(0);
-    });
-
-    it("Should calculate partial day yield correctly", async function () {
-      const amount = 123456789n; // arbitrary non-zero amount
-      const rate = 123456789n; // arbitrary non-zero rate
-      const elapsedSeconds = 12345n; // arbitrary non-zero elapsed seconds
-      const expectedYield = (amount * rate * elapsedSeconds) / (86400n * RATE_FACTOR);
-
-      const yieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(amount, rate, elapsedSeconds);
-      expect(yieldResult).to.equal(expectedYield);
-    });
-
-    it("Should calculate full day yield when elapsedSeconds equals 1 day", async function () {
-      const amount = 123456789n; // arbitrary non-zero amount
-      const rate = 123456789n; // arbitrary non-zero rate
-      const elapsedSeconds = 86400n; // 1 day
-
-      const expectedYield = (amount * rate * elapsedSeconds) / (86400n * RATE_FACTOR);
-
-      const partialDayYieldResult = await yieldStreamerTestable.calculateSimplePartDayYield(
-        amount,
-        rate,
-        elapsedSeconds
-      );
-      const fullDaysYieldResult = await yieldStreamerTestable.calculateSimpleFullDayYield(amount, rate);
-
-      expect(partialDayYieldResult).to.equal(expectedYield);
-      expect(fullDaysYieldResult).to.equal(expectedYield);
-    });
-  });
-
-  describe("Function 'inRangeYieldRates()'", function () {
+  describe("Function 'inRangeYieldRates()'", async () => {
     it("Should return indices (0, 0) when there is only one yield rate in the array", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 

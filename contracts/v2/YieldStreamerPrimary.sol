@@ -746,7 +746,7 @@ abstract contract YieldStreamerPrimary is
                 cappedAmount = remainingAmount;
             }
 
-            uint256 yield = _calculateSimplePartDayYield(cappedAmount, tier.rate, elapsedSeconds);
+            uint256 yield = _calculateSimpleYield(cappedAmount, tier.rate, elapsedSeconds);
             totalYield += yield;
             tieredYield[i] = yield;
             remainingAmount -= cappedAmount;
@@ -757,50 +757,14 @@ abstract contract YieldStreamerPrimary is
     }
 
     /**
-     * @dev Calculates the yield for a full day.
+     * @dev Calculates a simple yield for a given period.
      *
      * @param amount The amount to calculate the yield for.
-     * @param tiers The yield tiers to apply during the calculation period.
-     * @return The yield accrued during the full day.
+     * @param rate The rate to apply when calculating the yield.
+     * @param elapsedSeconds The elapsed seconds within the period.
+     * @return The yield accrued during the period.
      */
-    function _calculateTieredFullDayYield(
-        uint256 amount,
-        RateTier[] memory tiers
-    ) internal pure returns (uint256, uint256[] memory) {
-        uint256 remainingAmount = amount;
-        uint256 totalYield = 0;
-        uint256 i = 0;
-        uint256 cappedAmount;
-        RateTier memory tier;
-        uint256[] memory tieredYield = new uint256[](tiers.length);
-
-        do {
-            if (remainingAmount == 0) {
-                break;
-            }
-
-            tier = tiers[i];
-
-            if (tier.cap == 0) {
-                cappedAmount = remainingAmount;
-            } else if (remainingAmount > tier.cap) {
-                cappedAmount = tier.cap;
-            } else {
-                cappedAmount = remainingAmount;
-            }
-
-            uint256 yield = _calculateSimpleFullDayYield(cappedAmount, tier.rate);
-            totalYield += yield;
-            tieredYield[i] = yield;
-            remainingAmount -= cappedAmount;
-            i++;
-        } while (i < tiers.length);
-
-        return (totalYield, tieredYield);
-    }
-
-    // Tested
-    function _calculateSimplePartDayYield(
+    function _calculateSimpleYield(
         uint256 amount,
         uint256 rate,
         uint256 elapsedSeconds
@@ -808,25 +772,20 @@ abstract contract YieldStreamerPrimary is
         return (amount * rate * elapsedSeconds) / (1 days * RATE_FACTOR);
     }
 
-    // Tested
-    function _calculateSimpleFullDayYield(uint256 amount, uint256 rate) internal pure returns (uint256) {
-        return (amount * rate) / RATE_FACTOR;
-    }
-
-    // Tested
     /**
      * @dev Finds the yield rates that overlap with the given timestamp range.
      *
      * @param rates The array of yield rates to search through.
-     * @param fromTimestamp The start timestamp (inclusive).
-     * @param toTimestamp The end timestamp (exclusive).
-     * @return The start and end index of the yield rates.
+     * @param fromTimestamp The inclusive start timestamp of the range to search for.
+     * @param toTimestamp The exclusive end timestamp of the range to search for.
+     * @return startIndex The start index of the yield rates that overlap with the given timestamp range.
+     * @return endIndex The end index of the yield rates that overlap with the given timestamp range.
      */
     function _inRangeYieldRates(
         YieldRate[] memory rates,
         uint256 fromTimestamp,
         uint256 toTimestamp
-    ) internal pure returns (uint256, uint256) {
+    ) internal pure returns (uint256 startIndex, uint256 endIndex) {
         uint256 length = rates.length;
 
         if (length == 0) {
@@ -837,10 +796,9 @@ abstract contract YieldStreamerPrimary is
             revert YieldStreamer_TimeRangeIsInvalid();
         }
 
-        uint256 startIndex;
-        uint256 endIndex = length; // Indicates unset value.
         uint256 rateTimestamp;
         uint256 i = length;
+        endIndex = length; // Indicates unset value.
 
         /**
          * NOTE:
