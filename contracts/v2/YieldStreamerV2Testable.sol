@@ -61,12 +61,11 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
     }
 
     function inRangeYieldRates(
-        uint32 groupId,
+        YieldRate[] memory rates,
         uint256 fromTimestamp,
         uint256 toTimestamp
-    ) external view returns (uint256, uint256) {
-        YieldStreamerStorageLayout storage $ = _yieldStreamerStorage();
-        return _inRangeYieldRates($.yieldRates[groupId], fromTimestamp, toTimestamp);
+    ) external pure returns (uint256, uint256) {
+        return _inRangeYieldRates(rates, fromTimestamp, toTimestamp);
     }
 
     function aggregateYield(YieldResult[] memory yieldResults) external pure returns (uint256, uint256) {

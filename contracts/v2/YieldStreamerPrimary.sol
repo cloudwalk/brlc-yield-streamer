@@ -838,32 +838,53 @@ abstract contract YieldStreamerPrimary is
         }
 
         uint256 startIndex;
-        uint256 endIndex = length; // Indicates unset.
+        uint256 endIndex = length; // Indicates unset value.
         uint256 rateTimestamp;
         uint256 i = length;
 
         /**
-         * Notes:
-         * There are common rules for the rates array:
+         * NOTE:
+         * There are common rules we assume to be followed for the rates array:
          * 1. The first rate in the rates array must always have the effective day equal to 0.
          * 2. The rates array is sorted by the effective day in ascending.
          * 3. The effective day in each rate is always greater than the previous rate's effective day.
          * The assumption that mentioned rules are followed is crucial for the logic below.
          */
 
+        /**
+         * NOTE:
+         * For optimization purposes, we iterate from the end to the beginning of the rates array.
+         * This allows us to not iterate through the entire array when we found the start index.
+         */
+
+        /**
+         * The loop iterates through the rates array to find:
+         * 1. `endIndex`: The last rate that starts before `toTimestamp`;
+         * 2. `startIndex`: The first rate that starts before or at `fromTimestamp`.
+         */
         do {
+            // First iteration starts from length-1.
             i--;
 
+            // Convert rate's effective day to timestamp.
+            // Cast `effectiveDay` to `uint256` to avoid underflow.
             rateTimestamp = uint256(rates[i].effectiveDay) * 1 days;
 
+            // Skip rates that start after or at `toTimestamp`.
+            // These rates are too late to be relevant for our time range.
             if (rateTimestamp >= toTimestamp) {
                 continue;
             }
 
+            // If we haven't found an `endIndex` yet and we found a rate
+            // that starts before `toTimestamp`, this is our `endIndex`.
             if (endIndex == length) {
                 endIndex = i;
             }
 
+            // If we find a rate that starts before or at `fromTimestamp`:
+            // 1. This becomes our `startIndex`;
+            // 2. We can break the loop since earlier rates won't be relevant.
             if (rateTimestamp <= fromTimestamp) {
                 startIndex = i;
                 break;
