@@ -873,44 +873,48 @@ abstract contract YieldStreamerPrimary is
         return (startIndex, endIndex);
     }
 
-    // Tested
     /**
-     * @dev Aggregates the yield results from multiple periods.
+     * @dev Aggregates yield results from multiple periods.
      *
      * @param yieldResults The array of yield results to aggregate.
-     * @return The final/updated accrued yield and stream yield.
+     * @return accruedYield The aggregated accrued yield.
+     * @return streamYield The aggregated stream yield.
      */
-    function _aggregateYield(YieldResult[] memory yieldResults) internal pure returns (uint256, uint256) {
+    function _aggregateYield(
+        YieldResult[] memory yieldResults
+    ) internal pure returns (uint256 accruedYield, uint256 streamYield) {
         uint256 length = yieldResults.length;
-        uint256 accruedYield;
-        uint256 streamYield;
 
         if (length == 0) {
             return (0, 0);
         }
 
-        // Initialize accruedYield with the first yield result's components
+        // Initialize `accruedYield` from the first item of the yield results.
         accruedYield = yieldResults[0].firstDayPartialYield + yieldResults[0].fullDaysYield;
 
-        // For a single yield result, set streamYield to the lastDayPartialYield of the first (and only) period
+        // If there's only one yield result, set `streamYield` to the `lastDayPartialYield` of the first period.
         if (length == 1) {
             streamYield = yieldResults[0].lastDayPartialYield;
             return (accruedYield, streamYield);
         }
 
-        // If there's more than one yield result, include the lastDayPartialYield of the first period to accruedYield
+        // If there's more than one yield result, add the `lastDayPartialYield` of the first period to `accruedYield`.
         accruedYield += yieldResults[0].lastDayPartialYield;
 
-        // Accumulate yields from the remaining periods (if any)
+        // Aggregate the yields from the remaining periods by summing up the `firstDayPartialYield`, `fullDaysYield`,
+        // and `lastDayPartialYield` items.
         for (uint256 i = 1; i < length; i++) {
             YieldResult memory result = yieldResults[i];
             accruedYield += result.firstDayPartialYield + result.fullDaysYield + result.lastDayPartialYield;
         }
 
-        // The streamYield is always the last lastDayPartialYield, so we remove it from accruedYield
+        // The `streamYield` is the `lastDayPartialYield` of the last period, so we remove it from `accruedYield`.
         accruedYield -= yieldResults[length - 1].lastDayPartialYield;
+
+        // Set `streamYield` to the `lastDayPartialYield` of the last period.
         streamYield = yieldResults[length - 1].lastDayPartialYield;
 
+        // Return the aggregated yield results.
         return (accruedYield, streamYield);
     }
 

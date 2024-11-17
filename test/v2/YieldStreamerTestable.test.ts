@@ -2072,22 +2072,11 @@ describe("YieldStreamerV2Testable", function () {
     });
   });
 
-  describe("Function 'aggregateYield()'", function () {
-    it("Should return (0, 0) when yieldResults is empty", async function () {
+  describe("Function 'aggregateYield()'", async () => {
+    it("Should correctly aggregate a single yield result", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
-      // Call the aggregateYield function with an empty array
-      const yieldResults: YieldResult[] = [];
-      const [accruedYield, streamYield] = await yieldStreamerTestable.aggregateYield(yieldResults);
-
-      expect(accruedYield).to.equal(0);
-      expect(streamYield).to.equal(0);
-    });
-
-    it("Should correctly handle a single YieldResult", async function () {
-      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
-
-      // Single YieldResult with sample values
+      // Set up a single yield result with sample values.
       const yieldResult: YieldResult = {
         firstDayPartialYield: 100n,
         fullDaysYield: 200n,
@@ -2096,22 +2085,23 @@ describe("YieldStreamerV2Testable", function () {
         tieredFullDaysYield: [200n],
         tieredLastDayPartialYield: [50n]
       };
-
       const yieldResults: YieldResult[] = [yieldResult];
 
-      // Expected values based on the updated function logic
+      // Calculate expected values based on the function logic.
       const expectedAccruedYield = yieldResult.firstDayPartialYield + yieldResult.fullDaysYield;
       const expectedStreamYield = yieldResult.lastDayPartialYield;
 
+      // Call the `aggregateYield` function with the yield results.
       const [accruedYield, streamYield] = await yieldStreamerTestable.aggregateYield(yieldResults);
 
       expect(accruedYield).to.equal(expectedAccruedYield);
       expect(streamYield).to.equal(expectedStreamYield);
     });
 
-    it("Should correctly aggregate multiple YieldResults", async function () {
+    it("Should correctly aggregate multiple yield results", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
+      // Set up multiple yield results with sample values.
       const yieldResults: YieldResult[] = [
         {
           firstDayPartialYield: 100n,
@@ -2139,30 +2129,43 @@ describe("YieldStreamerV2Testable", function () {
         }
       ];
 
-      // Calculate expected accruedYield according to the updated function logic
+      // Calculate expected `accruedYield` according to the function logic.
       const expectedAccruedYield =
-        // First period: include firstDayPartialYield, fullDaysYield, and lastDayPartialYield
+        // First period: include `firstDayPartialYield`, `fullDaysYield`, and `lastDayPartialYield`.
         yieldResults[0].firstDayPartialYield +
         yieldResults[0].fullDaysYield +
         yieldResults[0].lastDayPartialYield +
-        // Second period: include firstDayPartialYield, fullDaysYield, and lastDayPartialYield
+        // Second period: include `firstDayPartialYield`, `fullDaysYield`, and `lastDayPartialYield`.
         yieldResults[1].firstDayPartialYield +
         yieldResults[1].fullDaysYield +
         yieldResults[1].lastDayPartialYield +
-        // Third period: include firstDayPartialYield and fullDaysYield (exclude lastDayPartialYield)
+        // Third period: include `firstDayPartialYield` and `fullDaysYield` (exclude `lastDayPartialYield`).
         yieldResults[2].firstDayPartialYield +
         yieldResults[2].fullDaysYield;
-
+      // Calculate expected `streamYield` according to the function logic.
       const expectedStreamYield = yieldResults[yieldResults.length - 1].lastDayPartialYield;
+
+      // Call the `aggregateYield` function with the yield results.
       const [accruedYield, streamYield] = await yieldStreamerTestable.aggregateYield(yieldResults);
 
       expect(accruedYield).to.equal(expectedAccruedYield);
       expect(streamYield).to.equal(expectedStreamYield);
     });
+
+    it("Should correctly aggregate an empty yield results array", async () => {
+      const { yieldStreamerTestable } = await setUpFixture(deployContracts);
+
+      // Call the `aggregateYield` function with an empty array.
+      const yieldResults: YieldResult[] = [];
+      const [accruedYield, streamYield] = await yieldStreamerTestable.aggregateYield(yieldResults);
+
+      expect(accruedYield).to.equal(0);
+      expect(streamYield).to.equal(0);
+    });
   });
 
-  describe("Function 'blockTimestamp()'", function () {
-    it("Should return the adjusted timestamp as expected", async function () {
+  describe("Function 'blockTimestamp()'", async () => {
+    it("Should return the adjusted timestamp as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
       const currentTimestamp = BigInt(await time.latest());
@@ -2173,8 +2176,8 @@ describe("YieldStreamerV2Testable", function () {
     });
   });
 
-  describe("Function 'effectiveTimestamp()'", function () {
-    it("Should return the effective timestamp as expected", async function () {
+  describe("Function 'effectiveTimestamp()'", async () => {
+    it("Should return the effective timestamp as expected", async () => {
       const { yieldStreamerTestable } = await setUpFixture(deployContracts);
 
       const timestamps = [
