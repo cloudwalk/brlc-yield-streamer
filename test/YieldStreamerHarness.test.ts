@@ -1,9 +1,9 @@
 import { expect } from "chai";
-import { ethers, network, upgrades } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { Contract, ContractFactory } from "ethers";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { getAddress, getLatestBlockTimestamp, proveTx } from "../test-utils/eth";
+import { setUpFixture } from "../test-utils/common";
 
 // Constants for rate calculations and time units
 const SECONDS_IN_DAY = 24 * 60 * 60; // Number of seconds in a day
@@ -53,14 +53,18 @@ interface Version {
   [key: string]: number; // Indexing signature to ensure that fields are iterated over in a key-value style
 }
 
-async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
-  if (network.name === "hardhat") {
-    // Use Hardhat's snapshot functionality for faster test execution
-    return loadFixture(func);
-  } else {
-    // Directly execute the function if not on Hardhat network
-    return func();
-  }
+function checkEquality<T extends Record<string, unknown>>(actualObject: T, expectedObject: T, index?: number) {
+  const indexString = !index ? "" : ` with index: ${index}`;
+  Object.keys(expectedObject).forEach(property => {
+    const value = actualObject[property];
+    if (typeof value === "undefined" || typeof value === "function" || typeof value === "object") {
+      throw Error(`Property "${property}" is not found in the actual object` + indexString);
+    }
+    expect(value).to.eq(
+      expectedObject[property],
+      `Mismatch in the "${property}" property between the actual object and expected one` + indexString
+    );
+  });
 }
 
 describe("YieldStreamerV2Harness", function () {

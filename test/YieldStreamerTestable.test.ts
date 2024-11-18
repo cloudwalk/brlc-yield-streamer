@@ -1,7 +1,8 @@
 import { expect } from "chai";
-import { ethers, network, upgrades } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { Contract, ContractFactory } from "ethers";
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { setUpFixture } from "../test-utils/common";
 
 const NEGATIVE_TIME_SHIFT = 10800n; // 3 hours
 const RATE_FACTOR = 1000000000000n; // 10^12
@@ -53,18 +54,6 @@ interface AccruePreview {
   results: YieldResult[];
 }
 
-interface AccruePreview {
-  fromTimestamp: bigint;
-  toTimestamp: bigint;
-  balance: bigint;
-  streamYieldBefore: bigint;
-  accruedYieldBefore: bigint;
-  streamYieldAfter: bigint;
-  accruedYieldAfter: bigint;
-  rates: YieldRate[];
-  results: YieldResult[];
-}
-
 interface ClaimPreview {
   yield: bigint;
   fee: bigint;
@@ -72,16 +61,6 @@ interface ClaimPreview {
   balance: bigint;
   rates: bigint[];
   caps: bigint[];
-}
-
-async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
-  if (network.name === "hardhat") {
-    // Use Hardhat's snapshot functionality for faster test execution.
-    return loadFixture(func);
-  } else {
-    // Directly execute the function if not on Hardhat network.
-    return func();
-  }
 }
 
 describe("YieldStreamerV2Testable", async () => {
