@@ -645,15 +645,7 @@ describe("YieldStreamerV2Testable", async () => {
         const accruePreview = normalizeAccruePreview(accruePreviewRaw);
 
         // Assertion
-        expect(accruePreview.fromTimestamp).to.equal(testCase.expected.fromTimestamp);
-        expect(accruePreview.toTimestamp).to.equal(testCase.expected.toTimestamp);
-        expect(accruePreview.balance).to.equal(testCase.expected.balance);
-        expect(accruePreview.streamYieldBefore).to.equal(testCase.expected.streamYieldBefore);
-        expect(accruePreview.accruedYieldBefore).to.equal(testCase.expected.accruedYieldBefore);
-        expect(accruePreview.streamYieldAfter).to.equal(testCase.expected.streamYieldAfter);
-        expect(accruePreview.accruedYieldAfter).to.equal(testCase.expected.accruedYieldAfter);
-        expect(accruePreview.rates).to.deep.equal(testCase.expected.rates);
-        expect(accruePreview.results).to.deep.equal(testCase.expected.results);
+        expect(accruePreview).to.deep.equal(testCase.expected);
       });
     }
   });
@@ -1552,12 +1544,7 @@ describe("YieldStreamerV2Testable", async () => {
           const yieldResult = normalizeYieldResult(yieldResultRaw);
 
           // Assertion
-          expect(yieldResult.tieredFirstDayPartialYield).to.deep.equal(testCase.expected.tieredFirstDayPartialYield);
-          expect(yieldResult.tieredFullDaysYield).to.deep.equal(testCase.expected.tieredFullDaysYield);
-          expect(yieldResult.tieredLastDayPartialYield).to.deep.equal(testCase.expected.tieredLastDayPartialYield);
-          expect(yieldResult.firstDayPartialYield).to.equal(testCase.expected.firstDayPartialYield);
-          expect(yieldResult.fullDaysYield).to.equal(testCase.expected.fullDaysYield);
-          expect(yieldResult.lastDayPartialYield).to.equal(testCase.expected.lastDayPartialYield);
+          expect(yieldResult).to.deep.equal(testCase.expected);
         }
       });
     }
@@ -1724,10 +1711,10 @@ describe("YieldStreamerV2Testable", async () => {
       const elapsedSeconds = HOUR;
 
       // Call the `calculateSimpleYield` function
-      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+      const yieldAmount = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
       // Assertion
-      expect(yieldResult).to.equal(0);
+      expect(yieldAmount).to.equal(0);
     });
 
     it("Should return zero when amount is zero", async () => {
@@ -1738,10 +1725,10 @@ describe("YieldStreamerV2Testable", async () => {
       const elapsedSeconds = HOUR;
 
       // Call the `calculateSimpleYield` function
-      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+      const yieldAmount = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
       // Assertion
-      expect(yieldResult).to.equal(0);
+      expect(yieldAmount).to.equal(0);
     });
 
     it("Should return zero when elapsedSeconds is zero", async () => {
@@ -1752,10 +1739,10 @@ describe("YieldStreamerV2Testable", async () => {
       const elapsedSeconds = 0n; // Zero elapsed seconds
 
       // Call the `calculateSimpleYield` function
-      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+      const yieldAmount = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
       // Assertion
-      expect(yieldResult).to.equal(0);
+      expect(yieldAmount).to.equal(0);
     });
 
     it("Should calculate the yield correctly when elapsed seconds is equal to 1 day", async () => {
@@ -1767,10 +1754,10 @@ describe("YieldStreamerV2Testable", async () => {
       const expectedYield = (amount * rate * elapsedSeconds) / (DAY * RATE_FACTOR);
 
       // Call the `calculateSimpleYield` function
-      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+      const yieldAmount = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
       // Assertion
-      expect(yieldResult).to.equal(expectedYield);
+      expect(yieldAmount).to.equal(expectedYield);
     });
 
     it("Should calculate the yield correctly when elapsed seconds is less than 1 day", async () => {
@@ -1782,10 +1769,10 @@ describe("YieldStreamerV2Testable", async () => {
       const expectedYield = (amount * rate * elapsedSeconds) / (DAY * RATE_FACTOR);
 
       // Call the `calculateSimpleYield` function
-      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+      const yieldAmount = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
       // Assertion
-      expect(yieldResult).to.equal(expectedYield);
+      expect(yieldAmount).to.equal(expectedYield);
     });
 
     it("Should calculate the yield correctly when elapsed seconds is greater than 1 day", async () => {
@@ -1797,10 +1784,10 @@ describe("YieldStreamerV2Testable", async () => {
       const expectedYield = (amount * rate * elapsedSeconds) / (DAY * RATE_FACTOR);
 
       // Call the `calculateSimpleYield` function
-      const yieldResult = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
+      const yieldAmount = await yieldStreamerTestable.calculateSimpleYield(amount, rate, elapsedSeconds);
 
       // Assertion
-      expect(yieldResult).to.equal(expectedYield);
+      expect(yieldAmount).to.equal(expectedYield);
     });
   });
 
@@ -2364,7 +2351,7 @@ describe("YieldStreamerV2Testable", async () => {
         caps: accruePreview.rates[accruePreview.rates.length - 1].tiers.map(tier => tier.cap)
       };
 
-      // Verify the `ClaimPreview` struct is as expected
+      // Assertion
       expect(expectedClaimPreview.yield).to.equal(claimPreviewRaw.yield);
       expect(expectedClaimPreview.fee).to.equal(claimPreviewRaw.fee);
       expect(expectedClaimPreview.timestamp).to.equal(claimPreviewRaw.timestamp);
