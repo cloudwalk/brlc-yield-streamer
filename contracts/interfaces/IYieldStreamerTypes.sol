@@ -132,16 +132,16 @@ interface IYieldStreamerTypes {
      * Details the yield accrued during different parts of the period (partial days and full days).
      *
      * Fields:
-     * - `firstDayPartialYield`: Yield accrued during the partial first day of the period.
+     * - `partialFirstDayYield`: Yield accrued during the partial first day of the period.
      * - `fullDaysYield`: Total yield accrued during the full days within the period.
-     * - `lastDayPartialYield`: Yield accrued during the partial last day of the period.
+     * - `partialLastDayYield`: Yield accrued during the partial last day of the period.
      */
     struct YieldResult {
-        uint256 firstDayPartialYield;
+        uint256 partialFirstDayYield;
         uint256 fullDaysYield;
-        uint256 lastDayPartialYield;
-        uint256[] tieredFirstDayPartialYield;
-        uint256[] tieredFullDaysYield;
-        uint256[] tieredLastDayPartialYield;
+        uint256 partialLastDayYield;
+        uint256[] partialFirstDayYieldTiered;
+        uint256[] fullDaysYieldTiered;
+        uint256[] partialLastDayYieldTiered;
     }
 }

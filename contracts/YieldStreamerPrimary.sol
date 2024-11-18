@@ -507,9 +507,9 @@ abstract contract YieldStreamerPrimary is
                     yieldRates[params.rateStartIndex + 1].tiers,
                     params.initialBalance +
                         params.initialAccruedYield +
-                        results[0].firstDayPartialYield +
+                        results[0].partialFirstDayYield +
                         results[0].fullDaysYield +
-                        results[0].lastDayPartialYield,
+                        results[0].partialLastDayYield,
                     0
                 )
             );
@@ -559,9 +559,9 @@ abstract contract YieldStreamerPrimary is
 
             // Update the balance by adding the yield from the first sub-period.
             currentBalance +=
-                results[0].firstDayPartialYield +
+                results[0].partialFirstDayYield +
                 results[0].fullDaysYield +
-                results[0].lastDayPartialYield;
+                results[0].partialLastDayYield;
 
             /**
              * Calculate yield for the intermediate yield rate periods.
@@ -583,9 +583,9 @@ abstract contract YieldStreamerPrimary is
 
                 // Update the balance by adding the yield from the current sub-period.
                 currentBalance +=
-                    results[i - params.rateStartIndex].firstDayPartialYield +
+                    results[i - params.rateStartIndex].partialFirstDayYield +
                     results[i - params.rateStartIndex].fullDaysYield +
-                    results[i - params.rateStartIndex].lastDayPartialYield;
+                    results[i - params.rateStartIndex].partialLastDayYield;
             }
 
             /**
@@ -648,9 +648,9 @@ abstract contract YieldStreamerPrimary is
         uint256 length = params.tiers.length;
 
         // Initialize arrays to track yield per tier for each period.
-        result.tieredFirstDayPartialYield = new uint256[](length);
-        result.tieredFullDaysYield = new uint256[](length);
-        result.tieredLastDayPartialYield = new uint256[](length);
+        result.partialFirstDayYieldTiered = new uint256[](length);
+        result.fullDaysYieldTiered = new uint256[](length);
+        result.partialLastDayYieldTiered = new uint256[](length);
 
         /**
          * 1. First Partial Day Handling
@@ -668,38 +668,38 @@ abstract contract YieldStreamerPrimary is
             if (params.toTimestamp <= nextDayTimestamp) {
                 // Case 1: Both start and end within same partial day.
                 // Example: D1 14:00 -> D1 18:00.
-                (result.lastDayPartialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
+                (result.partialLastDayYield, result.partialLastDayYieldTiered) = _calculateTieredYield(
                     params.balance,
                     params.toTimestamp - params.fromTimestamp,
                     params.tiers
                 );
-                result.lastDayPartialYield += params.streamYield;
+                result.partialLastDayYield += params.streamYield;
                 return result;
             } else {
                 // Case 2: Start mid-day but continue to next day.
                 // Example: D1 14:00 -> D2 18:00.
-                (result.firstDayPartialYield, result.tieredFirstDayPartialYield) = _calculateTieredYield(
+                (result.partialFirstDayYield, result.partialFirstDayYieldTiered) = _calculateTieredYield(
                     params.balance,
                     nextDayTimestamp - params.fromTimestamp,
                     params.tiers
                 );
-                result.firstDayPartialYield += params.streamYield;
+                result.partialFirstDayYield += params.streamYield;
                 params.fromTimestamp = nextDayTimestamp; // Move to start of next day
             }
         } else if (params.toTimestamp < nextDayTimestamp) {
             // Case 3: Start at day start (00:00:00) but end within same day.
             // Example: D1 00:00 -> D1 18:00.
-            (result.lastDayPartialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
+            (result.partialLastDayYield, result.partialLastDayYieldTiered) = _calculateTieredYield(
                 params.balance + params.streamYield,
                 params.toTimestamp - params.fromTimestamp,
                 params.tiers
             );
-            result.firstDayPartialYield = params.streamYield;
+            result.partialFirstDayYield = params.streamYield;
             return result;
         } else {
             // Case 4: Start at day start and continue to next day.
             // Example: D1 00:00 -> D2 18:00.
-            result.firstDayPartialYield = params.streamYield;
+            result.partialFirstDayYield = params.streamYield;
         }
 
         /**
@@ -708,7 +708,7 @@ abstract contract YieldStreamerPrimary is
          */
         uint256 toTimestampEffective = _effectiveTimestamp(params.toTimestamp);
         uint256 fullDaysCount = (toTimestampEffective - params.fromTimestamp) / 1 days;
-        params.balance += result.firstDayPartialYield; // Compound first day's yield.
+        params.balance += result.partialFirstDayYield; // Compound first day's yield.
 
         if (fullDaysCount > 0) {
             uint256 fullDayYield;
@@ -720,7 +720,7 @@ abstract contract YieldStreamerPrimary is
 
                 // Accumulate per-tier yields.
                 for (uint256 j = 0; j < length; j++) {
-                    result.tieredFullDaysYield[j] += tieredFullDayYield[j];
+                    result.fullDaysYieldTiered[j] += tieredFullDayYield[j];
                 }
 
                 params.balance += fullDayYield; // Compound the day's yield.
@@ -735,7 +735,7 @@ abstract contract YieldStreamerPrimary is
          * Calculate yield for any remaining time less than a full day.
          */
         if (params.fromTimestamp < params.toTimestamp) {
-            (result.lastDayPartialYield, result.tieredLastDayPartialYield) = _calculateTieredYield(
+            (result.partialLastDayYield, result.partialLastDayYieldTiered) = _calculateTieredYield(
                 params.balance,
                 params.toTimestamp - params.fromTimestamp,
                 params.tiers
@@ -923,29 +923,29 @@ abstract contract YieldStreamerPrimary is
         }
 
         // Initialize `accruedYield` from the first item of the yield results.
-        accruedYield = yieldResults[0].firstDayPartialYield + yieldResults[0].fullDaysYield;
+        accruedYield = yieldResults[0].partialFirstDayYield + yieldResults[0].fullDaysYield;
 
-        // If there's only one yield result, set `streamYield` to the `lastDayPartialYield` of the first period.
+        // If there's only one yield result, set `streamYield` to the `partialLastDayYield` of the first period.
         if (length == 1) {
-            streamYield = yieldResults[0].lastDayPartialYield;
+            streamYield = yieldResults[0].partialLastDayYield;
             return (accruedYield, streamYield);
         }
 
-        // If there's more than one yield result, add the `lastDayPartialYield` of the first period to `accruedYield`.
-        accruedYield += yieldResults[0].lastDayPartialYield;
+        // If there's more than one yield result, add the `partialLastDayYield` of the first period to `accruedYield`.
+        accruedYield += yieldResults[0].partialLastDayYield;
 
-        // Aggregate the yields from the remaining periods by summing up the `firstDayPartialYield`, `fullDaysYield`,
-        // and `lastDayPartialYield` items.
+        // Aggregate the yields from the remaining periods by summing up the `partialFirstDayYield`, `fullDaysYield`,
+        // and `partialLastDayYield` items.
         for (uint256 i = 1; i < length; i++) {
             YieldResult memory result = yieldResults[i];
-            accruedYield += result.firstDayPartialYield + result.fullDaysYield + result.lastDayPartialYield;
+            accruedYield += result.partialFirstDayYield + result.fullDaysYield + result.partialLastDayYield;
         }
 
-        // The `streamYield` is the `lastDayPartialYield` of the last period, so we remove it from `accruedYield`.
-        accruedYield -= yieldResults[length - 1].lastDayPartialYield;
+        // The `streamYield` is the `partialLastDayYield` of the last period, so we remove it from `accruedYield`.
+        accruedYield -= yieldResults[length - 1].partialLastDayYield;
 
-        // Set `streamYield` to the `lastDayPartialYield` of the last period.
-        streamYield = yieldResults[length - 1].lastDayPartialYield;
+        // Set `streamYield` to the `partialLastDayYield` of the last period.
+        streamYield = yieldResults[length - 1].partialLastDayYield;
 
         // Return the aggregated yield results.
         return (accruedYield, streamYield);
