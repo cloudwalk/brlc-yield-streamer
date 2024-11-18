@@ -22,7 +22,10 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: process.env.HARDHAT_MNEMONIC
       },
-      allowUnlimitedContractSize: process.env.ALLOW_UNLIMITED_CONTRACT_SIZE === "true"
+      allowUnlimitedContractSize:
+        process.env.ALLOW_UNLIMITED_CONTRACT_SIZE !== undefined
+          ? process.env.ALLOW_UNLIMITED_CONTRACT_SIZE === "true"
+          : true
     },
     ganache: {
       url: process.env.GANACHE_RPC,
@@ -35,16 +38,16 @@ const config: HardhatUserConfig = {
       accounts: process.env.CW_TESTNET_PK
         ? [process.env.CW_TESTNET_PK]
         : {
-          mnemonic: process.env.CW_TESTNET_MNEMONIC ?? ""
-        }
+            mnemonic: process.env.CW_TESTNET_MNEMONIC ?? ""
+          }
     },
     cw_mainnet: {
       url: process.env.CW_MAINNET_RPC,
       accounts: process.env.CW_MAINNET_PK
         ? [process.env.CW_MAINNET_PK]
         : {
-          mnemonic: process.env.CW_MAINNET_MNEMONIC ?? ""
-        }
+            mnemonic: process.env.CW_MAINNET_MNEMONIC ?? ""
+          }
     }
   },
   gasReporter: {
