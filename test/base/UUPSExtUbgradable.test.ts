@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { connect } from "../../../test-utils/eth";
+import { connect } from "../../test-utils/eth";
 
 const ADDRESS_ZERO = ethers.ZeroAddress;
 

@@ -3,7 +3,7 @@ import { ethers, network, upgrades } from "hardhat";
 import { Contract } from "ethers";
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { checkEquality } from "../../test-utils/eth";
+import { checkEquality } from "../test-utils/eth";
 
 // Constants for rate calculations and time units
 const RATE_FACTOR = BigInt(1000000000000); // Factor used in yield rate calculations (10^12)
