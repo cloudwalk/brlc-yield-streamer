@@ -114,17 +114,17 @@ describe("YieldStreamerV2Testable", async () => {
     return rates;
   }
 
-  function normalizeYieldRate(rate: any): YieldRate {
+  function normalizeYieldRate(rate: YieldRate): YieldRate {
     return {
-      effectiveDay: rate[1],
-      tiers: rate[0].map((tier: any) => ({
-        rate: tier[0],
-        cap: tier[1]
+      effectiveDay: rate.effectiveDay,
+      tiers: rate.tiers.map((tier: RateTier) => ({
+        rate: tier.rate,
+        cap: tier.cap
       }))
     };
   }
 
-  function normalizeYieldResult(result: any): YieldResult {
+  function normalizeYieldResult(result: YieldResult): YieldResult {
     return {
       firstDayPartialYield: result.firstDayPartialYield,
       fullDaysYield: result.fullDaysYield,
@@ -135,7 +135,7 @@ describe("YieldStreamerV2Testable", async () => {
     };
   }
 
-  function normalizeAccruePreview(result: any): AccruePreview {
+  function normalizeAccruePreview(result: AccruePreview): AccruePreview {
     return {
       fromTimestamp: result.fromTimestamp,
       toTimestamp: result.toTimestamp,
