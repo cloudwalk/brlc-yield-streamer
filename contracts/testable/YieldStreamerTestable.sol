@@ -39,7 +39,7 @@ contract YieldStreamerTestable is YieldStreamer {
         return _calculateTieredYield(amount, elapsedSeconds, tiers);
     }
 
-    function calculateSimpleYield( // TODO: Change parameter order
+    function calculateSimpleYield(
         uint256 amount,
         uint256 rate,
         uint256 elapsedSeconds
@@ -48,7 +48,7 @@ contract YieldStreamerTestable is YieldStreamer {
     }
 
 
-    function inRangeYieldRates( // TODO: Change parameter order
+    function inRangeYieldRates(
         YieldRate[] memory rates,
         uint256 fromTimestamp,
         uint256 toTimestamp
