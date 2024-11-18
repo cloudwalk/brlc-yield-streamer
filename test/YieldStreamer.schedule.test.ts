@@ -173,7 +173,7 @@ describe("YieldStreamer - Deposit/Withdraw Simulation Tests", function () {
   let adjustedBlockTime: number;
   const EXPECTED_VERSION: Version = {
     major: 2,
-    minor: 1,
+    minor: 0,
     patch: 0
   };
 

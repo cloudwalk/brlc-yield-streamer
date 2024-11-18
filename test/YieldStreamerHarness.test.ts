@@ -18,12 +18,14 @@ const NEGATIVE_TIME_SHIFT = 3 * 60 * 60;
 const MIN_CLAIM_AMOUNT = 1000000;
 const ENABLE_YIELD_STATE_AUTO_INITIALIZATION = false;
 
-interface YieldRate {
-  effectiveDay: number;
-  value: number;
+interface RateTier {
+  rate: bigint;
+  cap: bigint;
+}
 
-  // Indexing signature to ensure that fields are iterated over in a key-value style
-  [key: string]: number;
+interface YieldRate {
+  tiers: RateTier[];
+  effectiveDay: bigint;
 }
 
 interface YieldState {
@@ -32,25 +34,17 @@ interface YieldState {
   accruedYield: bigint;
   lastUpdateTimestamp: bigint;
   lastUpdateBalance: bigint;
-
-  // Indexing signature to ensure that fields are iterated over in a key-value style
-  [key: string]: number | bigint;
 }
 
 interface YieldStreamerHarnessLayout {
   currentBlockTimestamp: bigint;
   usingSpecialBlockTimestamps: boolean;
-
-  // Indexing signature to ensure that fields are iterated over in a key-value style
-  [key: string]: bigint | boolean;
 }
 
 interface Version {
   major: number;
   minor: number;
   patch: number;
-
-  [key: string]: number; // Indexing signature to ensure that fields are iterated over in a key-value style
 }
 
 function checkEquality<T extends Record<string, unknown>>(actualObject: T, expectedObject: T, index?: number) {
@@ -83,7 +77,7 @@ describe("YieldStreamerHarness", function () {
   const harnessAdminRole: string = ethers.id("HARNESS_ADMIN_ROLE");
   const EXPECTED_VERSION: Version = {
     major: 2,
-    minor: 1,
+    minor: 0,
     patch: 0
   };
 
@@ -195,14 +189,31 @@ describe("YieldStreamerHarness", function () {
     it("Executes as expected", async () => {
       const { yieldStreamerHarness } = await setUpFixture(deployAndConfigureContracts);
       const groupId = 1;
-      const yieldRate1: YieldRate = { effectiveDay: 0, value: 123 };
-      const yieldRate2: YieldRate = { effectiveDay: 1, value: 456 };
-      await proveTx(yieldStreamerHarness.addYieldRate(groupId, yieldRate1.effectiveDay, yieldRate1.value));
-      await proveTx(yieldStreamerHarness.addYieldRate(groupId, yieldRate2.effectiveDay, yieldRate2.value));
-      const actualYieldRatesBefore = await yieldStreamerHarness.getGroupYieldRates(groupId);
-      expect(actualYieldRatesBefore.length).to.equal(2);
-      checkEquality(actualYieldRatesBefore[0], yieldRate1);
-      checkEquality(actualYieldRatesBefore[1], yieldRate2);
+      const yieldRate1: YieldRate = { effectiveDay: 0n, tiers: [{ rate: 123n, cap: 0n }] };
+      const yieldRate2: YieldRate = { effectiveDay: 1n, tiers: [{ rate: 456n, cap: 0n }] };
+
+      const actualYieldRatesBefore1 = await yieldStreamerHarness.getGroupYieldRates(groupId);
+      expect(actualYieldRatesBefore1.length).to.equal(0);
+
+      await proveTx(
+        yieldStreamerHarness.addYieldRate(
+          groupId,
+          yieldRate1.effectiveDay,
+          yieldRate1.tiers.map(tier => tier.rate),
+          yieldRate1.tiers.map(tier => tier.cap)
+        )
+      );
+      await proveTx(
+        yieldStreamerHarness.addYieldRate(
+          groupId,
+          yieldRate2.effectiveDay,
+          yieldRate2.tiers.map(tier => tier.rate),
+          yieldRate2.tiers.map(tier => tier.cap)
+        )
+      );
+
+      const actualYieldRatesBefore2 = await yieldStreamerHarness.getGroupYieldRates(groupId);
+      expect(actualYieldRatesBefore2.length).to.equal(2);
 
       await proveTx(yieldStreamerHarness.deleteYieldRates(groupId));
       const actualYieldRatesAfter = await yieldStreamerHarness.getGroupYieldRates(groupId);
