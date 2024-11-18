@@ -6,7 +6,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 
 /**
  * @title HarnessAdministrable contract
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://cloudwalk.io)
  * @notice Provides the harness admin role for accounts to restrict access to some function of descendant contracts
  * @dev This contract is used through inheritance. It makes available the modifier `onlyHarnessAdmin`,
  * which can be applied to functions to restrict their usage

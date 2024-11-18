@@ -6,7 +6,7 @@ import { IBalanceTracker } from "./../interfaces/IBalanceTracker.sol";
 
 /**
  * @title BalanceTrackerMock contract
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://cloudwalk.io)
  * @notice A simplified implementation of the {BalanceTracker} contract for testing the YieldStreamer contract
  */
 contract BalanceTrackerMock is IBalanceTracker {

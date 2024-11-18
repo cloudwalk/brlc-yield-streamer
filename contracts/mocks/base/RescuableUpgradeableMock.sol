@@ -6,7 +6,7 @@ import { RescuableUpgradeable } from "../../base/RescuableUpgradeable.sol";
 
 /**
  * @title RescuableUpgradeableMock contract
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://cloudwalk.io)
  * @notice An implementation of the {RescuableUpgradeable} contract for testing purposes
  */
 contract RescuableUpgradeableMock is RescuableUpgradeable {
