@@ -168,7 +168,7 @@ async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   }
 }
 
-describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
+describe("YieldStreamer - Deposit/Withdraw Simulation Tests", function () {
   let user: SignerWithAddress;
   let adjustedBlockTime: number;
   const EXPECTED_VERSION: Version = {
@@ -184,17 +184,17 @@ describe("YieldStreamerV2 - Deposit/Withdraw Simulation Tests", function () {
   });
 
   /**
-   * Deploys the YieldStreamerV2 contract for testing.
-   * @returns The deployed YieldStreamerV2 contract instance.
+   * Deploys the YieldStreamer contract for testing.
+   * @returns The deployed YieldStreamer contract instance.
    */
   async function deployContracts(): Promise<{ erc20Token: Contract; yieldStreamer: Contract }> {
     const ERC20TokenMock = await ethers.getContractFactory("ERC20TokenMock");
-    const YieldStreamerV2 = await ethers.getContractFactory("YieldStreamerV2");
+    const YieldStreamer = await ethers.getContractFactory("YieldStreamer");
 
     const erc20Token = await ERC20TokenMock.deploy("Mock Token", "MTK");
     await erc20Token.waitForDeployment();
 
-    const yieldStreamer: Contract = await upgrades.deployProxy(YieldStreamerV2, [erc20Token.target]);
+    const yieldStreamer: Contract = await upgrades.deployProxy(YieldStreamer, [erc20Token.target]);
     await yieldStreamer.waitForDeployment();
 
     await erc20Token.setHook(yieldStreamer.target);

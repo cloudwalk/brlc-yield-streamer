@@ -21,12 +21,12 @@ import { YieldStreamerConfiguration } from "./YieldStreamerConfiguration.sol";
 import { YieldStreamerInitialization } from "./YieldStreamerInitialization.sol";
 
 /**
- * @title YieldStreamerV2 contract
+ * @title YieldStreamer contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev This contract is the main entry point for the yield streamer v2
  * and combines the primary, configuration, and initialization functionalities.
  */
-contract YieldStreamerV2 is
+contract YieldStreamer is
     UUPSExtUpgradeable,
     AccessControlExtUpgradeable,
     PausableExtUpgradeable,

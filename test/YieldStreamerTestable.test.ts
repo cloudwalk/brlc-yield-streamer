@@ -63,11 +63,11 @@ interface ClaimPreview {
   caps: bigint[];
 }
 
-describe("YieldStreamerV2Testable", async () => {
+describe("YieldStreamerTestable", async () => {
   let yieldStreamerTestableFactory: ContractFactory;
 
   before(async () => {
-    yieldStreamerTestableFactory = await ethers.getContractFactory("YieldStreamerV2Testable");
+    yieldStreamerTestableFactory = await ethers.getContractFactory("YieldStreamerTestable");
   });
 
   async function deployContracts(): Promise<{ yieldStreamerTestable: Contract; tokenMock: Contract }> {

@@ -4,16 +4,16 @@ pragma solidity 0.8.24;
 
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import { YieldStreamerV2 } from "./YieldStreamerV2.sol";
+import { YieldStreamer } from "../YieldStreamer.sol";
 
 /**
- * @title YieldStreamerV2Harness contract
+ * @title YieldStreamerHarness contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev A test harness contract that extends YieldStreamerV2 for testing purposes.
+ * @dev A test harness contract that extends YieldStreamer for testing purposes.
  * Implements additional functions to manipulate and inspect internal state during testing.
  * This contract should not be used in production environments.
  */
-contract YieldStreamerV2Harness is YieldStreamerV2 {
+contract YieldStreamerHarness is YieldStreamer {
     // -------------------- Libraries ----------------------------- //
 
     using SafeCast for uint256;

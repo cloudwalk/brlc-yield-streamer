@@ -2,14 +2,14 @@
 
 pragma solidity 0.8.24;
 
-import { YieldStreamerV2 } from "./YieldStreamerV2.sol";
+import { YieldStreamer } from "../YieldStreamer.sol";
 
 /**
- * @title YieldStreamerV2Testable contract
+ * @title YieldStreamerTestable contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev Implements additional functions to test private and internal functions of base contracts.
  */
-contract YieldStreamerV2Testable is YieldStreamerV2 {
+contract YieldStreamerTestable is YieldStreamer {
     // ------------------ Yield calculation ----------------------- //
 
     function getAccruePreview(
