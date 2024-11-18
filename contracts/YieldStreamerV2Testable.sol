@@ -71,9 +71,9 @@ contract YieldStreamerV2Testable is YieldStreamerV2 {
     function truncateArray(
         uint256 startIndex,
         uint256 endIndex,
-        YieldRate[] memory yieldRates
+        YieldRate[] memory rates
     ) external pure returns (YieldRate[] memory) {
-        return _truncateArray(startIndex, endIndex, yieldRates);
+        return _truncateArray(startIndex, endIndex, rates);
     }
 
     function calculateFee(uint256 amount) external pure returns (uint256) {
