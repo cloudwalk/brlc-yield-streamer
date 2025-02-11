@@ -1,0 +1,22 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: brlc-yield-streamer
+  description: Yield streamer V1 smart contracts
+  annotations:
+    github.com/project-slug: cloudwalk/brlc-yield-streamer
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - solidity
+    - typescript
+    - blockchain
+    - smart-contract
+  links:
+    - url: https://github.com/cloudwalk/brlc-yield-streamer
+      title: Repository
+      icon: github
+spec:
+  type: smart-contract
+  system: Blockchain
+  lifecycle: production
+  owner: team-smart-contracts
