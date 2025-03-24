@@ -38,7 +38,7 @@ contract YieldStreamer is
     uint256 public constant ROUNDING_COEF = 10000;
 
     /// @notice The minimum amount that is allowed to be claimed
-    uint256 public constant MIN_CLAIM_AMOUNT = 1000000;
+    uint256 public constant MIN_CLAIM_AMOUNT = 10000;
 
     /// @notice The maximum daily balance cap allowed for calculation claim
     uint256 public constant MAX_DAILY_BALANCE_LIMIT = 200000000000;
