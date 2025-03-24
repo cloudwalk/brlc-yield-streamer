@@ -19,7 +19,7 @@ const YIELD_STREAMER_INIT_DAY = BALANCE_TRACKER_INIT_DAY + LOOK_BACK_PERIOD_LENG
 const YIELD_RATE_INDEX_ZERO = 0;
 const FEE_RATE: BigNumber = BigNumber.from(0);
 const RATE_FACTOR: BigNumber = BigNumber.from(1000000000000);
-const MIN_CLAIM_AMOUNT: BigNumber = BigNumber.from(1000000);
+const MIN_CLAIM_AMOUNT: BigNumber = BigNumber.from(10000);
 const MAX_DAILY_BALANCE_LIMIT: BigNumber = BigNumber.from(200_000_000_000);
 const ROUNDING_COEF: BigNumber = BigNumber.from(10000);
 const BALANCE_TRACKER_ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
@@ -127,7 +127,7 @@ const yieldRateRecordCase3: YieldRateRecord = {
 
 const EXPECTED_VERSION: Version = {
   major: 1,
-  minor: 0,
+  minor: 1,
   patch: 0
 };
 
