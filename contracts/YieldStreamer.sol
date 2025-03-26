@@ -79,6 +79,9 @@ contract YieldStreamer is
     /// @notice The mapping of account to its group assignment
     mapping(address => bytes32) internal _groups;
 
+    /// @notice The mapping of account to the timestamp when the streaming should be stopped
+    mapping(address => uint256) internal _stopStreamAt;
+
     // -------------------- Events -----------------------------------
 
     /**
@@ -157,6 +160,14 @@ contract YieldStreamer is
      * @param account The address of the account
      */
     event AccountGroupAssigned(bytes32 indexed groupId, address account);
+
+    /**
+     * @notice Emitted when yield streaming is stopped for an account
+     *
+     * @param account The address of the account
+     * @param timestamp The original timestamp when streaming was stopped (without time shift)
+     */
+    event YieldStreamingStopped(address indexed account, uint256 timestamp);
 
     // -------------------- Errors -----------------------------------
 
@@ -761,6 +772,16 @@ contract YieldStreamer is
         }
     }
 
+    /**
+     * @notice Returns the timestamp when streaming was stopped for an account
+     *
+     * @param account The address of the account to check
+     * @return The timestamp when streaming was stopped (with 3-hour negative time shift applied), or 0 if not stopped
+     */
+    function getYieldStreamingStopTime(address account) external view returns (uint256) {
+        return _stopStreamAt[account];
+    }
+
     // -------------------- Internal Functions -----------------------
 
     /**
@@ -866,7 +887,7 @@ contract YieldStreamer is
      * @param amount The amount of yield to be claimed
      */
     function _claimPreview(address account, uint256 amount) internal view returns (ClaimResult memory) {
-        (uint256 day, uint256 time) = dayAndTime();
+        (uint256 day, uint256 time) = _dayAndTimeWithStopStream(account);
         ClaimState memory state = _claims[account];
         ClaimResult memory result;
         result.prevClaimDebit = state.debit;
@@ -1061,8 +1082,72 @@ contract YieldStreamer is
     }
 
     /**
+     * @notice Stops streaming yield immediately for the specified accounts
+     *
+     * Requirements:
+     *
+     * - Can only be called by an account with the blocklister role
+     *
+     * Emits an {YieldStreamingStopped} event for each account
+     *
+     * @param accounts Array of addresses for which to stop yield streaming
+     */
+    function stopStreamFor(address[] calldata accounts) external onlyBlocklister {
+        uint256 rawTimestamp = block.timestamp;
+        uint256 shiftedTimestamp = _timeShiftedTimestamp(rawTimestamp);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            // Store the shifted timestamp to align with how dayAndTime calculates day indices
+            _stopStreamAt[accounts[i]] = shiftedTimestamp;
+            // Emit the original timestamp for accurate external tracking
+            emit YieldStreamingStopped(accounts[i], rawTimestamp);
+        }
+    }
+
+    /**
+     * @notice Returns the timestamp shifted by the negative time shift
+     * @param timestamp The timestamp to shift
+     * @return The shifted timestamp
+     */
+    function _timeShiftedTimestamp(uint256 timestamp) internal pure returns (uint256) {
+        // The day in the contract is calculated with a NEGATIVE_TIME_SHIFT of 3 hours
+        return timestamp - 3 hours;
+    }
+
+    /**
+     * @notice Returns the day and time for an account, taking into account the stop stream logic
+     * @param account The address of the account to get the day and time for
+     * @return The day and time
+     */
+    function _dayAndTimeWithStopStream(address account) internal view returns (uint256, uint256) {
+        (uint256 day, uint256 time) = IBalanceTracker(_balanceTracker).dayAndTime();
+
+        // -------------------- Stop Stream Logic Start --------------------
+        uint256 stopStreamTimestamp = _stopStreamAt[account];
+
+        if (stopStreamTimestamp > 0) {
+            // Calculate the stop stream day and time
+            uint256 stopStreamDay = stopStreamTimestamp / 1 days;
+            uint256 stopStreamTime = stopStreamTimestamp % 1 days;
+
+            if (day > stopStreamDay) {
+                // Case 1: The current day is past the stop day, so set the day
+                // to the stop day and time to stop time
+                day = stopStreamDay;
+                time = stopStreamTime;
+            } else if (day == stopStreamDay && time > stopStreamTime) {
+                // Case 2: The current day is the stop day and the time is past
+                // the stop time, so set the time to the stop time
+                time = stopStreamTime;
+            }
+        }
+        // -------------------- Stop Stream Logic End --------------------
+
+        return (day, time);
+    }
+
+    /**
      * @dev This empty reserved space is put in place to allow future versions
      * to add new variables without shifting down storage in the inheritance chain
      */
-    uint256[44] private __gap;
+    uint256[43] private __gap;
 }
