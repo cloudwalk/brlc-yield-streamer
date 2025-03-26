@@ -127,7 +127,7 @@ const yieldRateRecordCase3: YieldRateRecord = {
 
 const EXPECTED_VERSION: Version = {
   major: 1,
-  minor: 1,
+  minor: 2,
   patch: 0
 };
 
