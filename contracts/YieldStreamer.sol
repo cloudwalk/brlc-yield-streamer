@@ -79,9 +79,6 @@ contract YieldStreamer is
     /// @notice The mapping of account to its group assignment
     mapping(address => bytes32) internal _groups;
 
-    /// @notice The mapping of account to the timestamp when the streaming should be stopped
-    mapping(address => uint256) internal _stopStreamAt;
-
     // -------------------- Events -----------------------------------
 
     /**
@@ -160,14 +157,6 @@ contract YieldStreamer is
      * @param account The address of the account
      */
     event AccountGroupAssigned(bytes32 indexed groupId, address account);
-
-    /**
-     * @notice Emitted when yield streaming is stopped for an account
-     *
-     * @param account The address of the account
-     * @param timestamp The original timestamp when streaming was stopped (without time shift)
-     */
-    event YieldStreamingStopped(address indexed account, uint256 timestamp);
 
     // -------------------- Errors -----------------------------------
 
@@ -772,16 +761,6 @@ contract YieldStreamer is
         }
     }
 
-    /**
-     * @notice Returns the timestamp when streaming was stopped for an account
-     *
-     * @param account The address of the account to check
-     * @return The timestamp when streaming was stopped (with 3-hour negative time shift applied), or 0 if not stopped
-     */
-    function getYieldStreamingStopTime(address account) external view returns (uint256) {
-        return _stopStreamAt[account];
-    }
-
     // -------------------- Internal Functions -----------------------
 
     /**
@@ -891,67 +870,6 @@ contract YieldStreamer is
         ClaimState memory state = _claims[account];
         ClaimResult memory result;
         result.prevClaimDebit = state.debit;
-
-        // -------------------- Stop Stream Logic Start --------------------
-        // Get the configured stop timestamp for this account from storage
-        uint256 stopStreamTimestamp = _stopStreamAt[account];
-
-        // Check if a stop timestamp is configured (> 0)
-        if (stopStreamTimestamp > 0) {
-            // Get the current timestamp for comparison - both timestamps need to be in the same frame of reference
-            // stopStreamTimestamp is already time-shifted, so we need to compare it with time-shifted current timestamp
-            uint256 currentTimestamp = _timeShiftedTimestamp(block.timestamp);
-
-            // Check if we've passed the stop timestamp
-            if (currentTimestamp >= stopStreamTimestamp) {
-                // The stopStreamTimestamp is already stored with the time shift applied in stopStreamFor()
-                // So we directly use it for day index calculation
-                uint256 stopStreamAtDay = stopStreamTimestamp / 1 days;
-
-                // Case 1: If the account's last claim day is at or after the stop day,
-                // they've already claimed all available yield up to the stop day
-                if (state.day >= stopStreamAtDay) {
-                    result.nextClaimDay = state.day;      // Preserve the current claim day state
-                    result.firstYieldDay = state.day;     // No further yield calculation needed
-                    result.shortfall = amount;            // Set shortfall to the full requested amount
-                    return result;                        // Exit early - no yield available
-                }
-
-                // Case 2: If the current day is after the stop day, only calculate yield up to the day before stop day
-                if (day >= stopStreamAtDay) {
-                    // Adjust calculation to the day before the stop day to ensure no yield for stop day
-                    if (stopStreamAtDay > 0) {
-                        day = stopStreamAtDay - 1;
-                    } else {
-                        // If stopStreamAtDay is day 0, they get no yield at all
-                        result.nextClaimDay = state.day;
-                        result.firstYieldDay = state.day;
-                        result.shortfall = amount;
-                        return result;
-                    }
-                    time = 0;  // No yield for the current day
-                }
-                // Case 3: If we're on the same day but after the stop timestamp, calculate partial yield
-                else if (day == stopStreamAtDay) {
-                    // Since stopStreamTimestamp already has the time shift applied,
-                    // we need to calculate the start of the day accordingly
-                    uint256 dayStartTimestamp = stopStreamAtDay * 1 days;
-
-                    // Calculate seconds from day start until stop timestamp
-                    uint256 secondsFromDayStartToStop = 0;
-                    if (stopStreamTimestamp > dayStartTimestamp) {
-                        secondsFromDayStartToStop = stopStreamTimestamp - dayStartTimestamp;
-
-                        // If the current time is greater than the time when streaming was stopped,
-                        // limit the time to that point
-                        if (time > secondsFromDayStartToStop) {
-                            time = secondsFromDayStartToStop;
-                        }
-                    }
-                }
-            }
-        }
-        // -------------------- Stop Stream Logic End --------------------
 
         if (state.day != --day) {
             /**
@@ -1079,19 +997,6 @@ contract YieldStreamer is
             }
         }
 
-        // -------------------- Final Stop Stream Check --------------------
-        // If the account has had yield streaming stopped and our calculations have set the next claim day
-        // to be at or after the stop day, cap it at the day before the stop day
-        if (stopStreamTimestamp > 0) {
-            // Convert stopStreamTimestamp to a day index considering the time shift
-            uint256 stopStreamAtDay = stopStreamTimestamp / 1 days;
-            if (result.nextClaimDay >= stopStreamAtDay) {
-                // If stopStreamAtDay is 0, cap at 0, otherwise cap at the day before
-                result.nextClaimDay = stopStreamAtDay > 0 ? stopStreamAtDay - 1 : 0;
-            }
-        }
-        // -------------------- Final Stop Stream Check End --------------------
-
         result.fee = _roundUpward(calculateFee(result.yield));
 
         return result;
@@ -1156,40 +1061,8 @@ contract YieldStreamer is
     }
 
     /**
-     * @notice Stops streaming yield immediately for the specified accounts
-     *
-     * Requirements:
-     *
-     * - Can only be called by an account with the blocklister role
-     *
-     * Emits an {YieldStreamingStopped} event for each account
-     *
-     * @param accounts Array of addresses for which to stop yield streaming
-     */
-    function stopStreamFor(address[] calldata accounts) external onlyBlocklister {
-        uint256 rawTimestamp = block.timestamp;
-        uint256 shiftedTimestamp = _timeShiftedTimestamp(rawTimestamp);
-        for (uint256 i = 0; i < accounts.length; i++) {
-            // Store the shifted timestamp to align with how dayAndTime calculates day indices
-            _stopStreamAt[accounts[i]] = shiftedTimestamp;
-            // Emit the original timestamp for accurate external tracking
-            emit YieldStreamingStopped(accounts[i], rawTimestamp);
-        }
-    }
-
-    /**
-     * @notice Returns the timestamp shifted by the negative time shift
-     * @param timestamp The timestamp to shift
-     * @return The shifted timestamp
-     */
-    function _timeShiftedTimestamp(uint256 timestamp) internal pure returns (uint256) {
-        // The day in the contract is calculated with a NEGATIVE_TIME_SHIFT of 3 hours
-        return timestamp - 3 hours;
-    }
-
-    /**
      * @dev This empty reserved space is put in place to allow future versions
      * to add new variables without shifting down storage in the inheritance chain
      */
-    uint256[43] private __gap;
+    uint256[44] private __gap;
 }
