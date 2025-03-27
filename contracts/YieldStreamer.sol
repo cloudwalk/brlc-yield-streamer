@@ -165,9 +165,8 @@ contract YieldStreamer is
      * @notice Emitted when yield streaming is stopped for an account
      *
      * @param account The address of the account
-     * @param timestamp The original timestamp when streaming was stopped (without time shift)
      */
-    event YieldStreamingStopped(address indexed account, uint256 timestamp);
+    event YieldStreamingStopped(address indexed account);
 
     // -------------------- Errors -----------------------------------
 
@@ -563,14 +562,13 @@ contract YieldStreamer is
      * @param accounts Array of addresses for which to stop yield streaming
      */
     function stopStreamingFor(address[] calldata accounts) external onlyBlocklister {
-        uint256 rawTimestamp = block.timestamp;
-        uint256 shiftedTimestamp = _timeShiftedTimestamp(rawTimestamp);
+        uint256 shiftedTimestamp = _timeShiftedTimestamp(block.timestamp);
         for (uint256 i = 0; i < accounts.length; i++) {
             if (_stopStreamingAt[accounts[i]] > 0) {
                 revert StreamingAlreadyStopped(accounts[i]);
             }
             _stopStreamingAt[accounts[i]] = shiftedTimestamp;
-            emit YieldStreamingStopped(accounts[i], rawTimestamp);
+            emit YieldStreamingStopped(accounts[i]);
         }
     }
 

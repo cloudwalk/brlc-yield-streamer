@@ -1998,54 +1998,40 @@ describe("Contract 'YieldStreamer'", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
 
-      // Get pre-transaction timestamp for comparison range
-      const beforeTx = await getBlockTimestamp();
-
       const tx = await context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address]);
 
-      // Get post-transaction timestamp
-      const afterTx = await getBlockTimestamp();
-
-      // Get the actual event arguments
+      // Verify the event was emitted
       const receipt = await tx.wait();
-      const event = receipt.events?.find((e: any) => e.event === EVENT_YIELD_STREAMING_STOPPED);
-      const eventTimestamp = event?.args?.timestamp.toNumber();
+      const events = receipt.events?.filter((e: any) => e.event === EVENT_YIELD_STREAMING_STOPPED) || [];
+      expect(events.length).to.equal(1);
 
-      // Verify the timestamp is within a valid range
-      expect(eventTimestamp).to.be.within(beforeTx - 2, afterTx + 2);
+      // Verify the event contains the correct account address
+      const event = events[0];
+      expect(event.args?.account).to.equal(user.address);
 
+      // Verify the stop timestamp was stored
       const stopTime = await context.yieldStreamer.getYieldStreamingStopTimestamp(user.address);
       expect(stopTime).to.be.gt(0);
-
-      // Check that the stored timestamp is shifted by 3 hours
-      expect(stopTime).to.be.equal(eventTimestamp - 3 * 3600);
     });
 
     it("Can stop streaming for multiple accounts at once", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
 
-      // Get pre-transaction timestamp for comparison range
-      const beforeTx = await getBlockTimestamp();
+      const accounts = [user.address, user2.address, user3.address];
+      const tx = await context.yieldStreamer.connect(blocklister).stopStreamingFor(accounts);
 
-      const tx = await context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address, user2.address, user3.address]);
-
-      // Get post-transaction timestamp
-      const afterTx = await getBlockTimestamp();
-
-      // Get all events from the transaction
+      // Verify events were emitted for each account
       const receipt = await tx.wait();
       const events = receipt.events?.filter((e: any) => e.event === EVENT_YIELD_STREAMING_STOPPED) || [];
+      expect(events.length).to.equal(accounts.length);
 
-      // Verify we have exactly 3 events
-      expect(events.length).to.equal(3);
-
-      // Check each event has a valid timestamp
-      for (const event of events) {
-        const eventTimestamp = event.args?.timestamp.toNumber();
-        expect(eventTimestamp).to.be.within(beforeTx - 2, afterTx + 2);
+      // Verify each event contains the correct account address
+      for (let i = 0; i < accounts.length; i++) {
+        expect(events[i].args?.account).to.equal(accounts[i]);
       }
 
+      // Verify stop timestamps were stored for all accounts
       const stopTime1 = await context.yieldStreamer.getYieldStreamingStopTimestamp(user.address);
       const stopTime2 = await context.yieldStreamer.getYieldStreamingStopTimestamp(user2.address);
       const stopTime3 = await context.yieldStreamer.getYieldStreamingStopTimestamp(user3.address);
