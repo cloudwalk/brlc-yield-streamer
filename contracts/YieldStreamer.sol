@@ -79,7 +79,7 @@ contract YieldStreamer is
     /// @notice The mapping of account to its group assignment
     mapping(address => bytes32) internal _groups;
 
-    /// @notice The mapping of account to the timestamp when the streaming should be stopped
+    /// @notice The mapping of account to the timestamp (UTC-3) when the streaming should be stopped
     mapping(address => uint256) internal _stopStreamingAt;
 
     // -------------------- Events -----------------------------------
@@ -549,6 +549,29 @@ contract YieldStreamer is
 
         yieldRate.effectiveDay = _toUint16(effectiveDay);
         yieldRate.value = _toUint240(value);
+    }
+
+    /**
+     * @notice Stops streaming yield immediately for the specified accounts
+     *
+     * Requirements:
+     *
+     * - Can only be called by an account with the blocklister role
+     *
+     * Emits an {YieldStreamingStopped} event for each account
+     *
+     * @param accounts Array of addresses for which to stop yield streaming
+     */
+    function stopStreamingFor(address[] calldata accounts) external onlyBlocklister {
+        uint256 rawTimestamp = block.timestamp;
+        uint256 shiftedTimestamp = _timeShiftedTimestamp(rawTimestamp);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            if (_stopStreamingAt[accounts[i]] > 0) {
+                revert StreamingAlreadyStopped(accounts[i]);
+            }
+            _stopStreamingAt[accounts[i]] = shiftedTimestamp;
+            emit YieldStreamingStopped(accounts[i], rawTimestamp);
+        }
     }
 
     // -------------------- User Functions ---------------------------
@@ -1085,29 +1108,6 @@ contract YieldStreamer is
             roundedAmount += ROUNDING_COEF;
         }
         return roundedAmount;
-    }
-
-    /**
-     * @notice Stops streaming yield immediately for the specified accounts
-     *
-     * Requirements:
-     *
-     * - Can only be called by an account with the blocklister role
-     *
-     * Emits an {YieldStreamingStopped} event for each account
-     *
-     * @param accounts Array of addresses for which to stop yield streaming
-     */
-    function stopStreamingFor(address[] calldata accounts) external onlyBlocklister {
-        uint256 rawTimestamp = block.timestamp;
-        uint256 shiftedTimestamp = _timeShiftedTimestamp(rawTimestamp);
-        for (uint256 i = 0; i < accounts.length; i++) {
-            if (_stopStreamingAt[accounts[i]] > 0) {
-                revert StreamingAlreadyStopped(accounts[i]);
-            }
-            _stopStreamingAt[accounts[i]] = shiftedTimestamp;
-            emit YieldStreamingStopped(accounts[i], rawTimestamp);
-        }
     }
 
     /**
