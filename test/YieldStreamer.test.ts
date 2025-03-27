@@ -2063,21 +2063,18 @@ describe("Contract 'YieldStreamer'", async () => {
         .withArgs(user.address);
     });
 
-    it("Multiple calls update the timestamp", async () => {
+    it("Reverts when trying to stop streaming for an account that already has streaming stopped", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
 
+      // First call should succeed
       await proveTx(context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address]));
-      const firstStopTime = await context.yieldStreamer.getYieldStreamingStopTimestamp(user.address);
 
-      // Add delay to ensure different timestamp
-      await network.provider.send("evm_increaseTime", [60]);
-      await network.provider.send("evm_mine");
-
-      await proveTx(context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address]));
-      const secondStopTime = await context.yieldStreamer.getYieldStreamingStopTimestamp(user.address);
-
-      expect(secondStopTime).to.be.gt(firstStopTime);
+      // Second call should revert with StreamingAlreadyStopped
+      await expect(
+        context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address])
+      ).to.be.revertedWithCustomError(context.yieldStreamer, "StreamingAlreadyStopped")
+        .withArgs(user.address);
     });
   });
 

@@ -263,6 +263,12 @@ contract YieldStreamer is
      */
     error ToDayPriorFromDay();
 
+    /**
+     * @notice Thrown when the streaming is already stopped for an account
+     * @param account The address of the account
+     */
+    error StreamingAlreadyStopped(address account);
+
     // -------------------- Initializers -----------------------------
 
     /**
@@ -1096,9 +1102,10 @@ contract YieldStreamer is
         uint256 rawTimestamp = block.timestamp;
         uint256 shiftedTimestamp = _timeShiftedTimestamp(rawTimestamp);
         for (uint256 i = 0; i < accounts.length; i++) {
-            // Store the shifted timestamp to align with how dayAndTime calculates day indices
+            if (_stopStreamingAt[accounts[i]] > 0) {
+                revert StreamingAlreadyStopped(accounts[i]);
+            }
             _stopStreamingAt[accounts[i]] = shiftedTimestamp;
-            // Emit the original timestamp for accurate external tracking
             emit YieldStreamingStopped(accounts[i], rawTimestamp);
         }
     }
