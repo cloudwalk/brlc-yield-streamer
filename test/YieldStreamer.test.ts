@@ -1993,7 +1993,7 @@ describe("Contract 'YieldStreamer'", async () => {
     });
   });
 
-  describe("Function 'stopStreamFor()'", async () => {
+  describe("Function 'stopStreamingFor()'", async () => {
     it("Executes as expected and emits the corresponding events", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
@@ -2001,7 +2001,7 @@ describe("Contract 'YieldStreamer'", async () => {
       // Get pre-transaction timestamp for comparison range
       const beforeTx = await getBlockTimestamp();
 
-      const tx = await context.yieldStreamer.connect(blocklister).stopStreamFor([user.address]);
+      const tx = await context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address]);
 
       // Get post-transaction timestamp
       const afterTx = await getBlockTimestamp();
@@ -2014,7 +2014,7 @@ describe("Contract 'YieldStreamer'", async () => {
       // Verify the timestamp is within a valid range
       expect(eventTimestamp).to.be.within(beforeTx - 2, afterTx + 2);
 
-      const stopTime = await context.yieldStreamer.getYieldStreamingStopTime(user.address);
+      const stopTime = await context.yieldStreamer.getYieldStreamingStopTimestamp(user.address);
       expect(stopTime).to.be.gt(0);
 
       // Check that the stored timestamp is shifted by 3 hours
@@ -2028,7 +2028,7 @@ describe("Contract 'YieldStreamer'", async () => {
       // Get pre-transaction timestamp for comparison range
       const beforeTx = await getBlockTimestamp();
 
-      const tx = await context.yieldStreamer.connect(blocklister).stopStreamFor([user.address, user2.address, user3.address]);
+      const tx = await context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address, user2.address, user3.address]);
 
       // Get post-transaction timestamp
       const afterTx = await getBlockTimestamp();
@@ -2046,9 +2046,9 @@ describe("Contract 'YieldStreamer'", async () => {
         expect(eventTimestamp).to.be.within(beforeTx - 2, afterTx + 2);
       }
 
-      const stopTime1 = await context.yieldStreamer.getYieldStreamingStopTime(user.address);
-      const stopTime2 = await context.yieldStreamer.getYieldStreamingStopTime(user2.address);
-      const stopTime3 = await context.yieldStreamer.getYieldStreamingStopTime(user3.address);
+      const stopTime1 = await context.yieldStreamer.getYieldStreamingStopTimestamp(user.address);
+      const stopTime2 = await context.yieldStreamer.getYieldStreamingStopTimestamp(user2.address);
+      const stopTime3 = await context.yieldStreamer.getYieldStreamingStopTimestamp(user3.address);
 
       expect(stopTime1).to.be.gt(0);
       expect(stopTime2).to.be.gt(0);
@@ -2058,7 +2058,7 @@ describe("Contract 'YieldStreamer'", async () => {
 
     it("Is reverted if caller is not the blocklister", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
-      await expect(context.yieldStreamer.connect(user).stopStreamFor([user.address]))
+      await expect(context.yieldStreamer.connect(user).stopStreamingFor([user.address]))
         .to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CALLER_NOT_BLOCKLISTER)
         .withArgs(user.address);
     });
@@ -2067,15 +2067,15 @@ describe("Contract 'YieldStreamer'", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
       await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
 
-      await proveTx(context.yieldStreamer.connect(blocklister).stopStreamFor([user.address]));
-      const firstStopTime = await context.yieldStreamer.getYieldStreamingStopTime(user.address);
+      await proveTx(context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address]));
+      const firstStopTime = await context.yieldStreamer.getYieldStreamingStopTimestamp(user.address);
 
       // Add delay to ensure different timestamp
       await network.provider.send("evm_increaseTime", [60]);
       await network.provider.send("evm_mine");
 
-      await proveTx(context.yieldStreamer.connect(blocklister).stopStreamFor([user.address]));
-      const secondStopTime = await context.yieldStreamer.getYieldStreamingStopTime(user.address);
+      await proveTx(context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address]));
+      const secondStopTime = await context.yieldStreamer.getYieldStreamingStopTimestamp(user.address);
 
       expect(secondStopTime).to.be.gt(firstStopTime);
     });
@@ -2100,12 +2100,12 @@ describe("Contract 'YieldStreamer'", async () => {
       // Simulate a specific stop timestamp by manipulating the stored value
       await network.provider.send("hardhat_setStorageAt", [
         context.yieldStreamer.address,
-        // Calculate storage slot for _stopStreamAt[user.address]
+        // Calculate storage slot for _stopStreamingAt[user.address]
         // This is approximate and may need adjustment based on contract layout
         ethers.utils.keccak256(
           ethers.utils.defaultAbiCoder.encode(
             ["address", "uint256"],
-            [user.address, ethers.BigNumber.from(82)] // 82 is likely the slot for _stopStreamAt mapping
+            [user.address, ethers.BigNumber.from(82)] // 82 is likely the slot for _stopStreamingAt mapping
           )
         ),
         ethers.utils.defaultAbiCoder.encode(["uint256"], [stopTimestamp])

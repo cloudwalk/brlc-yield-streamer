@@ -80,7 +80,7 @@ contract YieldStreamer is
     mapping(address => bytes32) internal _groups;
 
     /// @notice The mapping of account to the timestamp when the streaming should be stopped
-    mapping(address => uint256) internal _stopStreamAt;
+    mapping(address => uint256) internal _stopStreamingAt;
 
     // -------------------- Events -----------------------------------
 
@@ -778,8 +778,8 @@ contract YieldStreamer is
      * @param account The address of the account to check
      * @return The timestamp when streaming was stopped (with 3-hour negative time shift applied), or 0 if not stopped
      */
-    function getYieldStreamingStopTime(address account) external view returns (uint256) {
-        return _stopStreamAt[account];
+    function getYieldStreamingStopTimestamp(address account) external view returns (uint256) {
+        return _stopStreamingAt[account];
     }
 
     // -------------------- Internal Functions -----------------------
@@ -887,7 +887,7 @@ contract YieldStreamer is
      * @param amount The amount of yield to be claimed
      */
     function _claimPreview(address account, uint256 amount) internal view returns (ClaimResult memory) {
-        (uint256 day, uint256 time) = _dayAndTimeWithStopStream(account);
+        (uint256 day, uint256 time) = _dayAndTimeWithStopStreaming(account);
         ClaimState memory state = _claims[account];
         ClaimResult memory result;
         result.prevClaimDebit = state.debit;
@@ -1092,12 +1092,12 @@ contract YieldStreamer is
      *
      * @param accounts Array of addresses for which to stop yield streaming
      */
-    function stopStreamFor(address[] calldata accounts) external onlyBlocklister {
+    function stopStreamingFor(address[] calldata accounts) external onlyBlocklister {
         uint256 rawTimestamp = block.timestamp;
         uint256 shiftedTimestamp = _timeShiftedTimestamp(rawTimestamp);
         for (uint256 i = 0; i < accounts.length; i++) {
             // Store the shifted timestamp to align with how dayAndTime calculates day indices
-            _stopStreamAt[accounts[i]] = shiftedTimestamp;
+            _stopStreamingAt[accounts[i]] = shiftedTimestamp;
             // Emit the original timestamp for accurate external tracking
             emit YieldStreamingStopped(accounts[i], rawTimestamp);
         }
@@ -1118,11 +1118,11 @@ contract YieldStreamer is
      * @param account The address of the account to get the day and time for
      * @return The day and time
      */
-    function _dayAndTimeWithStopStream(address account) internal view returns (uint256, uint256) {
+    function _dayAndTimeWithStopStreaming(address account) internal view returns (uint256, uint256) {
         (uint256 day, uint256 time) = IBalanceTracker(_balanceTracker).dayAndTime();
 
         // -------------------- Stop Stream Logic Start --------------------
-        uint256 stopStreamTimestamp = _stopStreamAt[account];
+        uint256 stopStreamTimestamp = _stopStreamingAt[account];
 
         if (stopStreamTimestamp > 0) {
             // Calculate the stop stream day and time
