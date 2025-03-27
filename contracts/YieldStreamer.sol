@@ -1125,19 +1125,10 @@ contract YieldStreamer is
         uint256 stopStreamTimestamp = _stopStreamingAt[account];
 
         if (stopStreamTimestamp > 0) {
-            // Calculate the stop stream day and time
-            uint256 stopStreamDay = stopStreamTimestamp / 1 days;
-            uint256 stopStreamTime = stopStreamTimestamp % 1 days;
-
-            if (day > stopStreamDay) {
-                // Case 1: The current day is past the stop day, so set the day
-                // to the stop day and time to stop time
-                day = stopStreamDay;
-                time = stopStreamTime;
-            } else if (day == stopStreamDay && time > stopStreamTime) {
-                // Case 2: The current day is the stop day and the time is past
-                // the stop time, so set the time to the stop time
-                time = stopStreamTime;
+            uint256 currentTimestamp = day * 1 days + time;
+            if (currentTimestamp > stopStreamTimestamp) {
+                day = stopStreamTimestamp / 1 days;
+                time = stopStreamTimestamp % 1 days;
             }
         }
         // -------------------- Stop Stream Logic End --------------------
