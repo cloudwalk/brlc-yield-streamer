@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { BigNumber, Contract, ContractFactory } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { proveTx } from "../test-utils/eth";
+import { getTxTimestamp, proveTx } from "../test-utils/eth";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 
 const ZERO_ADDRESS = ethers.constants.AddressZero;
@@ -25,6 +25,7 @@ const ROUNDING_COEF: BigNumber = BigNumber.from(10000);
 const BALANCE_TRACKER_ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
 const ZERO_GROUP_ID = ethers.utils.formatBytes32String("");
 const GROUP_ONE_ID = ethers.utils.formatBytes32String("GROUP_ONE");
+const TIME_SHIFT_IN_SECONDS = -3 * 60 * 60;
 
 interface TestContext {
   tokenMock: Contract;
@@ -565,7 +566,7 @@ describe("Contract 'YieldStreamer'", async () => {
     [deployer, user, feeReceiver, user2, user3, blocklister] = await ethers.getSigners();
     tokenMockFactory = await ethers.getContractFactory("ERC20TokenMock");
     balanceTrackerMockFactory = await ethers.getContractFactory("BalanceTrackerMock");
-    yieldStreamerFactory = await ethers.getContractFactory("YieldStreamer");
+    yieldStreamerFactory = await ethers.getContractFactory("YieldStreamerTestable");
   });
 
   async function deployContracts(): Promise<TestContext> {
@@ -757,6 +758,9 @@ describe("Contract 'YieldStreamer'", async () => {
         .withArgs(GROUP_ONE_ID, user2.address)
         .and.to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
         .withArgs(GROUP_ONE_ID, user3.address);
+      for (const userAddress of users) {
+        expect(await context.yieldStreamer.getAccountGroup(userAddress)).to.equal(GROUP_ONE_ID);
+      }
     });
 
     it("Is reverted if caller is not the blocklister", async () => {
@@ -1059,6 +1063,45 @@ describe("Contract 'YieldStreamer'", async () => {
     });
   });
 
+  describe("Function 'stopStreamingFor()'", async () => {
+    it("Executes as expected and emits the corresponding events", async () => {
+      const { yieldStreamer } = await setUpFixture(deployContracts);
+      await proveTx(yieldStreamer.setMainBlocklister(blocklister.address));
+      const userAddresses = [user.address, user2.address];
+
+      const tx = yieldStreamer.connect(blocklister).stopStreamingFor(userAddresses);
+      const expectedStopTimestamp = await getTxTimestamp(tx) + TIME_SHIFT_IN_SECONDS;
+
+      // Verify the event was emitted and the stop timestamp was stored for each user
+      for (const userAddress of userAddresses) {
+        await expect(tx).to.emit(yieldStreamer, EVENT_YIELD_STREAMING_STOPPED).withArgs(userAddress);
+        const actualStopTime = await yieldStreamer.getYieldStreamingStopTimestamp(userAddress);
+        expect(actualStopTime).to.equal(expectedStopTimestamp);
+      }
+    });
+
+    it("Is reverted if caller is not a blocklister", async () => {
+      const context: TestContext = await setUpFixture(deployContracts);
+      await expect(context.yieldStreamer.connect(user).stopStreamingFor([user.address]))
+        .to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CALLER_NOT_BLOCKLISTER)
+        .withArgs(user.address);
+    });
+
+    it("Is reverted when trying to stop streaming for an account that already has streaming stopped", async () => {
+      const context: TestContext = await setUpFixture(deployContracts);
+      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
+
+      // First call should succeed
+      await proveTx(context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address]));
+
+      // Second call should revert with StreamingAlreadyStopped
+      await expect(
+        context.yieldStreamer.connect(blocklister).stopStreamingFor([user2.address, user.address])
+      ).to.be.revertedWithCustomError(context.yieldStreamer, "StreamingAlreadyStopped")
+        .withArgs(user.address);
+    });
+  });
+
   describe("Function 'updateYieldRate()'", async () => {
     it("Executes as expected if there are three yield rate records configured", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
@@ -1357,7 +1400,7 @@ describe("Contract 'YieldStreamer'", async () => {
 
   describe("Function 'claimAllPreview()'", async () => {
     describe("Executes as expected if", async () => {
-      const claimRequest: ClaimRequest = {
+      const baseClaimRequest: ClaimRequest = {
         amount: BIG_NUMBER_MAX_UINT256,
         firstYieldDay: YIELD_STREAMER_INIT_DAY,
         claimDay: YIELD_STREAMER_INIT_DAY + 10,
@@ -1370,11 +1413,10 @@ describe("Contract 'YieldStreamer'", async () => {
 
       async function executeAndCheckClaimAll(
         context: TestContext,
-        balanceRecords: BalanceRecord[]
+        claimRequest: ClaimRequest
       ): Promise<ClaimResult> {
-        await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, balanceRecords));
+        await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, claimRequest.balanceRecords));
         const actualClaimResult = await context.yieldStreamer.claimAllPreview(user.address);
-        claimRequest.balanceRecords = balanceRecords;
         const expectedClaimResult = defineExpectedClaimResult(claimRequest);
         compareClaimPreviews(actualClaimResult, expectedClaimResult);
         return actualClaimResult;
@@ -1382,35 +1424,86 @@ describe("Contract 'YieldStreamer'", async () => {
 
       it("Token balances are according to case 1", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
-        await proveTx(context.balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
-        await executeAndCheckClaimAll(context, claimRequest.balanceRecords);
+        await proveTx(context.balanceTrackerMock.setDayAndTime(baseClaimRequest.claimDay, baseClaimRequest.claimTime));
+        await executeAndCheckClaimAll(context, baseClaimRequest);
       });
 
       it("Token min daily balance becomes larger than yield-generating daily balance limit", async () => {
-        claimRequest.claimDay = YIELD_STREAMER_INIT_DAY + 3;
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
-        const balanceRecords: BalanceRecord[] = [
+        const claimRequest: ClaimRequest = { ...baseClaimRequest };
+        claimRequest.claimDay = YIELD_STREAMER_INIT_DAY + 3;
+        claimRequest.balanceRecords = [
           { day: BALANCE_TRACKER_INIT_DAY, value: BigNumber.from(500_000_000_000) },
           { day: BALANCE_TRACKER_INIT_DAY + 1, value: BigNumber.from(150_000_000_000) },
           { day: BALANCE_TRACKER_INIT_DAY + 2, value: BigNumber.from(300_000_000_000) }
         ];
-        expect(balanceRecords[0].value).to.be.greaterThan(MAX_DAILY_BALANCE_LIMIT);
-        expect(balanceRecords[1].value).to.be.lessThan(MAX_DAILY_BALANCE_LIMIT);
-        expect(balanceRecords[2].value).to.be.greaterThan(MAX_DAILY_BALANCE_LIMIT);
+        expect(claimRequest.balanceRecords[0].value).to.be.greaterThan(MAX_DAILY_BALANCE_LIMIT);
+        expect(claimRequest.balanceRecords[1].value).to.be.lessThan(MAX_DAILY_BALANCE_LIMIT);
+        expect(claimRequest.balanceRecords[2].value).to.be.greaterThan(MAX_DAILY_BALANCE_LIMIT);
 
         await proveTx(context.balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
-        const actualClaimResult1 = await executeAndCheckClaimAll(context, balanceRecords);
+        const actualClaimResult1 = await executeAndCheckClaimAll(context, claimRequest);
 
-        balanceRecords[1].value = balanceRecords[1].value.add(BigNumber.from(50_000_000_000));
-        expect(balanceRecords[1].value).to.be.equal(MAX_DAILY_BALANCE_LIMIT);
-        const actualClaimResult2 = await executeAndCheckClaimAll(context, balanceRecords);
+        claimRequest.balanceRecords[1].value = claimRequest.balanceRecords[1].value.add(BigNumber.from(50_000_000_000));
+        expect(claimRequest.balanceRecords[1].value).to.be.equal(MAX_DAILY_BALANCE_LIMIT);
+        const actualClaimResult2 = await executeAndCheckClaimAll(context, claimRequest);
 
-        balanceRecords[1].value = balanceRecords[1].value.add(BigNumber.from(50_000_000_000));
-        expect(balanceRecords[1].value).to.be.greaterThan(MAX_DAILY_BALANCE_LIMIT);
-        const actualClaimResult3 = await executeAndCheckClaimAll(context, balanceRecords);
+        claimRequest.balanceRecords[1].value = claimRequest.balanceRecords[1].value.add(BigNumber.from(50_000_000_000));
+        expect(claimRequest.balanceRecords[1].value).to.be.greaterThan(MAX_DAILY_BALANCE_LIMIT);
+        const actualClaimResult3 = await executeAndCheckClaimAll(context, claimRequest);
 
         expect(actualClaimResult1.yield).to.be.lessThan(actualClaimResult2.yield);
         compareClaimPreviews(actualClaimResult2, actualClaimResult3);
+      });
+
+      it("The streaming is stopped for the account but stopped timestamp is after the current one", async () => {
+        const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+        const { yieldStreamer, balanceTrackerMock } = context;
+        const claimRequest: ClaimRequest = { ...baseClaimRequest };
+        await proveTx(balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
+        const timestamp = (baseClaimRequest.claimDay + 1) * 24 * 3600 + baseClaimRequest.claimTime;
+        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp)); // Call via the testable ver.
+        await executeAndCheckClaimAll(context, claimRequest);
+      });
+
+      it("The streaming is stopped for the account and stopped timestamp equals the current one", async () => {
+        const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+        const { yieldStreamer, balanceTrackerMock } = context;
+        const claimRequest: ClaimRequest = { ...baseClaimRequest };
+        await proveTx(balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
+        const timestamp = baseClaimRequest.claimDay * 24 * 3600 + baseClaimRequest.claimTime;
+        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp)); // Call via the testable ver.
+        await executeAndCheckClaimAll(context, claimRequest);
+      });
+
+      it("The streaming is stopped for the account and stopped timestamp is before the current one", async () => {
+        const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+        const { yieldStreamer, balanceTrackerMock } = context;
+        const claimRequest: ClaimRequest = { ...baseClaimRequest };
+        await proveTx(balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
+
+        // Streaming stop timestamp is 1 day before the claim timestamp
+        const timestamp1 = (baseClaimRequest.claimDay - 1) * 24 * 3600 + baseClaimRequest.claimTime;
+        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp1)); // Call via the testable ver.
+        {
+          const expectedClaimResult1 = defineExpectedClaimResult(claimRequest);
+          claimRequest.claimDay -= 1;
+          const expectedClaimResult2 = defineExpectedClaimResult(claimRequest);
+          expect(expectedClaimResult2.yield).to.be.lessThan(expectedClaimResult1.yield);
+        }
+        await executeAndCheckClaimAll(context, claimRequest);
+
+        // Streaming stop timestamp is 1 hour before the claim timestamp
+        claimRequest.claimDay = baseClaimRequest.claimDay;
+        const timestamp2 = baseClaimRequest.claimDay * 24 * 3600 + baseClaimRequest.claimTime - 3600;
+        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp2)); // Call via the testable ver.
+        {
+          const expectedClaimResult1 = defineExpectedClaimResult(claimRequest);
+          claimRequest.claimTime -= 3600;
+          const expectedClaimResult2 = defineExpectedClaimResult(claimRequest);
+          expect(expectedClaimResult2.yield).to.be.lessThan(expectedClaimResult1.yield);
+        }
+        await executeAndCheckClaimAll(context, claimRequest);
       });
     });
   });
@@ -1473,6 +1566,10 @@ describe("Contract 'YieldStreamer'", async () => {
         claimRequest.amount = MIN_CLAIM_AMOUNT;
         await checkClaimPreview(context, claimRequest);
       });
+
+      // Cases with balance limit and stream stopping for an account are not tested here
+      // because they are already covered in the 'claimAllPreview()' tests.
+      // Both functions use the same internal logic, so we avoid duplicating these test cases.
     });
     describe("Is reverted if", async () => {
       it("The amount is bellow the allowed minimum", async () => {
@@ -1554,6 +1651,10 @@ describe("Contract 'YieldStreamer'", async () => {
         claimRequest.amount = MIN_CLAIM_AMOUNT;
         await checkClaim(context, claimRequest);
       });
+
+      // Cases with balance limit and stream stopping for an account are not tested here
+      // because they are already covered in the 'claimAllPreview()' tests.
+      // Both functions use the same internal logic, so we avoid duplicating these test cases.
     });
 
     describe("Is reverted if", async () => {
@@ -1993,217 +2094,6 @@ describe("Contract 'YieldStreamer'", async () => {
     });
   });
 
-  describe("Function 'stopStreamingFor()'", async () => {
-    it("Executes as expected and emits the corresponding events", async () => {
-      const context: TestContext = await setUpFixture(deployContracts);
-      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
-
-      const tx = await context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address]);
-
-      // Verify the event was emitted
-      const receipt = await tx.wait();
-      const events = receipt.events?.filter((e: any) => e.event === EVENT_YIELD_STREAMING_STOPPED) || [];
-      expect(events.length).to.equal(1);
-
-      // Verify the event contains the correct account address
-      const event = events[0];
-      expect(event.args?.account).to.equal(user.address);
-
-      // Verify the stop timestamp was stored
-      const stopTime = await context.yieldStreamer.getYieldStreamingStopTimestamp(user.address);
-      expect(stopTime).to.be.gt(0);
-    });
-
-    it("Can stop streaming for multiple accounts at once", async () => {
-      const context: TestContext = await setUpFixture(deployContracts);
-      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
-
-      const accounts = [user.address, user2.address, user3.address];
-      const tx = await context.yieldStreamer.connect(blocklister).stopStreamingFor(accounts);
-
-      // Verify events were emitted for each account
-      const receipt = await tx.wait();
-      const events = receipt.events?.filter((e: any) => e.event === EVENT_YIELD_STREAMING_STOPPED) || [];
-      expect(events.length).to.equal(accounts.length);
-
-      // Verify each event contains the correct account address
-      for (let i = 0; i < accounts.length; i++) {
-        expect(events[i].args?.account).to.equal(accounts[i]);
-      }
-
-      // Verify stop timestamps were stored for all accounts
-      const stopTime1 = await context.yieldStreamer.getYieldStreamingStopTimestamp(user.address);
-      const stopTime2 = await context.yieldStreamer.getYieldStreamingStopTimestamp(user2.address);
-      const stopTime3 = await context.yieldStreamer.getYieldStreamingStopTimestamp(user3.address);
-
-      expect(stopTime1).to.be.gt(0);
-      expect(stopTime2).to.be.gt(0);
-      expect(stopTime3).to.be.gt(0);
-      expect(stopTime1).to.be.equal(stopTime2).and.to.be.equal(stopTime3);
-    });
-
-    it("Is reverted if caller is not the blocklister", async () => {
-      const context: TestContext = await setUpFixture(deployContracts);
-      await expect(context.yieldStreamer.connect(user).stopStreamingFor([user.address]))
-        .to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CALLER_NOT_BLOCKLISTER)
-        .withArgs(user.address);
-    });
-
-    it("Reverts when trying to stop streaming for an account that already has streaming stopped", async () => {
-      const context: TestContext = await setUpFixture(deployContracts);
-      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
-
-      // First call should succeed
-      await proveTx(context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address]));
-
-      // Second call should revert with StreamingAlreadyStopped
-      await expect(
-        context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address])
-      ).to.be.revertedWithCustomError(context.yieldStreamer, "StreamingAlreadyStopped")
-        .withArgs(user.address);
-    });
-  });
-
-  describe("Function 'claim()' with stopped streaming", async () => {
-    const baseClaimRequest: ClaimRequest = {
-      amount: BIG_NUMBER_MAX_UINT256,
-      firstYieldDay: YIELD_STREAMER_INIT_DAY,
-      claimDay: YIELD_STREAMER_INIT_DAY + 10,
-      claimTime: 12 * 3600,
-      claimDebit: BIG_NUMBER_ZERO,
-      lookBackPeriodLength: LOOK_BACK_PERIOD_LENGTH,
-      yieldRateRecords: [yieldRateRecordCase1],
-      balanceRecords: balanceRecordsCase1
-    };
-
-    async function setupAndStopStreaming(context: TestContext, stopTimestamp: number): Promise<void> {
-      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
-      await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, baseClaimRequest.balanceRecords));
-
-      // Simulate a specific stop timestamp by manipulating the stored value
-      await network.provider.send("hardhat_setStorageAt", [
-        context.yieldStreamer.address,
-        // Calculate storage slot for _stopStreamingAt[user.address]
-        // This is approximate and may need adjustment based on contract layout
-        ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(
-            ["address", "uint256"],
-            [user.address, ethers.BigNumber.from(82)] // 82 is likely the slot for _stopStreamingAt mapping
-          )
-        ),
-        ethers.utils.defaultAbiCoder.encode(["uint256"], [stopTimestamp])
-      ]);
-    }
-
-    it("Returns frozen day and time when streaming is stopped before current day", async () => {
-      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
-      const stopDay = baseClaimRequest.claimDay - 2;
-      const stopTime = 8 * 3600; // 8 hours
-      const stopTimestamp = (stopDay * 86400) + stopTime;
-
-      await setupAndStopStreaming(context, stopTimestamp);
-
-      // Set current day/time to be after the stop time
-      await proveTx(context.balanceTrackerMock.setDayAndTime(baseClaimRequest.claimDay, baseClaimRequest.claimTime));
-
-      // Check that claim preview uses the stopped time
-      const claimResult = await context.yieldStreamer.claimPreview(user.address, MIN_CLAIM_AMOUNT);
-
-      // The claim should be based on the stopped day/time, not the current day/time
-      expect(claimResult.nextClaimDay).to.be.lte(stopDay);
-
-      // For a claim all preview, the yield should be limited
-      const claimAllResult = await context.yieldStreamer.claimAllPreview(user.address);
-
-      // Just verify it returns a valid yield amount (don't compare exact values)
-      expect(claimAllResult.yield).to.be.gt(0);
-    });
-
-    it("Returns current day but limited time when streaming is stopped on current day", async () => {
-      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
-      const stopDay = baseClaimRequest.claimDay;
-      const stopTime = 6 * 3600; // 6 hours (earlier than claim time)
-      const stopTimestamp = (stopDay * 86400) + stopTime;
-
-      await setupAndStopStreaming(context, stopTimestamp);
-
-      // Set current day/time to be same day but after stop time
-      await proveTx(context.balanceTrackerMock.setDayAndTime(stopDay, baseClaimRequest.claimTime));
-
-      // Check claim preview
-      const claimResult = await context.yieldStreamer.claimPreview(user.address, MIN_CLAIM_AMOUNT);
-
-      // The claim should be based on the current day but with limited time
-      const claimAllResult = await context.yieldStreamer.claimAllPreview(user.address);
-
-      // Instead of comparing exact values, just verify streamYield is positive
-      expect(claimAllResult.streamYield).to.be.gte(0);
-
-      // Instead of checking exact day value which may vary based on implementation details,
-      // ensure the next claim day is a reasonable value
-      expect(claimResult.nextClaimDay).to.be.gte(YIELD_STREAMER_INIT_DAY);
-    });
-
-    it("Returns normal day and time when current time is before stop time", async () => {
-      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
-      const stopDay = baseClaimRequest.claimDay;
-      const stopTime = 20 * 3600; // 20 hours (later than claim time)
-      const stopTimestamp = (stopDay * 86400) + stopTime;
-
-      await setupAndStopStreaming(context, stopTimestamp);
-
-      // Set current day/time to be same day but before stop time
-      await proveTx(context.balanceTrackerMock.setDayAndTime(stopDay, baseClaimRequest.claimTime));
-
-      // Claim preview should be normal since we're before the stop time
-      const previewWithStop = await context.yieldStreamer.claimPreview(user.address, MIN_CLAIM_AMOUNT);
-
-      // Reset stop time to 0 and compare
-      await network.provider.send("hardhat_setStorageAt", [
-        context.yieldStreamer.address,
-        ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(
-            ["address", "uint256"],
-            [user.address, ethers.BigNumber.from(82)]
-          )
-        ),
-        ethers.utils.defaultAbiCoder.encode(["uint256"], [0])
-      ]);
-
-      const previewWithoutStop = await context.yieldStreamer.claimPreview(user.address, MIN_CLAIM_AMOUNT);
-
-      // Results should be identical since stop time hasn't been reached
-      expect(previewWithStop.yield).to.be.equal(previewWithoutStop.yield);
-      expect(previewWithStop.streamYield).to.be.equal(previewWithoutStop.streamYield);
-    });
-
-    it("Actual claim uses stopped time values correctly", async () => {
-      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
-      const stopDay = baseClaimRequest.claimDay - 1; // Yesterday
-      const stopTime = 16 * 3600; // 16 hours
-      const stopTimestamp = (stopDay * 86400) + stopTime;
-
-      await setupAndStopStreaming(context, stopTimestamp);
-
-      // Set current day/time to be after the stop time
-      await proveTx(context.balanceTrackerMock.setDayAndTime(baseClaimRequest.claimDay, baseClaimRequest.claimTime));
-
-      // Do the actual claim with MIN_CLAIM_AMOUNT
-      const preview = await context.yieldStreamer.claimPreview(user.address, MIN_CLAIM_AMOUNT);
-      const tx = await context.yieldStreamer.connect(user).claim(MIN_CLAIM_AMOUNT);
-
-      // Check the claim state matches the preview
-      const claimState = await context.yieldStreamer.getLastClaimDetails(user.address);
-      expect(claimState.day).to.equal(preview.nextClaimDay);
-      expect(claimState.debit).to.equal(preview.nextClaimDebit);
-
-      // Verify event emission
-      await expect(tx)
-        .to.emit(context.yieldStreamer, EVENT_CLAIM)
-        .withArgs(user.address, MIN_CLAIM_AMOUNT, preview.fee);
-    });
-  });
-
   describe("Function 'getDailyBalancesWithYield()' with stopped streaming", async () => {
     const baseClaimRequest: ClaimRequest = {
       amount: BIG_NUMBER_MAX_UINT256,
@@ -2371,11 +2261,14 @@ describe("Contract 'YieldStreamer'", async () => {
       }
     });
   });
-});
 
-// Helper function to get the latest block timestamp
-async function getBlockTimestamp(): Promise<number> {
-  const blockNumber = await ethers.provider.getBlockNumber();
-  const block = await ethers.provider.getBlock(blockNumber);
-  return block.timestamp;
-}
+  describe("Function 'dayAndTime()'", async () => {
+    it("Executes as expected", async () => {
+      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+      const day = 123456789;
+      const time = 987654321;
+      await proveTx(context.balanceTrackerMock.setDayAndTime(day, time));
+      expect(await context.yieldStreamer.dayAndTime()).to.deep.equal([day, time]);
+    });
+  });
+});

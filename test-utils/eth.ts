@@ -30,7 +30,17 @@ export async function increaseBlockTimestamp(increaseInSeconds: number) {
   await increaseBlockTimestampTo(currentTimestamp + increaseInSeconds);
 }
 
-export async function proveTx(txResponsePromise: Promise<TransactionResponse>): Promise<TransactionReceipt> {
-  const txReceipt = await txResponsePromise;
-  return txReceipt.wait();
+export async function proveTx(tx: Promise<TransactionResponse> | TransactionResponse): Promise<TransactionReceipt> {
+  const txResponse = await tx;
+  const txReceipt = await txResponse.wait();
+  if (!txReceipt) {
+    throw new Error("The transaction receipt is empty");
+  }
+  return txReceipt;
+}
+
+export async function getTxTimestamp(tx: Promise<TransactionResponse> | TransactionResponse): Promise<number> {
+  const receipt = await proveTx(tx);
+  const block = await ethers.provider.getBlock(receipt.blockNumber);
+  return Number(block?.timestamp ?? 0);
 }
