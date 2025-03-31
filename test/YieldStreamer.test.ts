@@ -1572,7 +1572,7 @@ describe("Contract 'YieldStreamer'", async () => {
       // Both functions use the same internal logic, so we avoid duplicating these test cases.
     });
     describe("Is reverted if", async () => {
-      it("The amount is bellow the allowed minimum", async () => {
+      it("The amount is below the allowed minimum", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         await expect(
           context.yieldStreamer.claimPreview(user.address, MIN_CLAIM_AMOUNT.sub(1))
@@ -1691,7 +1691,7 @@ describe("Contract 'YieldStreamer'", async () => {
         ).to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CLAIM_REJECTION_DUE_TO_SHORTFALL);
       });
 
-      it("The amount is bellow the allowed minimum", async () => {
+      it("The amount is below the allowed minimum", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         await expect(
           context.yieldStreamer.connect(user).claim(MIN_CLAIM_AMOUNT.sub(1))
