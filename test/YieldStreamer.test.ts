@@ -1462,7 +1462,7 @@ describe("Contract 'YieldStreamer'", async () => {
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
         await proveTx(balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
         const timestamp = (baseClaimRequest.claimDay + 1) * 24 * 3600 + baseClaimRequest.claimTime;
-        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp));
+        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp)); // Call via the testable ver.
         await executeAndCheckClaimAll(context, claimRequest);
       });
 
@@ -1472,7 +1472,7 @@ describe("Contract 'YieldStreamer'", async () => {
         const claimRequest: ClaimRequest = { ...baseClaimRequest };
         await proveTx(balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
         const timestamp = baseClaimRequest.claimDay * 24 * 3600 + baseClaimRequest.claimTime;
-        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp));
+        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp)); // Call via the testable ver.
         await executeAndCheckClaimAll(context, claimRequest);
       });
 
@@ -1484,7 +1484,7 @@ describe("Contract 'YieldStreamer'", async () => {
 
         // Streaming stop timestamp is 1 day before the claim timestamp
         const timestamp1 = (baseClaimRequest.claimDay - 1) * 24 * 3600 + baseClaimRequest.claimTime;
-        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp1));
+        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp1)); // Call via the testable ver.
         {
           const expectedClaimResult1 = defineExpectedClaimResult(claimRequest);
           claimRequest.claimDay -= 1;
@@ -1496,7 +1496,7 @@ describe("Contract 'YieldStreamer'", async () => {
         // Streaming stop timestamp is 1 hour before the claim timestamp
         claimRequest.claimDay = baseClaimRequest.claimDay;
         const timestamp2 = baseClaimRequest.claimDay * 24 * 3600 + baseClaimRequest.claimTime - 3600;
-        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp2));
+        await proveTx(yieldStreamer.setStreamingStopTimestamp(user.address, timestamp2)); // Call via the testable ver.
         {
           const expectedClaimResult1 = defineExpectedClaimResult(claimRequest);
           claimRequest.claimTime -= 3600;
