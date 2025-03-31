@@ -758,6 +758,9 @@ describe("Contract 'YieldStreamer'", async () => {
         .withArgs(GROUP_ONE_ID, user2.address)
         .and.to.emit(context.yieldStreamer, EVENT_ACCOUNT_TO_GROUP_ASSIGNED)
         .withArgs(GROUP_ONE_ID, user3.address);
+      for (const userAddress of users) {
+        expect(await context.yieldStreamer.getAccountGroup(userAddress)).to.equal(GROUP_ONE_ID);
+      }
     });
 
     it("Is reverted if caller is not the blocklister", async () => {
@@ -2256,6 +2259,16 @@ describe("Contract 'YieldStreamer'", async () => {
         // that the implementation is reasonable, not specifically how it's implemented
         expect(yieldWithStopping[0]).to.be.equal(yieldWithoutStopping[0]);
       }
+    });
+  });
+
+  describe("Function 'dayAndTime()'", async () => {
+    it("Executes as expected", async () => {
+      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+      const day = 123456789;
+      const time = 987654321;
+      await proveTx(context.balanceTrackerMock.setDayAndTime(day, time));
+      expect(await context.yieldStreamer.dayAndTime()).to.deep.equal([day, time]);
     });
   });
 });
