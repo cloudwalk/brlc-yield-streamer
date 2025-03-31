@@ -1060,6 +1060,45 @@ describe("Contract 'YieldStreamer'", async () => {
     });
   });
 
+  describe("Function 'stopStreamingFor()'", async () => {
+    it("Executes as expected and emits the corresponding events", async () => {
+      const { yieldStreamer } = await setUpFixture(deployContracts);
+      await proveTx(yieldStreamer.setMainBlocklister(blocklister.address));
+      const userAddresses = [user.address, user2.address];
+
+      const tx = yieldStreamer.connect(blocklister).stopStreamingFor(userAddresses);
+      const expectedStopTimestamp = await getTxTimestamp(tx) + TIME_SHIFT_IN_SECONDS;
+
+      // Verify the event was emitted and the stop timestamp was stored for each user
+      for (const userAddress of userAddresses) {
+        await expect(tx).to.emit(yieldStreamer, EVENT_YIELD_STREAMING_STOPPED).withArgs(userAddress);
+        const actualStopTime = await yieldStreamer.getYieldStreamingStopTimestamp(userAddress);
+        expect(actualStopTime).to.equal(expectedStopTimestamp);
+      }
+    });
+
+    it("Is reverted if caller is not a blocklister", async () => {
+      const context: TestContext = await setUpFixture(deployContracts);
+      await expect(context.yieldStreamer.connect(user).stopStreamingFor([user.address]))
+        .to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CALLER_NOT_BLOCKLISTER)
+        .withArgs(user.address);
+    });
+
+    it("Is reverted when trying to stop streaming for an account that already has streaming stopped", async () => {
+      const context: TestContext = await setUpFixture(deployContracts);
+      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
+
+      // First call should succeed
+      await proveTx(context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address]));
+
+      // Second call should revert with StreamingAlreadyStopped
+      await expect(
+        context.yieldStreamer.connect(blocklister).stopStreamingFor([user2.address, user.address])
+      ).to.be.revertedWithCustomError(context.yieldStreamer, "StreamingAlreadyStopped")
+        .withArgs(user.address);
+    });
+  });
+
   describe("Function 'updateYieldRate()'", async () => {
     it("Executes as expected if there are three yield rate records configured", async () => {
       const context: TestContext = await setUpFixture(deployContracts);
@@ -2049,45 +2088,6 @@ describe("Contract 'YieldStreamer'", async () => {
           )
         ).to.reverted;
       });
-    });
-  });
-
-  describe("Function 'stopStreamingFor()'", async () => {
-    it("Executes as expected and emits the corresponding events", async () => {
-      const { yieldStreamer } = await setUpFixture(deployContracts);
-      await proveTx(yieldStreamer.setMainBlocklister(blocklister.address));
-      const userAddresses = [user.address, user2.address];
-
-      const tx = yieldStreamer.connect(blocklister).stopStreamingFor(userAddresses);
-      const expectedStopTimestamp = await getTxTimestamp(tx) + TIME_SHIFT_IN_SECONDS;
-
-      // Verify the event was emitted and the stop timestamp was stored for each user
-      for (const userAddress of userAddresses) {
-        await expect(tx).to.emit(yieldStreamer, EVENT_YIELD_STREAMING_STOPPED).withArgs(userAddress);
-        const actualStopTime = await yieldStreamer.getYieldStreamingStopTimestamp(userAddress);
-        expect(actualStopTime).to.equal(expectedStopTimestamp);
-      }
-    });
-
-    it("Is reverted if caller is not a blocklister", async () => {
-      const context: TestContext = await setUpFixture(deployContracts);
-      await expect(context.yieldStreamer.connect(user).stopStreamingFor([user.address]))
-        .to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CALLER_NOT_BLOCKLISTER)
-        .withArgs(user.address);
-    });
-
-    it("Is reverted when trying to stop streaming for an account that already has streaming stopped", async () => {
-      const context: TestContext = await setUpFixture(deployContracts);
-      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
-
-      // First call should succeed
-      await proveTx(context.yieldStreamer.connect(blocklister).stopStreamingFor([user.address]));
-
-      // Second call should revert with StreamingAlreadyStopped
-      await expect(
-        context.yieldStreamer.connect(blocklister).stopStreamingFor([user2.address, user.address])
-      ).to.be.revertedWithCustomError(context.yieldStreamer, "StreamingAlreadyStopped")
-        .withArgs(user.address);
     });
   });
 
