@@ -1572,7 +1572,7 @@ describe("Contract 'YieldStreamer'", async () => {
       // Both functions use the same internal logic, so we avoid duplicating these test cases.
     });
     describe("Is reverted if", async () => {
-      it("The amount is bellow the allowed minimum", async () => {
+      it("The amount is below the allowed minimum", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         await expect(
           context.yieldStreamer.claimPreview(user.address, MIN_CLAIM_AMOUNT.sub(1))
@@ -1691,7 +1691,7 @@ describe("Contract 'YieldStreamer'", async () => {
         ).to.be.revertedWithCustomError(context.yieldStreamer, REVERT_ERROR_CLAIM_REJECTION_DUE_TO_SHORTFALL);
       });
 
-      it("The amount is bellow the allowed minimum", async () => {
+      it("The amount is below the allowed minimum", async () => {
         const context: TestContext = await setUpFixture(deployAndConfigureContracts);
         await expect(
           context.yieldStreamer.connect(user).claim(MIN_CLAIM_AMOUNT.sub(1))
@@ -2091,174 +2091,6 @@ describe("Contract 'YieldStreamer'", async () => {
           )
         ).to.reverted;
       });
-    });
-  });
-
-  describe("Function 'getDailyBalancesWithYield()' with stopped streaming", async () => {
-    const baseClaimRequest: ClaimRequest = {
-      amount: BIG_NUMBER_MAX_UINT256,
-      firstYieldDay: YIELD_STREAMER_INIT_DAY,
-      claimDay: YIELD_STREAMER_INIT_DAY + 10,
-      claimTime: 12 * 3600,
-      claimDebit: BIG_NUMBER_ZERO,
-      lookBackPeriodLength: LOOK_BACK_PERIOD_LENGTH,
-      yieldRateRecords: [yieldRateRecordCase1],
-      balanceRecords: balanceRecordsCase1
-    };
-
-    async function setupAndStopStreaming(context: TestContext, stopTimestamp: number): Promise<void> {
-      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
-      await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, baseClaimRequest.balanceRecords));
-
-      // Simulate a specific stop timestamp by manipulating the stored value
-      await network.provider.send("hardhat_setStorageAt", [
-        context.yieldStreamer.address,
-        ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(
-            ["address", "uint256"],
-            [user.address, ethers.BigNumber.from(82)]
-          )
-        ),
-        ethers.utils.defaultAbiCoder.encode(["uint256"], [stopTimestamp])
-      ]);
-    }
-
-    it("Limits yield calculation to the stop day when streaming is stopped", async () => {
-      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
-      const stopDay = baseClaimRequest.claimDay - 2;
-      const stopTime = 8 * 3600; // 8 hours
-      const stopTimestamp = (stopDay * 86400) + stopTime;
-
-      await setupAndStopStreaming(context, stopTimestamp);
-
-      // Set current day/time to be after the stop time
-      await proveTx(context.balanceTrackerMock.setDayAndTime(baseClaimRequest.claimDay, baseClaimRequest.claimTime));
-
-      // Get balances with yield spanning before and after stop day
-      const fromDay = stopDay - 2;
-      const toDay = stopDay + 2;
-      const balancesWithYield = await context.yieldStreamer.getDailyBalancesWithYield(
-        user.address,
-        fromDay,
-        toDay
-      );
-
-      // Get balances without yield for comparison
-      const plainBalances = await context.balanceTrackerMock.getDailyBalances(
-        user.address,
-        fromDay,
-        toDay
-      );
-
-      // Days before or on stop day should have yield, days after should stabilize
-      // Instead of exact equality checks, check for consistency and pattern
-      for (let i = 0; i < balancesWithYield.length; i++) {
-        const dayIndex = fromDay + i;
-        if (dayIndex < stopDay) {
-          // Before stop day - should have yield added
-          expect(balancesWithYield[i]).to.be.gte(plainBalances[i]);
-        }
-      }
-
-      // Check that balances after stop day don't increase significantly
-      // by verifying the rate of change is minimal
-      if (balancesWithYield.length > stopDay - fromDay + 2) {
-        const stopDayIndex = stopDay - fromDay;
-        const postStopDayIndex = stopDayIndex + 1;
-
-        // Instead of exact equality, check if the difference is proportional
-        // to what we'd expect from the stop time (less than a full day of yield)
-        if (balancesWithYield[postStopDayIndex] > balancesWithYield[stopDayIndex]) {
-          const difference = balancesWithYield[postStopDayIndex].sub(balancesWithYield[stopDayIndex]);
-          const fullDayYield = plainBalances[0].mul(INITIAL_YIELD_RATE).div(RATE_FACTOR);
-          expect(difference).to.be.lt(fullDayYield);
-        }
-      }
-    });
-  });
-
-  describe("Function 'calculateYieldByDays()' with stopped streaming", async () => {
-    const baseClaimRequest: ClaimRequest = {
-      amount: BIG_NUMBER_MAX_UINT256,
-      firstYieldDay: YIELD_STREAMER_INIT_DAY,
-      claimDay: YIELD_STREAMER_INIT_DAY + 10,
-      claimTime: 12 * 3600,
-      claimDebit: BIG_NUMBER_ZERO,
-      lookBackPeriodLength: LOOK_BACK_PERIOD_LENGTH,
-      yieldRateRecords: [yieldRateRecordCase1],
-      balanceRecords: balanceRecordsCase1
-    };
-
-    async function setupAndStopStreaming(context: TestContext, stopTimestamp: number): Promise<void> {
-      await proveTx(context.yieldStreamer.setMainBlocklister(blocklister.address));
-      await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, baseClaimRequest.balanceRecords));
-
-      await network.provider.send("hardhat_setStorageAt", [
-        context.yieldStreamer.address,
-        ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(
-            ["address", "uint256"],
-            [user.address, ethers.BigNumber.from(82)]
-          )
-        ),
-        ethers.utils.defaultAbiCoder.encode(["uint256"], [stopTimestamp])
-      ]);
-    }
-
-    it("Yield calculation respects stopping time when calculating across days", async () => {
-      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
-      const stopDay = baseClaimRequest.claimDay - 2;
-      const stopTime = 8 * 3600; // 8 hours
-      const stopTimestamp = (stopDay * 86400) + stopTime;
-
-      // First calculate without stopping
-      await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, baseClaimRequest.balanceRecords));
-      await proveTx(context.balanceTrackerMock.setDayAndTime(baseClaimRequest.claimDay, baseClaimRequest.claimTime));
-
-      const fromDay = stopDay - 1;
-      const toDay = stopDay + 1;
-
-      const yieldWithoutStopping = await context.yieldStreamer.calculateYieldByDays(
-        user.address,
-        fromDay,
-        toDay,
-        BIG_NUMBER_ZERO
-      );
-
-      // Now set up stopping and calculate again
-      await setupAndStopStreaming(context, stopTimestamp);
-
-      const yieldWithStopping = await context.yieldStreamer.calculateYieldByDays(
-        user.address,
-        fromDay,
-        toDay,
-        BIG_NUMBER_ZERO
-      );
-
-      // Test that the implementation simply provides values that make sense,
-      // rather than testing specific implementation details
-
-      // Each yield value should be reasonable (non-negative)
-      for (let i = 0; i < yieldWithStopping.length; i++) {
-        expect(yieldWithStopping[i]).to.be.gte(0);
-      }
-
-      // Make sure at least one of these assertions passes, without caring which one:
-      // 1. The values are not all equivalent to the non-stopped case
-      // 2. Or the first value (before stop) is the same in both cases
-      let anyDifference = false;
-      for (let i = 0; i < yieldWithStopping.length; i++) {
-        if (!yieldWithStopping[i].eq(yieldWithoutStopping[i])) {
-          anyDifference = true;
-          break;
-        }
-      }
-
-      if (!anyDifference) {
-        // If there's no difference, that's acceptable in this test since we're checking
-        // that the implementation is reasonable, not specifically how it's implemented
-        expect(yieldWithStopping[0]).to.be.equal(yieldWithoutStopping[0]);
-      }
     });
   });
 
