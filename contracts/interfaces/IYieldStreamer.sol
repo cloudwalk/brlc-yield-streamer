@@ -55,4 +55,9 @@ interface IYieldStreamer {
      * @param amount The portion of yield to be claimed
      */
     function claimPreview(address account, uint256 amount) external view returns (ClaimResult memory);
+
+    /**
+     * @notice Returns true if the streamer is archived (all yield is zeroed out).
+     */
+    function isArchived() external view returns (bool);
 }

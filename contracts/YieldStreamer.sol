@@ -82,6 +82,9 @@ contract YieldStreamer is
     /// @notice The mapping of account to the timestamp (UTC-3) when the streaming should be stopped
     mapping(address => uint256) internal _stopStreamingAt;
 
+    /// @notice The flag that indicates if the streamer is archived
+    bool internal _isArchived;
+
     // -------------------- Events -----------------------------------
 
     /**
@@ -167,6 +170,13 @@ contract YieldStreamer is
      * @param account The address of the account
      */
     event YieldStreamingStopped(address indexed account);
+
+    /**
+     * @notice Emitted when the streamer is archived
+     *
+     * @param isArchived The flag that indicates if the streamer is archived
+     */
+    event IsArchivedChanged(bool isArchived);
 
     // -------------------- Errors -----------------------------------
 
@@ -268,6 +278,11 @@ contract YieldStreamer is
      */
     error StreamingAlreadyStopped(address account);
 
+    /**
+     * @notice Thrown when archiving already archived contract
+     */
+    error ContractAlreadyArchived();
+
     // -------------------- Initializers -----------------------------
 
     /**
@@ -315,10 +330,30 @@ contract YieldStreamer is
     // -------------------- Admin Functions --------------------------
 
     /**
-     * @notice Sets the address of the fee receiver
+     * @notice Sets the flag that indicates if the streamer is archived
      *
      * Requirements:
      *
+     * - Can only be called by the contract owner
+     *
+     * Emits an {IsArchivedChanged} event
+     *
+     * @param isArchived_ The flag that indicates if the streamer is archived
+     */
+    function setIsArchived(bool isArchived_) external onlyOwner {
+        if (_isArchived && isArchived_) {
+            revert ContractAlreadyArchived();
+        }
+
+        _isArchived = isArchived_;
+
+        emit IsArchivedChanged(isArchived_);
+    }
+
+    /**
+     * @notice Sets the address of the fee receiver
+     *
+     * Requirements:
      * - Can only be called by the contract owner
      * - The new fee receiver address must not be the same as the current one
      *
@@ -620,7 +655,30 @@ contract YieldStreamer is
     /**
      * @inheritdoc IYieldStreamer
      */
+    function isArchived() public view returns (bool) {
+        return _isArchived;
+    }
+
+    /**
+     * @inheritdoc IYieldStreamer
+     */
     function claimAllPreview(address account) external view returns (ClaimResult memory) {
+        if (isArchived()) {
+            return
+                ClaimResult({
+                    nextClaimDay: 0,
+                    nextClaimDebit: 0,
+                    firstYieldDay: 0,
+                    prevClaimDebit: 0,
+                    primaryYield: 0,
+                    streamYield: 0,
+                    lastDayYield: 0,
+                    shortfall: 0,
+                    fee: 0,
+                    yield: 0
+                });
+        }
+
         return _claimPreview(account, type(uint256).max);
     }
 
@@ -631,6 +689,22 @@ contract YieldStreamer is
      * @dev The requested claim amount must be rounded according to the `ROUNDING_COEF` value
      */
     function claimPreview(address account, uint256 amount) public view returns (ClaimResult memory) {
+        if (isArchived()) {
+            return
+                ClaimResult({
+                    nextClaimDay: 0,
+                    nextClaimDebit: 0,
+                    firstYieldDay: 0,
+                    prevClaimDebit: 0,
+                    primaryYield: 0,
+                    streamYield: 0,
+                    lastDayYield: 0,
+                    shortfall: 0,
+                    fee: 0,
+                    yield: 0
+                });
+        }
+
         if (amount < MIN_CLAIM_AMOUNT) {
             revert ClaimAmountBelowMinimum();
         }
