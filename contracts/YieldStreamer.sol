@@ -655,7 +655,7 @@ contract YieldStreamer is
     /**
      * @inheritdoc IYieldStreamer
      */
-    function isArchived() public view returns (bool) {
+    function isArchived() external view returns (bool) {
         return _isArchived;
     }
 
@@ -663,22 +663,6 @@ contract YieldStreamer is
      * @inheritdoc IYieldStreamer
      */
     function claimAllPreview(address account) external view returns (ClaimResult memory) {
-        if (isArchived()) {
-            return
-                ClaimResult({
-                    nextClaimDay: 0,
-                    nextClaimDebit: 0,
-                    firstYieldDay: 0,
-                    prevClaimDebit: 0,
-                    primaryYield: 0,
-                    streamYield: 0,
-                    lastDayYield: 0,
-                    shortfall: 0,
-                    fee: 0,
-                    yield: 0
-                });
-        }
-
         return _claimPreview(account, type(uint256).max);
     }
 
@@ -689,22 +673,6 @@ contract YieldStreamer is
      * @dev The requested claim amount must be rounded according to the `ROUNDING_COEF` value
      */
     function claimPreview(address account, uint256 amount) public view returns (ClaimResult memory) {
-        if (isArchived()) {
-            return
-                ClaimResult({
-                    nextClaimDay: 0,
-                    nextClaimDebit: 0,
-                    firstYieldDay: 0,
-                    prevClaimDebit: 0,
-                    primaryYield: 0,
-                    streamYield: 0,
-                    lastDayYield: 0,
-                    shortfall: 0,
-                    fee: 0,
-                    yield: 0
-                });
-        }
-
         if (amount < MIN_CLAIM_AMOUNT) {
             revert ClaimAmountBelowMinimum();
         }
@@ -988,6 +956,22 @@ contract YieldStreamer is
      * @param amount The amount of yield to be claimed
      */
     function _claimPreview(address account, uint256 amount) internal view returns (ClaimResult memory) {
+        if (_isArchived) {
+            return
+                ClaimResult({
+                    nextClaimDay: 0,
+                    nextClaimDebit: 0,
+                    firstYieldDay: 0,
+                    prevClaimDebit: 0,
+                    primaryYield: 0,
+                    streamYield: 0,
+                    lastDayYield: 0,
+                    shortfall: 0,
+                    fee: 0,
+                    yield: 0
+                });
+        }
+
         (uint256 day, uint256 time) = _dayAndTimeWithStopStreaming(account);
         ClaimState memory state = _claims[account];
         ClaimResult memory result;
