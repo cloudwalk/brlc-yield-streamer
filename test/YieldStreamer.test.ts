@@ -128,8 +128,8 @@ const yieldRateRecordCase3: YieldRateRecord = {
 
 const EXPECTED_VERSION: Version = {
   major: 1,
-  minor: 2,
-  patch: 1
+  minor: 3,
+  patch: 0
 };
 
 const EMPTY_CLAIM_RESULT: ClaimResult = {
