@@ -128,8 +128,22 @@ const yieldRateRecordCase3: YieldRateRecord = {
 
 const EXPECTED_VERSION: Version = {
   major: 1,
-  minor: 2,
-  patch: 1
+  minor: 3,
+  patch: 0
+};
+
+const EMPTY_CLAIM_RESULT: ClaimResult = {
+  nextClaimDay: BigNumber.from(0),
+  nextClaimDebit: BigNumber.from(0),
+  firstYieldDay: BigNumber.from(0),
+  prevClaimDebit: BigNumber.from(0),
+  primaryYield: BigNumber.from(0),
+  streamYield: BigNumber.from(0),
+  lastDayYield: BigNumber.from(0),
+  shortfall: BigNumber.from(0),
+  fee: BigNumber.from(0),
+  yield: BigNumber.from(0),
+  claimDebitIsGreaterThanFirstDayYield: false
 };
 
 function defineExpectedDailyBalances(balanceRecords: BalanceRecord[], dayFrom: number, dayTo: number): BigNumber[] {
@@ -660,6 +674,53 @@ describe("Contract 'YieldStreamer'", async () => {
           `Mismatch in the "${property}" property`
         );
       });
+    });
+  });
+
+  describe("Function 'setIsArchived()'", async () => {
+    it("Can set the contract to archived state", async () => {
+      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+
+      expect(await context.yieldStreamer.isArchived()).to.equal(false);
+
+      const tx = await context.yieldStreamer.setIsArchived(true);
+
+      await expect(tx)
+        .to.emit(context.yieldStreamer, "IsArchivedChanged")
+        .withArgs(true);
+
+      expect(await context.yieldStreamer.isArchived()).to.equal(true);
+    });
+
+    it("Can set the contract back to not archived state", async () => {
+      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+
+      await proveTx(context.yieldStreamer.setIsArchived(true));
+      expect(await context.yieldStreamer.isArchived()).to.equal(true);
+
+      const tx = await context.yieldStreamer.setIsArchived(false);
+
+      await expect(tx)
+        .to.emit(context.yieldStreamer, "IsArchivedChanged")
+        .withArgs(false);
+
+      expect(await context.yieldStreamer.isArchived()).to.equal(false);
+    });
+
+    it("Reverts when trying to archive an already archived contract", async () => {
+      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+
+      await proveTx(context.yieldStreamer.setIsArchived(true));
+
+      await expect(context.yieldStreamer.setIsArchived(true))
+        .to.be.revertedWithCustomError(context.yieldStreamer, "ContractAlreadyArchived");
+    });
+
+    it("Can only be called by the owner", async () => {
+      const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+
+      await expect(context.yieldStreamer.connect(user).setIsArchived(true))
+        .to.be.revertedWith("Ownable: caller is not the owner");
     });
   });
 
@@ -1505,6 +1566,21 @@ describe("Contract 'YieldStreamer'", async () => {
         }
         await executeAndCheckClaimAll(context, claimRequest);
       });
+
+      it("Returns zeroed values when the contract is archived", async () => {
+        const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+
+        await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, baseClaimRequest.balanceRecords));
+        await proveTx(context.balanceTrackerMock.setDayAndTime(baseClaimRequest.claimDay, baseClaimRequest.claimTime));
+
+        const preArchiveResult = await context.yieldStreamer.claimAllPreview(user.address);
+        expect(preArchiveResult.yield).to.not.equal(BIG_NUMBER_ZERO);
+
+        await proveTx(context.yieldStreamer.setIsArchived(true));
+
+        const postArchiveResult = await context.yieldStreamer.claimAllPreview(user.address);
+        compareClaimPreviews(postArchiveResult, EMPTY_CLAIM_RESULT);
+      });
     });
   });
 
@@ -1565,6 +1641,21 @@ describe("Contract 'YieldStreamer'", async () => {
 
         claimRequest.amount = MIN_CLAIM_AMOUNT;
         await checkClaimPreview(context, claimRequest);
+      });
+
+      it("Returns zeroed values when the contract is archived", async () => {
+        const context: TestContext = await setUpFixture(deployAndConfigureContracts);
+        const claimRequest = { ...baseClaimRequest, amount: MIN_CLAIM_AMOUNT };
+
+        await proveTx(context.balanceTrackerMock.setBalanceRecords(user.address, claimRequest.balanceRecords));
+        await proveTx(context.balanceTrackerMock.setDayAndTime(claimRequest.claimDay, claimRequest.claimTime));
+        const preArchiveResult = await context.yieldStreamer.claimPreview(user.address, claimRequest.amount);
+        expect(preArchiveResult.yield).to.not.equal(BIG_NUMBER_ZERO);
+
+        await proveTx(context.yieldStreamer.setIsArchived(true));
+
+        const postArchiveResult = await context.yieldStreamer.claimPreview(user.address, claimRequest.amount);
+        compareClaimPreviews(postArchiveResult, EMPTY_CLAIM_RESULT);
       });
 
       // Cases with balance limit and stream stopping for an account are not tested here
